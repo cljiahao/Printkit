@@ -8,9 +8,11 @@ larger clusters; everything else sits flat here.
 
 ## Contents
 
-- `types.ts` — hand-maintained DB types (`Transaction`, `VendorPaymentConfig`,
-  `TxStatus`, `VendorPlan`, `PaymentConfigKind`, `Booking`, `BookingStatus`,
-  `SocialLinks`, …), kept in sync with `supabase/migrations/` by hand.
+- `types.ts` — hand-maintained DB types (`PrintJob`, `PrintJobType`,
+  `PrintJobStatus`, `KitApiKey`, `AdminAuditEntry`, `Database`), kept in sync
+  with `supabase/migrations/` by hand. The `Database` interface satisfies
+  Supabase's `GenericSchema` constraint with proper `Tables`, `Views`, and
+  `Functions` typing for the `printkit` schema.
 - `schemas.ts` — Zod input schemas for every form/action boundary:
   `vendorPaymentConfigInputSchema` (discriminated union over `kind`,
   paynow/pointer), `issueRefundInputSchema`, `createBookingInputSchema`

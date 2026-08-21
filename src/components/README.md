@@ -16,10 +16,6 @@ sits flat here.
 - `elevated-card.tsx` — `ElevatedCard({ as, className, children })`: the
   shared raised-card container (rounded, bordered, soft shadow) used by the
   login page, matching every other kit's login page.
-- `social-icons.tsx` — `SOCIAL_LINK_FIELDS`: the website/Instagram/
-  Facebook/TikTok field list (plain lucide glyphs, not brand-mark icons).
-- `social-links-fields.tsx` — the input-field group rendering
-  `SOCIAL_LINK_FIELDS` for the profile settings page.
 
 `FeedbackForm`/`SupportForm`/`ImageUploader`/`InfoTooltip`/`Section` were
 migrated onto `@merqo/ui`'s shared versions (2026-08-05 `@merqo/ui`
@@ -34,13 +30,11 @@ paykit's own upload glue (resize + Supabase Storage write) lives in
 
 ## Connectivity
 
-`social-links-fields.tsx` is
-used by the dashboard profile settings page. `BackButton` is used by the
-dashboard `profile/` and `plan/` pages. `landing/` is only used by
-`src/app/page.tsx`. `ui/` is used everywhere. `@merqo/ui`'s `AccountMenu`
-(rendered from `dashboard-nav.tsx`) owns the Feedback/Get-help `Sheet`
-drawers, wired to `submitFeedbackAction`/`submitSupportMessageAction` in
-`src/app/actions/`.
+`BackButton` is used by the dashboard `profile/` and `plan/` pages. `landing/`
+is only used by `src/app/page.tsx`. `ui/` is used everywhere. `@merqo/ui`'s
+`AccountMenu` (rendered from `dashboard-nav.tsx`) owns the Feedback/Get-help
+`Sheet` drawers, wired to `submitFeedbackAction`/`submitSupportMessageAction`
+in `src/app/actions/`.
 
 ## Parent
 

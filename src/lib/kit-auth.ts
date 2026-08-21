@@ -20,11 +20,15 @@ export async function verifyKitAuth(
   if (!kitSlug || !secret) return null;
 
   const supabase = await createServiceClient();
-  const { data, error } = (await supabase
+  const result = await supabase
     .from("kit_api_keys")
     .select("secret_hash")
     .eq("kit_slug", kitSlug)
-    .maybeSingle()) as { data: { secret_hash: string } | null; error: null };
+    .maybeSingle();
+  const { data, error } = result as {
+    data: { secret_hash: string } | null;
+    error: null;
+  };
   if (error || !data) return null;
 
   const provided = Buffer.from(hashApiKey(secret));

@@ -2,6 +2,7 @@ import {
   createServerClient as createSSRClient,
   type CookieMethodsServer,
 } from "@supabase/ssr";
+import { type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { publicEnv } from "@/lib/env";
 import type { Database } from "@/lib/types";
@@ -25,7 +26,9 @@ function cookieMethods(cookieStore: CookieStore): CookieMethodsServer {
   };
 }
 
-export async function createServerClient() {
+export async function createServerClient(): Promise<
+  SupabaseClient<Database, "printkit">
+> {
   const cookieStore = await cookies();
 
   return createSSRClient<Database, "printkit">(
@@ -45,7 +48,9 @@ export async function createServerClient() {
 // Handlers. No request cookies are attached: an empty cookie adapter means
 // the secret key drives auth, giving a true RLS bypass instead of silently
 // authenticating as whatever user's cookies happened to be present.
-export async function createServiceClient() {
+export async function createServiceClient(): Promise<
+  SupabaseClient<Database, "printkit">
+> {
   const secretKey = process.env.SUPABASE_SECRET_KEY;
   if (!secretKey)
     throw new Error(

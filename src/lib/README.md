@@ -18,9 +18,19 @@ everything else sits flat here.
 - `print-jobs.ts` — `createPrintJob(input)`: inserts a queued `print_jobs`
   row via the service client and returns its `id`. `(source_kit,
 source_ref)` is unique, so a retried call for the same source order
-  returns a clean `{ok:false, status:409}` instead of a generic 500. A
-  second export, `updatePrintJobStatus`, is later-plan work (needs
-  `qkit-client.ts` to exist first).
+  returns a clean `{ok:false, status:409}` instead of a generic 500.
+  `updatePrintJobStatus(jobId, status)`: the single choke point for
+  changing a row's status — updates it, then (only when `source_kit` is
+  `"qkit"` and the new status is terminal, `"printed"`/`"failed"`) calls
+  `notifyQkitPrintStatus` to tell qkit. Not yet called by any UI or bridge
+  code — Plan 3's manual-reprint action and Plan 4's bridge print-result
+  handler both will.
+- `qkit-client.ts` — `notifyQkitPrintStatus(orderId, status)`: fire-and-forget
+  outbound callback to qkit's `POST /api/printkit/print-status`, a plain
+  (no `kit_slug:` prefix) shared-secret bearer check — different from this
+  repo's own multi-caller `kit-auth.ts` convention, since qkit has exactly
+  one caller for that route. Never throws; every failure (missing secret,
+  network error, non-2xx) is swallowed after a log line.
 - `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
   (gets a session-scoped Supabase client and the authenticated user,
   redirects to `/login` if none).

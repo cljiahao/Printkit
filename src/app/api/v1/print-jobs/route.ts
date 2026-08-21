@@ -3,8 +3,6 @@ import { z } from "zod";
 import { verifyKitAuth } from "@/lib/kit-auth";
 import { createPrintJob } from "@/lib/print-jobs";
 
-export const revalidate = 0;
-
 const bodySchema = z.object({
   vendor_id: z.string().uuid(),
   payload: z.record(z.string(), z.unknown()),

@@ -16,9 +16,17 @@ export async function notifyQkitPrintStatus(
   status: "printed" | "failed",
 ): Promise<void> {
   const secret = process.env.QKIT_CALLBACK_SECRET;
-  if (!secret) return;
+  if (!secret) {
+    console.warn("notifyQkitPrintStatus: QKIT_CALLBACK_SECRET unset, skipping");
+    return;
+  }
 
-  const qkitUrl = process.env.NEXT_PUBLIC_QKIT_URL ?? "https://qkit.vercel.app";
+  const qkitUrl = process.env.NEXT_PUBLIC_QKIT_URL;
+  if (!qkitUrl) {
+    console.warn("notifyQkitPrintStatus: NEXT_PUBLIC_QKIT_URL unset, skipping");
+    return;
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 5000);
 

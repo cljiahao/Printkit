@@ -72,6 +72,31 @@ describe("createPrintJob", () => {
     });
   });
 
+  it("returns a 400 result on an unknown vendor_id (foreign key violation)", async () => {
+    insertMock.mockReturnValue({
+      select: () => ({
+        single: () =>
+          Promise.resolve({
+            data: null,
+            error: { code: "23503", message: "foreign key violation" },
+          }),
+      }),
+    });
+
+    const result = await createPrintJob({
+      vendorId: "unknown-vendor",
+      payload: { customer_name: "Ada", order_number: "0007" },
+      sourceKit: "qkit",
+      sourceRef: "order-uuid-1",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: 400,
+      error: "Unknown vendor_id.",
+    });
+  });
+
   it("returns a 500 result on an unexpected database error", async () => {
     insertMock.mockReturnValue({
       select: () => ({

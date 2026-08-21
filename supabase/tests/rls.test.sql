@@ -1,5 +1,5 @@
 begin;
-select plan(8);
+select plan(9);
 
 select has_table('printkit', 'print_jobs', 'print_jobs table exists');
 select has_table('printkit', 'admin_audit', 'admin_audit table exists');
@@ -43,6 +43,17 @@ select throws_ok(
 );
 
 reset role;
+
+-- Real duplicate-insert enforcement — proves Postgres actually raises 23505
+-- for a genuine (source_kit, source_ref) collision, not just that
+-- print-jobs.ts's unit tests mock that error code correctly.
+select throws_ok(
+  $$ insert into printkit.print_jobs (vendor_id, payload, source_kit, source_ref)
+     values ('11111111-1111-1111-1111-111111111111', '{}'::jsonb, 'qkit', 'order-1') $$,
+  '23505',
+  null,
+  'duplicate (source_kit, source_ref) is rejected by the real unique constraint'
+);
 
 -- admin_audit: non-admin authenticated user sees nothing
 set local role authenticated;

@@ -35,9 +35,9 @@ refresh + `/dashboard/*` → `/login` redirect) on every request via
 route below; `page.tsx` (the landing page) is the only route directly
 under `app/` besides the special Next.js files. `api/v1/print-jobs/` is
 the inbound route qkit calls on order-placed; printkit's own outbound
-call back into qkit on job status change is later-plan work (see
-`docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`). No
-`actions/` or `admin/` directories exist yet.
+call back into qkit on job status change is `src/lib/qkit-client.ts`'s
+`notifyQkitPrintStatus`, invoked from `updatePrintJobStatus`
+(`@/lib/print-jobs`). No `actions/` or `admin/` directories exist yet.
 
 ## Parent
 

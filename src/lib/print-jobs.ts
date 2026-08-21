@@ -41,6 +41,13 @@ export async function createPrintJob(
         error: "A print job already exists for this order.",
       };
     }
+    if (error.code === "23503") {
+      return {
+        ok: false,
+        status: 400,
+        error: "Unknown vendor_id.",
+      };
+    }
     console.error("createPrintJob failed", error.message);
     return { ok: false, status: 500, error: "Could not create print job." };
   }
@@ -69,7 +76,7 @@ export async function updatePrintJobStatus(
     .from("print_jobs")
     .update({
       status,
-      printed_at: status === "printed" ? new Date().toISOString() : undefined,
+      printed_at: status === "printed" ? new Date().toISOString() : null,
     })
     .eq("id", jobId)
     .select("source_kit, source_ref")

@@ -24,6 +24,18 @@ describe("notifyQkitPrintStatus", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does nothing (no throw) when NEXT_PUBLIC_QKIT_URL is unset", async () => {
+    process.env.QKIT_CALLBACK_SECRET = "shared-secret";
+    delete process.env.NEXT_PUBLIC_QKIT_URL;
+    const fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      notifyQkitPrintStatus("order-1", "failed"),
+    ).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("POSTs a plain (no kit_slug prefix) bearer token and the order id/status", async () => {
     process.env.QKIT_CALLBACK_SECRET = "shared-secret";
     process.env.NEXT_PUBLIC_QKIT_URL = "https://qkit.test";
@@ -45,19 +57,25 @@ describe("notifyQkitPrintStatus", () => {
 
   it("never throws when the fetch itself rejects", async () => {
     process.env.QKIT_CALLBACK_SECRET = "shared-secret";
-    global.fetch = vi.fn().mockRejectedValue(new Error("network down"));
+    process.env.NEXT_PUBLIC_QKIT_URL = "https://qkit.test";
+    const fetchMock = vi.fn().mockRejectedValue(new Error("network down"));
+    global.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(
       notifyQkitPrintStatus("order-1", "printed"),
     ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("never throws on a non-2xx response", async () => {
     process.env.QKIT_CALLBACK_SECRET = "shared-secret";
-    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    process.env.NEXT_PUBLIC_QKIT_URL = "https://qkit.test";
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    global.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(
       notifyQkitPrintStatus("order-1", "printed"),
     ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -16,9 +16,9 @@ everything else sits flat here.
 - `kit-auth.ts` — `hashApiKey`/`verifyKitAuth`: bearer-secret verification
   for calling kits, checked on every `/api/v1/*` route before any DB access.
 - `print-jobs.ts` — `createPrintJob(input)`: inserts a queued `print_jobs`
-  row via the service client and returns its `id`. `(source_kit,
-source_ref)` is unique, so a retried call for the same source order
-  returns a clean `{ok:false, status:409}` instead of a generic 500.
+  row via the service client and returns its `id`. `(source_kit, source_ref)`
+  is unique, so a retried call for the same source order returns a clean
+  `{ok:false, status:409}` instead of a generic 500.
   `updatePrintJobStatus(jobId, status)`: the single choke point for
   changing a row's status — updates it, then (only when `source_kit` is
   `"qkit"` and the new status is terminal, `"printed"`/`"failed"`) calls

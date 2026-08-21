@@ -7,6 +7,14 @@ for this project.
 
 ## Contents
 
+- `api/v1/print-jobs/` — inbound `POST` route for calling kits (qkit) to
+  queue a print job. Verifies the caller's bearer secret via
+  `verifyKitAuth` (`@/lib/kit-auth`), validates the body with a Zod schema
+  (`vendor_id` UUID, `payload` object, `source_ref`), then delegates to
+  `createPrintJob` (`@/lib/print-jobs`). Returns 401 unauthenticated, 400
+  invalid body, 201 with the new row's `id` on success, or the
+  `createPrintJob` error's own status (e.g. 409 on a duplicate
+  `source_kit`+`source_ref`).
 - `apple-icon.tsx` — `AppleIcon` route handler; renders `brandIcon(180)` as a 180×180 PNG for iOS home-screen touch icons.
 - `auth/callback/` — Supabase auth callback route (`GET`, OAuth code exchange via `exchangeCodeForSession`); redirects to `next` (same-origin only) or `/dashboard` on success, `/login?error=oauth` on failure or a missing code.
 - `dashboard/` — authenticated vendor area. Currently a single placeholder page (`page.tsx`) gated by `getVendorSession()` — no sub-routes yet.
@@ -25,10 +33,11 @@ its own `page.tsx`. `src/proxy.ts` also runs `updateSession` (session
 refresh + `/dashboard/*` → `/login` redirect) on every request via
 `src/lib/supabase/middleware.ts`. `layout.tsx` is the ancestor of every
 route below; `page.tsx` (the landing page) is the only route directly
-under `app/` besides the special Next.js files. No `api/`, `actions/`, or
-`admin/` directories exist yet — the `/api/v1/print-jobs` route and an
-admin console are later-plan work (see `docs/superpowers/specs/2026-08-21-
-printkit-v0.1-design.md`).
+under `app/` besides the special Next.js files. `api/v1/print-jobs/` is
+the inbound route qkit calls on order-placed; printkit's own outbound
+call back into qkit on job status change is later-plan work (see
+`docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`). No
+`actions/` or `admin/` directories exist yet.
 
 ## Parent
 

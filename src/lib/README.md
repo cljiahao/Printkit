@@ -15,6 +15,12 @@ everything else sits flat here.
   `Functions` typing for the `printkit` schema.
 - `kit-auth.ts` — `hashApiKey`/`verifyKitAuth`: bearer-secret verification
   for calling kits, checked on every `/api/v1/*` route before any DB access.
+- `print-jobs.ts` — `createPrintJob(input)`: inserts a queued `print_jobs`
+  row via the service client and returns its `id`. `(source_kit,
+source_ref)` is unique, so a retried call for the same source order
+  returns a clean `{ok:false, status:409}` instead of a generic 500. A
+  second export, `updatePrintJobStatus`, is later-plan work (needs
+  `qkit-client.ts` to exist first).
 - `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
   (gets a session-scoped Supabase client and the authenticated user,
   redirects to `/login` if none).

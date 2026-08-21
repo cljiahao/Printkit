@@ -57,4 +57,23 @@ describe("verifyKitAuth", () => {
       await verifyKitAuth(requestWith("Bearer qkit:correct-secret")),
     ).toEqual({ kitSlug: "qkit" });
   });
+
+  it("returns null for a malformed bearer token with no kit_slug:secret split", async () => {
+    expect(await verifyKitAuth(requestWith("Bearer no-colon-here"))).toBeNull();
+  });
+});
+
+describe("hashApiKey", () => {
+  it("is deterministic for the same input", () => {
+    expect(hashApiKey("my-secret")).toBe(hashApiKey("my-secret"));
+  });
+
+  it("produces a 64-character hex string (sha256)", () => {
+    const hash = hashApiKey("my-secret");
+    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("produces different output for different input", () => {
+    expect(hashApiKey("secret-a")).not.toBe(hashApiKey("secret-b"));
+  });
 });

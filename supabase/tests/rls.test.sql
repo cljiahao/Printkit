@@ -1,5 +1,5 @@
 begin;
-select plan(6);
+select plan(8);
 
 select has_table('printkit', 'print_jobs', 'print_jobs table exists');
 select has_table('printkit', 'admin_audit', 'admin_audit table exists');
@@ -37,9 +37,9 @@ select results_eq(
 select throws_ok(
   $$ insert into printkit.print_jobs (vendor_id, payload, source_kit, source_ref)
      values ('22222222-2222-2222-2222-222222222222', '{}'::jsonb, 'qkit', 'order-2') $$,
+  '42501',
   null,
-  null,
-  'vendor cannot insert into print_jobs (service-role only)'
+  'vendor cannot insert into print_jobs (insufficient_privilege)'
 );
 
 reset role;
@@ -53,6 +53,47 @@ select results_eq(
   $$ values (0::bigint) $$,
   'non-admin sees no admin_audit rows'
 );
+
+reset role;
+
+-- Positive admin-read test: an admin genuinely sees admin_audit rows.
+-- Without this, is_admin() silently returning false always would still
+-- pass the suite (the existing test only proves a NON-admin sees nothing).
+insert into printkit.admins (user_id)
+values ('11111111-1111-1111-1111-111111111111');
+
+insert into printkit.admin_audit (admin_id, action, detail)
+values ('11111111-1111-1111-1111-111111111111', 'test_action', '{}'::jsonb);
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "11111111-1111-1111-1111-111111111111"}';
+
+select results_eq(
+  $$ select count(*) from printkit.admin_audit $$,
+  $$ values (1::bigint) $$,
+  'admin sees their own admin_audit insert'
+);
+
+reset role;
+
+-- kit_api_keys denial: the single most security-critical table in the
+-- schema (holds bearer-secret hashes) has zero policies AND zero grants —
+-- prove Postgres actually refuses an authenticated select, not just that
+-- the migration text lacks a grant line.
+insert into printkit.kit_api_keys (kit_slug, secret_hash)
+values ('qkit', 'irrelevant-hash-value');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "11111111-1111-1111-1111-111111111111"}';
+
+select throws_ok(
+  $$ select * from printkit.kit_api_keys $$,
+  '42501',
+  null,
+  'authenticated role cannot select kit_api_keys (insufficient_privilege)'
+);
+
+reset role;
 
 select * from finish();
 rollback;

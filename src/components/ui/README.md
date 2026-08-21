@@ -6,7 +6,7 @@ shadcn/ui (new-york style) primitives, installed via
 `pnpm dlx shadcn@latest add <component> --yes` and left close to generated —
 don't hand-edit structurally, re-run the generator instead so upstream fixes
 aren't lost. Wrapped by feature components elsewhere in `src/components/`
-and `src/app/`; nothing here is paykit-specific.
+and `src/app/`; nothing here is printkit-specific.
 
 ## Contents
 

@@ -8,11 +8,11 @@ everything else sits flat here.
 
 ## Contents
 
-- `types.ts` — hand-maintained DB types (`PrintJob`, `PrintJobType`,
-  `PrintJobStatus`, `KitApiKey`, `Admin`, `AdminAuditEntry`, `Database`),
-  kept in sync with `supabase/migrations/` by hand. The `Database` interface
-  satisfies Supabase's `GenericSchema` constraint with proper `Tables`,
-  `Views`, and `Functions` typing for the `printkit` schema.
+- `types.ts` — the `Database` interface, generated via
+  `supabase gen types typescript --local --schema printkit` (see the
+  `supabase-migrate` skill) and regenerated after any schema change. Satisfies
+  Supabase's `GenericSchema` constraint with proper `Tables`, `Views`, and
+  `Functions` typing for the `printkit` schema.
 - `kit-auth.ts` — `hashApiKey`/`verifyKitAuth`: bearer-secret verification
   for calling kits, checked on every `/api/v1/*` route before any DB access.
 - `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
@@ -34,11 +34,10 @@ everything else sits flat here.
   returns.
 - `env.ts` — `publicEnv`: required-env-var accessors that throw at import
   time if unset, instead of silently reading `undefined`.
-- `utils.ts` — `cn()` (clsx + tailwind-merge), shared form label/error
-  Tailwind class constants, `formatCents()` (integer cents -> SGD currency
-  string), and `formatDate()` (a `date`-column "YYYY-MM-DD" string ->
-  display date, parsed/formatted with an explicit UTC anchor so it never
-  shifts by a day depending on the server's runtime timezone).
+- `utils.ts` — `cn()` (clsx + tailwind-merge) and `formatDate()` (a
+  `date`-column "YYYY-MM-DD" string -> display date, parsed/formatted with
+  an explicit UTC anchor so it never shifts by a day depending on the
+  server's runtime timezone).
 
 ## Connectivity
 

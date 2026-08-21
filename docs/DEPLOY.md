@@ -1,30 +1,29 @@
-# paykit — Deploy Notes
+# printkit — Deploy Notes
 
-paykit runs on the **shared Merqo Supabase project** (same one as
-qkit/loopkit/merqo), in its own `paykit` schema.
+printkit runs on the **shared Merqo Supabase project** (same one as
+qkit/loopkit/merqo/paykit), in its own `printkit` schema.
 
 ## First deploy
 
-1. Add `paykit` to the Supabase project's exposed schemas (Data API config)
+1. Add `printkit` to the Supabase project's exposed schemas (Data API config)
    so `@supabase/ssr` can query it.
-2. Apply `supabase/migrations/0001_paykit_core.sql`.
-3. Set Vercel env vars: `NEXT_PUBLIC_SUPABASE_URL`,
+2. Apply the migrations in order: `supabase/migrations/0001_printkit_core.sql`
+   then `supabase/migrations/0002_printkit_admin.sql`.
+3. Set Vercel env vars (see `.env.example` / `src/lib/env.ts` for the
+   authoritative list): `NEXT_PUBLIC_SUPABASE_URL`,
    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (shared
-   creds — same values as qkit/loopkit's own Vercel projects).
+   creds — same values as the other kits' own Vercel projects),
+   `NEXT_PUBLIC_AUTH_COOKIE_DOMAIN` (set to `.merqo.io` in Production only —
+   leave unset in dev/preview, since those don't run on merqo.io),
+   `MERQO_METRICS_SECRET`, and `MERQO_PROVISION_SECRET` (two different
+   secret values — a leak of one must not grant the other's capability).
 4. No calling kit is wired up yet in this scope — `scripts/create-kit-key.mjs`
-   only needs to be run once a real cutover spec (see the design spec's
-   Follow-ups) actually connects a kit to paykit.
+   mints a hashed bearer secret for a calling kit (qkit) and only needs to
+   be run once Plan 2 (a separate, not-yet-started implementation plan)
+   actually wires up the real cross-kit integration.
 
 ## Notes
 
-- paykit never touches funds — there is no payment-provider webhook to
-  configure.
-- The dashboard profile page (`/dashboard/profile`) reads/writes the shared
-  `merqo.vendor_profile` table (stall/shop name, social links) and uploads
-  profile-icon photos to the shared `vendor-images` Storage bucket. Neither
-  needs a paykit-local migration — both were created once, project-wide, by
-  loopkit's `0017_loopkit_vendor_profile.sql`, and are already live on the
-  shared Supabase project by the time paykit deploys.
-- Cutting qkit (or any other kit) over to call paykit, and removing qkit's
-  local payment duplicate, is separate, later work — not part of this
-  deploy.
+- Cutting qkit over to call printkit's `POST /api/v1/print-jobs` on
+  order-placed, and printkit calling back into qkit on job status change,
+  is Plan 2 — not part of this deploy.

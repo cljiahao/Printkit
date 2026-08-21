@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Claude Code harness for paykit: hook scripts that enforce guardrails at
+Claude Code harness for printkit: hook scripts that enforce guardrails at
 tool-call/session boundaries, project skills, the harness integrity manifest,
 and its verifier.
 
@@ -29,4 +29,4 @@ recorded `origin_hash`.
 
 ## Parent
 
-[paykit](../README.md)
+[printkit](../README.md)

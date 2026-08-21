@@ -42,7 +42,7 @@ src/proxy.ts                      — Supabase session refresh + /dashboard guar
 src/lib/supabase/                 — browser / server / service clients (schema=printkit)
 src/lib/kit-auth.ts               — bearer-secret verification for calling kits
 src/lib/vendor-session.ts         — shared dashboard auth guard (getVendorSession)
-src/lib/types.ts                  — DB types (mirror of supabase/migrations)
+src/lib/types.ts                  — DB types, generated via `supabase gen types`
 scripts/create-kit-key.mjs        — mint + store a hashed bearer secret for a calling kit
 supabase/migrations/              — SQL schema + RLS + grants
 supabase/tests/rls.test.sql       — pgTAP RLS suite
@@ -77,6 +77,11 @@ supabase/tests/rls.test.sql       — pgTAP RLS suite
   imported by another kit.
 - After editing the schema, update both `supabase/migrations/` and
   `src/lib/types.ts`.
+- Never instruct an agent to run `.claude/regen-harness.sh` — it's
+  human-run only (its own header says so), since running it can launder a
+  tampered or drifted hook/workflow into a passing integrity check. A
+  harness-guarded file that needs a cosmetic fix gets left for a human to
+  fix directly, who then runs `regen-harness.sh` themselves.
 
 ## Skills
 
@@ -131,8 +136,7 @@ files, a readme-coupling staleness warning, and a comment-hygiene warning
 Conventional Commits; pre-push runs the harness integrity check + quality
 gate. Hard-local; coverage/changed-line gates run in CI. Migrated
 2026-08-01 off lefthook, whose unsigned `lefthook.exe` Windows Smart App
-Control blocks unconditionally — see
-`docs/superpowers/specs/2026-08-01-lefthook-to-husky-migration-design.md`.
+Control blocks unconditionally.
 CI (GitHub Actions): `test` (check + unit + coverage) with a hard gate on
 changed-line coverage (`diff-cover` ≥80%), `build` (`next build` — the one
 job that catches Next.js client/server bundle-boundary errors `pnpm

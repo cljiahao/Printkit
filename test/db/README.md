@@ -8,8 +8,8 @@ migrations — a fast sanity check, not a substitute for `supabase/tests/rls.tes
 
 ## Contents
 
-- `schema.test.ts` — asserts `0001_paykit_core.sql` creates the `paykit` schema and its core tables/RLS.
-- `admin-schema.test.ts` — asserts `0006_paykit_admin.sql` creates `admins`/`is_admin`/`admin_audit` with RLS and the expected grants.
+- `schema.test.ts` — asserts `0001_printkit_core.sql` creates the `printkit` schema and its core tables/RLS.
+- `admin-schema.test.ts` — asserts `0002_printkit_admin.sql` creates `admins`/`is_admin`/`admin_audit` with RLS and the expected grants.
 
 ## Parent
 

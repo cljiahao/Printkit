@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── paykit — "Banknote Engrave" — engraved teal-green ink + steel-blue secondary, replacing "Signal & Mint". */
+/* ── printkit — "Banknote Engrave" — engraved teal-green ink + steel-blue secondary, replacing "Signal & Mint". */
 
 :root {
   --radius: 0.625rem;
@@ -28,7 +28,7 @@
   --ring: oklch(0.708 0 0);
 
   /* brand accent — a clean money-green, distinct from qkit's ember and
-     loopkit's gold. Carries the "Pay" segment of the PayKit wordmark. */
+     loopkit's gold. Carries the "Print" segment of the PrintKit wordmark. */
   --mint: oklch(0.6 0.15 155);
   --mint-foreground: oklch(0.16 0.03 155);
   /* payment-flow complement — a cooler teal-blue paired with mint in the
@@ -36,7 +36,7 @@
   --flow: oklch(0.62 0.14 220);
   /* dark authoritative band — the closing-CTA / stat-band sections, matching
      the family's shared "full-bleed color block" convention (loopkit uses
-     its plum primary; paykit uses near-black ink instead, closer to a
+     its plum primary; printkit uses near-black ink instead, closer to a
      payment-terminal / infrastructure feel). */
   --ink: oklch(0.16 0.01 255);
   --ink-foreground: oklch(0.96 0.005 255);
@@ -114,7 +114,7 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans);
   /* a faint mint-to-flow wash, top-right — quieter than loopkit's dual glow,
-     leaning into paykit's "clean infrastructure" register rather than
+     leaning into printkit's "clean infrastructure" register rather than
      qkit's textured paper or loopkit's celebratory bloom. */
   background-image: radial-gradient(
     ellipse 60% 45% at 92% -6%,

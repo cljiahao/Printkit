@@ -5,7 +5,7 @@ allowed-tools: "Bash(supabase *), Bash(pnpm *)"
 disable-model-invocation: true
 ---
 
-paykit uses Supabase (Postgres + RLS), not Drizzle. Migrations live in
+printkit uses Supabase (Postgres + RLS), not Drizzle. Migrations live in
 `supabase/migrations/`.
 
 ## Apply schema
@@ -33,8 +33,8 @@ paykit uses Supabase (Postgres + RLS), not Drizzle. Migrations live in
 ## Safety gate (before running against a non-local project)
 
 - Confirm the linked project ref is correct: `supabase projects list`.
-- RLS must stay enabled on `vendor_payment_config`, `transactions`, `refunds`,
-  `kit_api_keys`, `feedback` — never disable it to make a query work; fix the
+- RLS must stay enabled on `print_jobs`, `admins`, `admin_audit`,
+  `kit_api_keys` — never disable it to make a query work; fix the
   policy or the query instead.
 - `kit_api_keys` must never grant `authenticated`/`anon` any access — it's
   service-role only.

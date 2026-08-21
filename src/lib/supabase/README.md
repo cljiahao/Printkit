@@ -28,15 +28,7 @@ deliberate.
   Both are generic over `Database`/`"printkit"` (see `@/lib/types`).
 - `middleware.ts` — `updateSession(request)`: refreshes the Supabase
   session cookie and redirects unauthenticated requests to `/dashboard/*`
-  (`isProtectedPath`) to `/login`. Called from `src/proxy.ts`. Also runs
-  `clearLegacyHostOnlyCookie()`: a vendor signed in before the `.merqo.io`
-  cookie domain shipped has a HOST-ONLY version of the same-named auth
-  cookie, which the browser and Next's cookie parser can disagree on (RFC
-  6265 ordering) once the domain-scoped one also exists — the helper
-  clears the host-only one once per browser (guarded by a
-  `sb-auth-cookie-domain-migrated` marker cookie), skipping any cookie
-  name `@supabase/ssr`'s own `setAll` just wrote this same request so it
-  never clobbers a same-request token refresh.
+  (`isProtectedPath`) to `/login`. Called from `src/proxy.ts`.
 
 ## Connectivity
 

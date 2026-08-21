@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Wordmark } from "@/components/landing/wordmark";
+import { Wordmark } from "@/components/wordmark";
 import { ElevatedCard } from "@/components/elevated-card";
 import { GoogleMark } from "./google-mark";
 

@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Shared React components — not scoped to one dashboard sub-route. Two
-subfolders group larger clusters (`landing/` marketing sections, `ui/`
-shadcn primitives); everything else sits flat here.
+Shared React components — not scoped to one dashboard sub-route. One
+subfolder groups a larger cluster (`ui/` shadcn primitives); everything
+else sits flat here.
 
 ## Contents
 
@@ -16,14 +16,18 @@ shadcn primitives); everything else sits flat here.
   shared raised-card container (rounded, bordered, soft shadow) used by the
   login page and the root error boundary, matching every other kit's
   login page.
+- `wordmark.tsx` — `Wordmark({ className })`: the "PrintKit" brand mark
+  (mint-green "Print" + plain "Kit"). Used by `src/app/error.tsx` and
+  `src/app/login/page.tsx`.
 
 ## Connectivity
 
 `BackButton` is not yet wired to any dashboard route (the dashboard is
 currently a single placeholder page — see `src/app/README.md`).
 `elevated-card.tsx` is used by `login/page.tsx` and `src/app/error.tsx`.
-`landing/` is only used by `src/app/page.tsx`. `ui/` is used throughout
-`src/app/` and `src/components/`.
+`wordmark.tsx` is used by `src/app/error.tsx` and `src/app/login/page.tsx`
+(not by `src/app/page.tsx`, which is a bare placeholder). `ui/` is used
+throughout `src/app/` and `src/components/`.
 
 ## Parent
 

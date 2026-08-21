@@ -6,41 +6,6 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type PrintJobType = "label";
-export type PrintJobStatus = "queued" | "sent" | "printed" | "failed";
-
-export interface PrintJob {
-  id: string;
-  vendor_id: string;
-  job_type: PrintJobType;
-  payload: Json;
-  status: PrintJobStatus;
-  source_kit: string;
-  source_ref: string;
-  created_at: string;
-  printed_at: string | null;
-}
-
-export interface KitApiKey {
-  kit_slug: string;
-  secret_hash: string;
-  created_at: string;
-}
-
-export interface Admin {
-  user_id: string;
-  created_at: string;
-}
-
-export interface AdminAuditEntry {
-  id: string;
-  admin_id: string;
-  action: string;
-  target_id: string | null;
-  detail: Json | null;
-  created_at: string;
-}
-
 export type Database = {
   printkit: {
     Tables: {

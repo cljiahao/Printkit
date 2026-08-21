@@ -26,7 +26,7 @@ route; mode is a client-side toggle on this one page.
     session and forwards to `/dashboard/profile`, where "Change password"
     already lets a signed-in (recovery counts) user set a new one — no
     separate reset-password page needed.
-  - `Wordmark` (`@/components/landing/wordmark`) and `GoogleMark`
+  - `Wordmark` (`@/components/wordmark`) and `GoogleMark`
     (`./google-mark`) brand the card; the card container is `ElevatedCard`
     (`@/components/elevated-card`), matching every other kit's login page.
 - `google-mark.tsx` — `GoogleMark`: the Google "G" icon SVG, extracted out
@@ -42,11 +42,12 @@ route; mode is a client-side toggle on this one page.
 
 ## Connectivity
 
-Signed-out visitors land here from `landing/nav.tsx`'s "Log in"/"Get
-started" links. On success it calls `router.push("/dashboard")` +
-`router.refresh()`; `/dashboard`'s `layout.tsx` (`getVendorSession()`) is
-the actual auth gate this page's happy path leads into.
+Signed-out visitors reach `/login` directly (the landing page,
+`src/app/page.tsx`, is currently a placeholder with no nav links yet). On
+success it calls `router.push("/dashboard")` + `router.refresh()`;
+`/dashboard`'s `layout.tsx` (`getVendorSession()`) is the actual auth gate
+this page's happy path leads into.
 
 ## Parent
 
-[paykit](../../../README.md)
+[printkit](../../../README.md)

@@ -15,7 +15,7 @@ for this project.
 - `icon.tsx` — `Icon` route handler; renders `brandIcon(32)` as a 32×32 PNG favicon.
 - `layout.tsx` — `RootLayout`. Loads `Fraunces`/`Inter`/`JetBrains_Mono` via `next/font/google`, sets `metadata`, wraps children in `next-themes`' `ThemeProvider` (`attribute="class"`, system default), then `TooltipProvider` + `Toaster`.
 - `login/` — combined sign-in/sign-up page, including the "Forgot password?" flow — see its own README.
-- `page.tsx` — `Home`, the marketing landing page. Currently a placeholder ("printkit" heading + one line of copy); no `src/components/landing/` sections are composed here yet.
+- `page.tsx` — `Home`, the marketing landing page. Currently a placeholder ("printkit" heading + one line of copy); no landing-page component sections exist yet.
 
 ## Connectivity
 

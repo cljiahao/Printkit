@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ElevatedCard } from "@/components/elevated-card";
-import { Wordmark } from "@/components/landing/wordmark";
+import { Wordmark } from "@/components/wordmark";
 
 /**
  * Root-level error boundary for non-dashboard routes (landing, login,

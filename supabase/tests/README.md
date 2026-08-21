@@ -20,10 +20,17 @@ app _asks_ the database for, never what the database _permits_.
     `authenticated`; writes come from the bearer-secret `/api/v1/print-jobs`
     route or the dashboard's service-role reprint action).
   - **`admin_audit` is admin-read-only** — a non-admin authenticated user
-    sees 0 rows.
+    sees 0 rows, and (positive case) an admin sees their own inserted row —
+    proving `is_admin()` actually returns true for an admin, not just false
+    for everyone.
+  - **`kit_api_keys` is service-role only** — an authenticated user's select
+    throws `insufficient_privilege` (42501); the table has zero policies and
+    zero grants to `authenticated`/`anon`.
 
-  Keep `select plan(N)` in step with the number of assertions; pgTAP fails
-  the run on a count mismatch.
+  The `throws_ok` assertions pin errcode `42501` (`insufficient_privilege`)
+  rather than accepting any error, so the suite can't pass on an unrelated
+  failure. Keep `select plan(N)` in step with the number of assertions;
+  pgTAP fails the run on a count mismatch.
 
 ## Connectivity
 

@@ -1,16 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const insertMock = vi.fn();
+const updateMock = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createServiceClient: () =>
     Promise.resolve({
       from: () => ({
         insert: insertMock,
+        update: updateMock,
       }),
     }),
 }));
 
-import { createPrintJob } from "./print-jobs";
+const notifyQkitPrintStatusMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/qkit-client", () => ({
+  notifyQkitPrintStatus: (...args: unknown[]) =>
+    notifyQkitPrintStatusMock(...args),
+}));
+
+import { createPrintJob, updatePrintJobStatus } from "./print-jobs";
 
 describe("createPrintJob", () => {
   beforeEach(() => insertMock.mockReset());
@@ -87,5 +95,85 @@ describe("createPrintJob", () => {
       status: 500,
       error: "Could not create print job.",
     });
+  });
+});
+
+describe("updatePrintJobStatus", () => {
+  beforeEach(() => {
+    notifyQkitPrintStatusMock.mockClear();
+    updateMock.mockReset();
+  });
+
+  it("updates the row and notifies qkit when source_kit is qkit and status is failed", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "qkit", source_ref: "order-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    const result = await updatePrintJobStatus("job-1", "failed");
+
+    expect(result).toEqual({ ok: true });
+    expect(notifyQkitPrintStatusMock).toHaveBeenCalledWith("order-1", "failed");
+  });
+
+  it("does not notify qkit for a non-terminal status (queued/sent)", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "qkit", source_ref: "order-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    await updatePrintJobStatus("job-1", "sent");
+
+    expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("does not notify qkit when source_kit is not qkit", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "some-other-kit", source_ref: "ref-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    await updatePrintJobStatus("job-1", "failed");
+
+    expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("returns ok:false when the row isn't found", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+    });
+
+    const result = await updatePrintJobStatus("missing-job", "failed");
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Could not update print job status.",
+    });
+    expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
   });
 });

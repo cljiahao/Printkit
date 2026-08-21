@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { notifyQkitPrintStatus } from "@/lib/qkit-client";
 import type { Json } from "@/lib/types";
 
 export type CreatePrintJobInput = {
@@ -45,4 +46,46 @@ export async function createPrintJob(
   }
 
   return { ok: true, id: data.id };
+}
+
+export type PrintJobStatus = "queued" | "sent" | "printed" | "failed";
+
+export type UpdatePrintJobStatusResult =
+  { ok: true } | { ok: false; error: string };
+
+/**
+ * The single choke point for changing a print_jobs row's status. Not yet
+ * called by any UI or bridge code (Plan 3's manual-reprint action and
+ * Plan 4's bridge print-result handler both will) — building it now means
+ * both of those land as thin callers of one already-tested function,
+ * rather than each reinventing "update the row, then tell qkit".
+ */
+export async function updatePrintJobStatus(
+  jobId: string,
+  status: PrintJobStatus,
+): Promise<UpdatePrintJobStatusResult> {
+  const supabase = await createServiceClient();
+  const { data, error } = await supabase
+    .from("print_jobs")
+    .update({
+      status,
+      printed_at: status === "printed" ? new Date().toISOString() : undefined,
+    })
+    .eq("id", jobId)
+    .select("source_kit, source_ref")
+    .single();
+
+  if (error || !data) {
+    console.error("updatePrintJobStatus failed", error?.message ?? "not found");
+    return { ok: false, error: "Could not update print job status." };
+  }
+
+  if (
+    data.source_kit === "qkit" &&
+    (status === "printed" || status === "failed")
+  ) {
+    await notifyQkitPrintStatus(data.source_ref, status);
+  }
+
+  return { ok: true };
 }

@@ -28,12 +28,12 @@ function cookieMethods(cookieStore: CookieStore): CookieMethodsServer {
 export async function createServerClient() {
   const cookieStore = await cookies();
 
-  return createSSRClient<Database, "paykit">(
+  return createSSRClient<Database, "printkit">(
     publicEnv.supabaseUrl,
     publicEnv.supabasePublishableKey,
     {
       cookies: cookieMethods(cookieStore),
-      db: { schema: "paykit" },
+      db: { schema: "printkit" },
       cookieOptions: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN
         ? { domain: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN }
         : undefined,
@@ -51,12 +51,16 @@ export async function createServiceClient() {
     throw new Error(
       "Missing required environment variable: SUPABASE_SECRET_KEY",
     );
-  return createSSRClient<Database, "paykit">(publicEnv.supabaseUrl, secretKey, {
-    cookies: { getAll: () => [], setAll: () => {} },
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
+  return createSSRClient<Database, "printkit">(
+    publicEnv.supabaseUrl,
+    secretKey,
+    {
+      cookies: { getAll: () => [], setAll: () => {} },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      db: { schema: "printkit" },
     },
-    db: { schema: "paykit" },
-  });
+  );
 }

@@ -62,7 +62,7 @@ export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
   const cookiesWrittenBySupabase = new Set<string>();
 
-  const supabase = createServerClient<Database, "paykit">(
+  const supabase = createServerClient<Database, "printkit">(
     publicEnv.supabaseUrl,
     publicEnv.supabasePublishableKey,
     {
@@ -81,7 +81,7 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
-      db: { schema: "paykit" },
+      db: { schema: "printkit" },
       cookieOptions: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN
         ? { domain: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN }
         : undefined,

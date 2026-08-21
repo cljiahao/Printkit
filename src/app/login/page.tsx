@@ -174,8 +174,8 @@ function LoginForm() {
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
               {isSignin
-                ? "Sign in to your paykit dashboard."
-                : "Set up a paykit account in seconds."}
+                ? "Sign in to your printkit dashboard."
+                : "Set up a printkit account in seconds."}
             </p>
 
             <Button
@@ -267,7 +267,7 @@ function LoginForm() {
 
           <div className="border-t" />
           <p className="px-7 py-4 text-center text-sm text-muted-foreground">
-            {isSignin ? "New to paykit? " : "Already have an account? "}
+            {isSignin ? "New to printkit? " : "Already have an account? "}
             <button
               type="button"
               className="font-semibold text-primary underline-offset-4 hover:underline"

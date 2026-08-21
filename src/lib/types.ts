@@ -114,7 +114,7 @@ export type Pricing = {
 };
 
 export interface Database {
-  paykit: {
+  printkit: {
     Tables: {
       vendor_payment_config: {
         Row: VendorPaymentConfig;

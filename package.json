@@ -1,0 +1,63 @@
+{
+  "name": "printkit",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": "24.x",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:mutation": "stryker run",
+    "check": "prettier --check . && eslint . && tsc --noEmit",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@merqo/ui": "github:cljiahao/merqo-ui#v0.18.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.48.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.468.0",
+    "next": "16.2.12",
+    "next-themes": "0.4.6",
+    "radix-ui": "^1.4.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "sonner": "^1.7.1",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@tailwindcss/typography": "^0.5.15",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^3.2.6",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "16.2.12",
+    "eslint-plugin-sonarjs": "4.1.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.4.2",
+    "supabase": "^2.105.0",
+    "tailwindcss": "^4.0.0",
+    "tw-animate-css": "^1.2.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.6"
+  }
+}

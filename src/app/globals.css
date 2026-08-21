@@ -1,0 +1,166 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@source "../../node_modules/@merqo/ui/dist";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ── paykit — "Banknote Engrave" — engraved teal-green ink + steel-blue secondary, replacing "Signal & Mint". */
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.949 0.015 88);
+  --foreground: oklch(0.227 0.006 156);
+  --card: oklch(0.949 0.015 88);
+  --card-foreground: oklch(0.227 0.006 156);
+  --popover: oklch(0.949 0.015 88);
+  --popover-foreground: oklch(0.227 0.006 156);
+  --primary: oklch(0.431 0.066 177);
+  --primary-foreground: oklch(0.949 0.015 88);
+  --secondary: oklch(0.517 0.071 238);
+  --secondary-foreground: oklch(0.949 0.015 88);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  /* brand accent — a clean money-green, distinct from qkit's ember and
+     loopkit's gold. Carries the "Pay" segment of the PayKit wordmark. */
+  --mint: oklch(0.6 0.15 155);
+  --mint-foreground: oklch(0.16 0.03 155);
+  /* payment-flow complement — a cooler teal-blue paired with mint in the
+     hero's gradient mesh, evoking money moving between kits. */
+  --flow: oklch(0.62 0.14 220);
+  /* dark authoritative band — the closing-CTA / stat-band sections, matching
+     the family's shared "full-bleed color block" convention (loopkit uses
+     its plum primary; paykit uses near-black ink instead, closer to a
+     payment-terminal / infrastructure feel). */
+  --ink: oklch(0.16 0.01 255);
+  --ink-foreground: oklch(0.96 0.005 255);
+}
+
+.dark {
+  --background: oklch(0.231 0.019 172);
+  --foreground: oklch(0.949 0.007 127);
+  --card: oklch(0.231 0.019 172);
+  --card-foreground: oklch(0.949 0.007 127);
+  --popover: oklch(0.231 0.019 172);
+  --popover-foreground: oklch(0.949 0.007 127);
+  --primary: oklch(0.63 0.098 172);
+  --primary-foreground: oklch(0.231 0.019 172);
+  --secondary: oklch(0.683 0.069 234);
+  --secondary-foreground: oklch(0.231 0.019 172);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+
+  --mint: oklch(0.72 0.16 155);
+  --mint-foreground: oklch(0.14 0.03 155);
+  --flow: oklch(0.74 0.13 220);
+  --ink: oklch(0.09 0.008 255);
+  --ink-foreground: oklch(0.96 0.005 255);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-mint: var(--mint);
+  --color-mint-foreground: var(--mint-foreground);
+  --color-flow: var(--flow);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+}
+
+* {
+  border-color: var(--color-border);
+  outline-color: var(--color-ring);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  /* a faint mint-to-flow wash, top-right — quieter than loopkit's dual glow,
+     leaning into paykit's "clean infrastructure" register rather than
+     qkit's textured paper or loopkit's celebratory bloom. */
+  background-image: radial-gradient(
+    ellipse 60% 45% at 92% -6%,
+    oklch(0.6 0.15 155 / 0.08),
+    transparent 60%
+  );
+  background-attachment: fixed;
+}
+
+/* Display headings tuned for Fraunces optical sizing (shared family face). */
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+/* Load reveal for landing sections; disabled under reduced-motion below.
+   Same name/shape as qkit's and loopkit's — a shared family convention. */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-rise {
+  animation: fade-rise 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-rise {
+    animation: none;
+  }
+  /* Tailwind's always-on animation utilities don't self-respect the preference. */
+  .animate-ping,
+  .animate-pulse,
+  .animate-spin {
+    animation: none;
+  }
+}

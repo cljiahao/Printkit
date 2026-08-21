@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+.next
+node_modules
+coverage
+.stryker-tmp
+reports
+.superpowers
+supabase/.temp
+supabase/.branches

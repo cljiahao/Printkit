@@ -1,0 +1,75 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC (CodeQL)
+
+# Least-privilege default; jobs widen only what they need.
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    # A job-level block REPLACES the default, so restate contents:read (checkout)
+    # and add pull-requests:read — the v3 action's PR scan calls the PR API and
+    # 403s ("Resource not accessible by integration") without it.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0 # full history so gitleaks can scan past commits
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          # Free for personal-account repos — no license key required.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  audit:
+    name: dependency audit (pnpm)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Hard gate on PRODUCTION deps (what actually ships): fails on high/critical.
+      # devDependencies (test toolchain — jsdom/vitest/stryker → undici, etc.) are
+      # not shipped and often can't be patched without an upstream release; those
+      # are tracked by Dependabot security PRs instead of blocking CI.
+      - run: pnpm audit --prod --audit-level=high
+      # Full audit incl. devDeps — informational only, never fails the build.
+      - run: pnpm audit --audit-level=high || true
+
+  codeql:
+    name: CodeQL (javascript-typescript)
+    runs-on: ubuntu-latest
+    # Code scanning is free only on PUBLIC repos (or private with paid GitHub
+    # Advanced Security). This repo is private on the free tier, so the SARIF
+    # upload errors "Code scanning is not enabled". Skip on private; the job
+    # self-enables if the repo is ever made public.
+    if: ${{ github.event.repository.private == false }}
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      # No build step needed for JS/TS — CodeQL extracts from source.
+      - uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          category: "/language:javascript-typescript"

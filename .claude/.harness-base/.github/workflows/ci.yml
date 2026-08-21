@@ -1,0 +1,189 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: check + unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Harness integrity
+        run: bash .claude/verify-harness.sh
+      - run: pnpm check
+      - run: pnpm test
+      - run: pnpm exec vitest --run --coverage
+      - name: Changed-line coverage (>= 80%)
+        run: pipx run diff-cover coverage/cobertura-coverage.xml --compare-branch=origin/main --fail-under=80
+
+  db:
+    name: db (migrations + pgTAP RLS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1
+        with:
+          version: 2.109.0
+      # `supabase start` boots the local stack and applies every migration in
+      # supabase/migrations — so a malformed migration fails here. `test db` then
+      # runs the pgTAP suite (supabase/tests/rls.test.sql), which carries its own
+      # inline fixtures, so no seed or API keys are needed.
+      - run: supabase start
+      - run: supabase test db
+      - if: always()
+        run: supabase stop
+
+  build:
+    name: build (next build)
+    runs-on: ubuntu-latest
+    env:
+      # next build renders dynamic routes at request time, so real Supabase
+      # creds aren't needed — dummy values satisfy the non-null env reads.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_dummy
+      SUPABASE_SECRET_KEY: sb_secret_ci_dummy
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  mutation:
+    name: mutation (changed lib)
+    runs-on: ubuntu-latest
+    # PRs only, scoped to the src/lib files the PR touches. Advisory: the
+    # Stryker config sets break=null, so a low score never fails the check.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Mutation-test changed src/lib files
+        run: |
+          git fetch origin "$GITHUB_BASE_REF" --depth=1
+          FILES=$(git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" \
+            | grep -E '^src/lib/.*\.ts$' \
+            | grep -vE '\.test\.ts$|/types\.ts$' \
+            | paste -sd, -)
+          if [ -z "$FILES" ]; then
+            echo "No src/lib changes — skipping mutation."
+            exit 0
+          fi
+          echo "Mutating: $FILES"
+          pnpm exec stryker run --mutate "$FILES"
+
+  changelog:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Require CHANGELOG for src changes (apply 'skip-changelog' label to bypass)
+        env:
+          {
+            LABELS: "${{ join(github.event.pull_request.labels.*.name, ' ') }}",
+          }
+        run: |
+          base="origin/${{ github.base_ref }}"
+          changed=$(git diff --name-only "$base"...HEAD)
+          if echo "$changed" | grep -qE '^src/' && ! echo "$changed" | grep -qx 'CHANGELOG.md'; then
+            echo " $LABELS " | grep -q ' skip-changelog ' && { echo "skip-changelog label present — OK"; exit 0; }
+            echo "::error::src/ changed but CHANGELOG.md was not updated. Add an entry or apply the 'skip-changelog' label."
+            exit 1
+          fi
+
+  readme-freshness:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Require README.md update for changed folders (apply 'skip-readme-check' label to bypass)
+        env:
+          {
+            LABELS: "${{ join(github.event.pull_request.labels.*.name, ' ') }}",
+          }
+        run: |
+          base="origin/${{ github.base_ref }}"
+          tmp=$(mktemp)
+          git diff --name-only "$base"...HEAD > "$tmp"
+          missing=""
+          while IFS= read -r f; do
+            case "$f" in */README.md|README.md) continue ;; esac
+            d=$(dirname "$f")
+            [ -d "$d" ] || continue
+            rm_path="README.md"
+            [ "$d" != "." ] && rm_path="$d/README.md"
+            grep -qxF "$rm_path" "$tmp" || missing="$missing\n  - $d/"
+          done < "$tmp"
+          rm -f "$tmp"
+          missing=$(printf '%b' "$missing" | sort -u)
+          if [ -n "$missing" ]; then
+            echo " $LABELS " | grep -q ' skip-readme-check ' && { echo "skip-readme-check label present — OK"; exit 0; }
+            echo "::error::Folders changed without updating their README.md (see list below)"
+            printf '%s\n' "$missing"
+            echo "Update the listed README.md files, or apply the 'skip-readme-check' label to bypass."
+            exit 1
+          fi
+
+  comment-hygiene:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Require no change-narration comments (apply 'skip-comment-check' label to bypass)
+        env:
+          {
+            LABELS: "${{ join(github.event.pull_request.labels.*.name, ' ') }}",
+          }
+        run: |
+          patterns=".claude/comment-hygiene-patterns.txt"
+          base="origin/${{ github.base_ref }}"
+          [ -f "$patterns" ] || { echo "::error::comment-hygiene pattern list missing (.claude/comment-hygiene-patterns.txt)"; exit 1; }
+          strict_patterns=$(mktemp)
+          head -n 10 "$patterns" > "$strict_patterns"
+          nl=$(printf '\nx'); nl=${nl%x}
+          flagged=""
+          for f in $(git diff --name-only "$base"...HEAD); do
+            case "$f" in *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs) ;; *) continue ;; esac
+            [ -f "$f" ] || continue
+            while IFS= read -r content; do
+              stripped=$(printf '%s' "$content" | sed -E 's@^[[:space:]]*(#|//|\*|/\*\*?)[[:space:]]?@@')
+              if [ -n "$stripped" ] && printf '%s' "$stripped" | grep -qEf "$strict_patterns"; then
+                flagged="$flagged$nl  - $f: $stripped"
+              fi
+            done < <(git diff -U0 "$base"...HEAD -- "$f" | grep '^+' | grep -vE '^\+\+\+' | sed 's/^+//' | grep -E '^[[:space:]]*(#|//|\*|/\*\*?)')
+          done
+          rm -f "$strict_patterns"
+          if [ -n "$flagged" ]; then
+            echo " $LABELS " | grep -q ' skip-comment-check ' && { echo "skip-comment-check label present — OK"; exit 0; }
+            echo "::error::Change-narration comments found (see list below)"
+            printf '%s\n' "$flagged"
+            echo "State WHAT the code does now, not what changed, or apply the 'skip-comment-check' label to bypass."
+            exit 1
+          fi

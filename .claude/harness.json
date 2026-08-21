@@ -1,0 +1,119 @@
+{
+  "templatecentral_version": "5.15.0",
+  "stack": "nextjs",
+  "adapted": "Next 16 + Supabase (auth/db) — Supabase variant, based on qkit harness",
+  "seeded_at": "2026-07-22",
+  "review_note": "Harness built to match the AGENTS.md 'AI Harness' section that had described it since the qkit-seeded bootstrap but was never actually built. Hooks/skills match qkit's simpler pattern; git-hook layer (lefthook) matches loopkit's, since that's this plan's chosen baseline. CI gates (changelog, readme-freshness, coverage) added to match loopkit's real working jobs. Follow-up: added the missing .claude/hooks/* Claude-Code-hook script layer (previously inline `node -e` one-liners embedded in settings.json), and fixed lefthook.yml's format-lint command, which had no exclude list and would have reformatted/drifted those scripts on first commit; version marker bumped 5.7.0 -> 5.11.0 to match sibling repo loopkit's harness architecture, which this change brings paykit's Claude Code hook layer up to.",
+  "adoWiki": false,
+  "richReadme": true,
+  "seeded_files": {
+    "AGENTS.md": {
+      "origin_hash": "45fc088896be57fe6bccf502a23a4cd8dc26ab3cad01fa775ee27cdcc9a9b244",
+      "path": "AGENTS.md"
+    },
+    ".claude/settings.json": {
+      "origin_hash": "4f4c90b4d431c38749d05bbeb611ece62a3f20223ea8ca76045f43d45ea8b537",
+      "path": ".claude/settings.json"
+    },
+    ".claude/hooks/block-no-verify.sh": {
+      "origin_hash": "bb58d44fec7b994cfbf5e956a4e95d00314ce4a9c07ad97f42a829b1d0c3d03c",
+      "path": ".claude/hooks/block-no-verify.sh"
+    },
+    ".claude/hooks/protect-files.sh": {
+      "origin_hash": "cedefb778eee8a3b8c79bb1a4eb7b7680a0a5e1ef3c9b1a08d3cac6c8793d6b1",
+      "path": ".claude/hooks/protect-files.sh"
+    },
+    ".claude/hooks/user-prompt-guard.cjs": {
+      "origin_hash": "7d1d56b9b305dd5f3c54f919a07736ad9e5e824ca5d86ee8b77ef40f1cc5cda0",
+      "path": ".claude/hooks/user-prompt-guard.cjs"
+    },
+    ".claude/hooks/post-edit-comment-check.sh": {
+      "origin_hash": "f7e5f610135ea114b401b6ca22ce01af3a64729eb753645f21460810ff749fee",
+      "path": ".claude/hooks/post-edit-comment-check.sh"
+    },
+    ".claude/comment-hygiene-patterns.txt": {
+      "origin_hash": "61e448dd1b798c211ec37f4efc9667275a0eaea0ba3be2217d4d187d15cbf078",
+      "path": ".claude/comment-hygiene-patterns.txt"
+    },
+    ".husky/lib/comment-hygiene.sh": {
+      "origin_hash": "08def5407a669dfacd8b056271a8d05b22e670c45a6bed16526ef06d4ddf3d19",
+      "path": ".husky/lib/comment-hygiene.sh"
+    },
+    ".claude/hooks/post-edit-typecheck.sh": {
+      "origin_hash": "f17a4f6cb67b023f1058acb542b43ccf294de612e5d15352776ffbb50366b509",
+      "path": ".claude/hooks/post-edit-typecheck.sh"
+    },
+    ".claude/hooks/post-tool-failure.sh": {
+      "origin_hash": "31af87da10f31b5ead1d5fa455ffeb8903956ed2dacb5ef7319b1e8a2822efcd",
+      "path": ".claude/hooks/post-tool-failure.sh"
+    },
+    ".claude/hooks/session-context.sh": {
+      "origin_hash": "8e563afe1421e080fc7ed651f80422d4b8d901898d6c52e7a770efb85d5e5982",
+      "path": ".claude/hooks/session-context.sh"
+    },
+    ".claude/hooks/skill-usage-log.sh": {
+      "origin_hash": "5405cf6e00bfee4c2f0bf7f90285215825f9671376383154b2a7aff2dd6db74f",
+      "path": ".claude/hooks/skill-usage-log.sh"
+    },
+    ".claude/hooks/stop-checks.sh": {
+      "origin_hash": "91e87eef5d1fdb2a2b7ee2b59d907cf341816e42512cb99eb8c3de24e7fd7ab8",
+      "path": ".claude/hooks/stop-checks.sh"
+    },
+    ".claude/hooks/subagent-stop.sh": {
+      "origin_hash": "8107bdb11b7dbe71121d24e1e585284f430503f96713b5bcc646308a9c777da5",
+      "path": ".claude/hooks/subagent-stop.sh"
+    },
+    ".claude/skills/next-verify/SKILL.md": {
+      "origin_hash": "bce9095dcc32ca4e80409d009e99c3980d9cf52664bfbe8ba74d97e48fe31a80",
+      "path": ".claude/skills/next-verify/SKILL.md"
+    },
+    ".claude/skills/supabase-migrate/SKILL.md": {
+      "origin_hash": "48c4e931d1b17d44e9a1a727e54a5d2a20a2a583b3c357ad66b88557818d88b3",
+      "path": ".claude/skills/supabase-migrate/SKILL.md"
+    },
+    ".husky/pre-commit": {
+      "origin_hash": "d2e7fc67c52c52b92b59483cb2ff7192622327df7eede66fcc1b2606ea5f239c",
+      "path": ".husky/pre-commit"
+    },
+    ".husky/commit-msg": {
+      "origin_hash": "542e5d3b30c42e64b3234d23d2e385ce4b1a3671231aa406b5ba2a80560dd35b",
+      "path": ".husky/commit-msg"
+    },
+    ".husky/pre-push": {
+      "origin_hash": "6a188b7cbbb034423607cd91ce20c78e62823775d24ce0c13ebdab9606f2b68c",
+      "path": ".husky/pre-push"
+    },
+    ".husky/lib/readme-coupling.sh": {
+      "origin_hash": "368a87cf51dbc4b5bfacafd80e44b8033cb926e2e2c09daa76eaac69a15756bd",
+      "path": ".husky/lib/readme-coupling.sh"
+    },
+    ".husky/lib/commit-msg-check.sh": {
+      "origin_hash": "f5347b89ef6d530b5ae388cc4dea3bfce10898c89e5218dcfd908876ccc0659e",
+      "path": ".husky/lib/commit-msg-check.sh"
+    },
+    ".husky/lib/pre-commit.sh": {
+      "origin_hash": "5f76b3061adf482c71501b7944e4620cd47962ca5f27e69d78b358659026f5b2",
+      "path": ".husky/lib/pre-commit.sh"
+    },
+    ".husky/lib/pre-push.sh": {
+      "origin_hash": "41e14be97718ce02e5b39bd63cceaea29d149a7f13b88cc33aa2d75a788992b6",
+      "path": ".husky/lib/pre-push.sh"
+    },
+    ".gitleaks.toml": {
+      "origin_hash": "f9cd4aac35f474f9a48c691b4fd46642388389fa650481342fc4d5ad6216de4e",
+      "path": ".gitleaks.toml"
+    },
+    ".github/workflows/ci.yml": {
+      "origin_hash": "309c76fa7f293b8f01ba53c42a93389130f37615b6a92806155c3840d02987ad",
+      "path": ".github/workflows/ci.yml"
+    },
+    ".claude/verify-harness.sh": {
+      "origin_hash": "54a5f6b03db4e1925a74ecc4dd69d37c265ffbdf594db1978b4599a94adfcaf0",
+      "path": ".claude/verify-harness.sh"
+    },
+    ".claude/regen-harness.sh": {
+      "origin_hash": "888ee29fd7a5312d2662abdb447ca94feaed57249287510d8227ec8a6ee186ee",
+      "path": ".claude/regen-harness.sh"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+node_modules/
+.next/
+.env*
+!.env.example
+coverage/
+.stryker-tmp/
+/reports/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+/.superpowers
+
+# impeccable skill local scratch
+PRODUCT.md
+.impeccable/
+
+# git worktrees (local scratch)
+.worktrees/
+.claude/worktrees/
+
+# Supabase CLI local state, written by `supabase start`/`db reset`/`test db`
+# (the running stack's branch pointer, cached CLI version, generated local
+# secrets). Machine-local — never the same across two developers or CI.
+supabase/.branches
+supabase/.temp
+.vercel

@@ -1,0 +1,19 @@
+allowBuilds:
+  supabase: true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  "@merqo/ui": true
+
+overrides:
+  postcss@<8.5.23: ">=8.5.23"
+  undici@<7.29.0: ">=7.29.0 <8"
+  vite@<=6.4.2: ">=6.4.3 <7"
+  qs@<6.15.2: ">=6.15.2"
+  sharp@<0.35.0: ">=0.35.0"
+  nanoid@<3.3.17: ">=3.3.17"
+  fast-uri@<4.1.2: ">=4.1.2"
+  js-yaml@<4.3.1: ">=4.3.1"
+  brace-expansion@<1.1.17: ">=1.1.17 <2"
+  brace-expansion@>=2.0.0 <2.1.4: ">=2.1.4 <3"
+  brace-expansion@>=3.0.0 <5.0.9: ">=5.0.9"

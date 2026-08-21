@@ -75,10 +75,9 @@ amountCents})`: the one `transactions`-insert-plus-render-the-checkout-view
   (`src/app/dashboard/tour-actions.ts`'s `markTourSeen`, which also
   delegates here) is fire-and-forget and can be aborted by a hard
   navigation before it lands.
-- `vendor-session.ts` — `getVendorSession()` (dashboard auth guard,
-  redirects to `/login` on no session) and `getVendorPlan()`. Deliberately
-  **not** used by Sheet-embedded server actions (`feedback.ts`,
-  `support.ts` in `src/app/actions/`) — see that folder's README for why.
+- `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
+  (gets a session-scoped Supabase client and the authenticated user,
+  redirects to `/login` if none).
 - `admin.ts` — `isAdmin(userId)` (presence of a row in `admins`, RLS-gated)
   and `requireAdmin()`: the `/admin` route/Server-Action gate, 404ing signed-
   out and non-admin callers alike so the route's existence is never revealed.

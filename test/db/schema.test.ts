@@ -4,35 +4,36 @@ import { fileURLToPath } from "node:url";
 
 const sql = readFileSync(
   fileURLToPath(
-    new URL("../../supabase/migrations/0001_paykit_core.sql", import.meta.url),
+    new URL(
+      "../../supabase/migrations/0001_printkit_core.sql",
+      import.meta.url,
+    ),
   ),
   "utf8",
 );
 
-describe("0001_paykit_core.sql", () => {
-  it("creates the paykit schema", () => {
-    expect(sql).toMatch(/create schema if not exists paykit/);
+describe("0001_printkit_core.sql", () => {
+  it("creates the printkit schema", () => {
+    expect(sql).toMatch(/create schema if not exists printkit/);
   });
 
-  it.each(["vendor_payment_config", "transactions", "refunds", "kit_api_keys"])(
-    "creates table paykit.%s",
+  it.each(["print_jobs", "kit_api_keys"])(
+    "creates table printkit.%s",
     (table) => {
-      expect(sql).toMatch(new RegExp(`create table paykit\\.${table}`));
+      expect(sql).toMatch(new RegExp(`create table printkit\\.${table}`));
     },
   );
 
-  it.each(["vendor_payment_config", "transactions", "refunds", "kit_api_keys"])(
-    "enables RLS on paykit.%s",
+  it.each(["print_jobs", "kit_api_keys"])(
+    "enables RLS on printkit.%s",
     (table) => {
       expect(sql).toMatch(
-        new RegExp(`alter table paykit\\.${table} enable row level security`),
+        new RegExp(
+          `alter table printkit\\.${table}\\s+enable row level security`,
+        ),
       );
     },
   );
-
-  it("defines tx_count_this_month", () => {
-    expect(sql).toMatch(/function paykit\.tx_count_this_month/);
-  });
 
   it("never grants kit_api_keys to authenticated or anon", () => {
     expect(sql).not.toMatch(

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Generates a bearer secret for a new calling kit and stores its SHA-256 hash
-// in paykit.kit_api_keys via the service-role client. Run once per kit. Prints
+// in printkit.kit_api_keys via the service-role client. Run once per kit. Prints
 // the plaintext secret ONCE — save it in the calling kit's own secret store;
-// paykit never stores or displays it again.
+// printkit never stores or displays it again.
 import { randomBytes, createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
@@ -22,7 +22,7 @@ if (!url || !secretKey) {
 const secret = randomBytes(32).toString("hex");
 const secretHash = createHash("sha256").update(secret, "utf8").digest("hex");
 
-const supabase = createClient(url, secretKey, { db: { schema: "paykit" } });
+const supabase = createClient(url, secretKey, { db: { schema: "printkit" } });
 const { error } = await supabase
   .from("kit_api_keys")
   .upsert(

@@ -18,9 +18,9 @@ extra_search_path = ["printkit", "extensions"]
 max_rows = 1000
 # Controls whether new tables, views, sequences and functions created in the `public` schema by
 # `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
-# without explicit GRANTs. Kept unset/off: paykit's migrations grant Data API access explicitly
-# (see `supabase/migrations/0001_paykit_core.sql`'s column-scoped GRANTs and the `plan`-column
-# escalation fix), matching the sibling repo qkit's rationale for the same setting.
+# without explicit GRANTs. Kept unset/off: printkit's migrations grant Data API access explicitly
+# (see `supabase/migrations/0001_printkit_core.sql`'s column-scoped GRANTs), matching the sibling
+# repo qkit's rationale for the same setting.
 # auto_expose_new_tables = true
 
 [api.tls]
@@ -65,7 +65,7 @@ schema_paths = []
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
-# No seed.sql exists yet — paykit has no seed data. Disabled to avoid a
+# No seed.sql exists yet — printkit has no seed data. Disabled to avoid a
 # missing-file error on `supabase db reset` / `supabase start`.
 enabled = false
 # Specifies an ordered list of seed files to load during db reset.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The three Supabase client constructors, each scoped to the `paykit` schema
+The three Supabase client constructors, each scoped to the `printkit` schema
 and to one specific execution context — client component, server
 (session-scoped), and middleware. Getting the wrong one in the wrong
 context is either a build error (browser APIs on the server) or an RLS
@@ -25,7 +25,7 @@ deliberate.
   (the `/api/v1/*` cross-kit API, admin-style reads). Never import this
   into a client component. `cookieOptions` intentionally omitted here —
   it never writes session cookies.
-  Both are generic over `Database`/`"paykit"` (see `@/lib/types`).
+  Both are generic over `Database`/`"printkit"` (see `@/lib/types`).
 - `middleware.ts` — `updateSession(request)`: refreshes the Supabase
   session cookie and redirects unauthenticated requests to `/dashboard/*`
   (`isProtectedPath`) to `/login`. Called from `src/proxy.ts`. Also runs

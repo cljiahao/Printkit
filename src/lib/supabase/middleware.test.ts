@@ -22,7 +22,7 @@ describe("updateSession — legacy host-only cookie cleanup", () => {
 
   it("clears a pre-existing sb-*-auth-token cookie once when the cookie domain is enabled", async () => {
     process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN = ".merqo.io";
-    const request = new NextRequest("https://paykit.merqo.io/dashboard", {
+    const request = new NextRequest("https://printkit.merqo.io/dashboard", {
       headers: { cookie: "sb-project-auth-token=stale-value" },
     });
 
@@ -41,7 +41,7 @@ describe("updateSession — legacy host-only cookie cleanup", () => {
 
   it("does not clear again once the migration marker cookie is already present", async () => {
     process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN = ".merqo.io";
-    const request = new NextRequest("https://paykit.merqo.io/dashboard", {
+    const request = new NextRequest("https://printkit.merqo.io/dashboard", {
       headers: {
         cookie:
           "sb-project-auth-token=fresh-value; sb-auth-cookie-domain-migrated=1",
@@ -57,7 +57,7 @@ describe("updateSession — legacy host-only cookie cleanup", () => {
   });
 
   it("does nothing when NEXT_PUBLIC_AUTH_COOKIE_DOMAIN is unset", async () => {
-    const request = new NextRequest("https://paykit.merqo.io/dashboard", {
+    const request = new NextRequest("https://printkit.merqo.io/dashboard", {
       headers: { cookie: "sb-project-auth-token=stale-value" },
     });
 
@@ -87,7 +87,7 @@ describe("updateSession — legacy host-only cookie cleanup", () => {
         }),
       },
     }));
-    const request = new NextRequest("https://paykit.merqo.io/dashboard", {
+    const request = new NextRequest("https://printkit.merqo.io/dashboard", {
       headers: { cookie: "sb-project-auth-token=stale-host-only-value" },
     });
 
@@ -110,7 +110,7 @@ describe("updateSession — legacy host-only cookie cleanup", () => {
 
   it("clears the legacy cookie on the public early-return path too", async () => {
     process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN = ".merqo.io";
-    const request = new NextRequest("https://paykit.merqo.io/login", {
+    const request = new NextRequest("https://printkit.merqo.io/login", {
       headers: { cookie: "sb-project-auth-token=stale-value" },
     });
 
@@ -132,7 +132,7 @@ describe("updateSession — legacy host-only cookie cleanup", () => {
         getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
       },
     }));
-    const request = new NextRequest("https://paykit.merqo.io/dashboard", {
+    const request = new NextRequest("https://printkit.merqo.io/dashboard", {
       headers: { cookie: "sb-project-auth-token=stale-value" },
     });
 

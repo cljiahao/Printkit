@@ -61,11 +61,10 @@ export type UpdatePrintJobStatusResult =
   { ok: true } | { ok: false; error: string };
 
 /**
- * The single choke point for changing a print_jobs row's status. Not yet
- * called by any UI or bridge code (Plan 3's manual-reprint action and
- * Plan 4's bridge print-result handler both will) — building it now means
- * both of those land as thin callers of one already-tested function,
- * rather than each reinventing "update the row, then tell qkit".
+ * The single choke point for changing a print_jobs row's status — every
+ * caller (manual reprint, the bridge's print-result handler) is a thin
+ * wrapper around this, rather than each reinventing "update the row, then
+ * tell qkit".
  */
 export async function updatePrintJobStatus(
   jobId: string,

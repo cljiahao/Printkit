@@ -43,6 +43,7 @@ everything else sits flat here.
 - `merqo-vendor-profile.ts` — `getOrCreateVendorProfile`/`upsertVendorProfile`, the shared vendor display-name source used by `dashboard-nav.tsx`.
 - `merqo-vendor-feedback.ts` — `submitVendorFeedback`, backs `AccountMenu`'s required `onFeedbackSubmit`.
 - `merqo-support.ts` — `submitSupportMessage`, backs `AccountMenu`'s required `getHelp` (form mode).
+- `niimbot-print.ts` — `connectPrinter`/`printLabel`/`disconnectPrinter`, a thin wrapper around `@mmote/niimbluelib`'s `NiimbotBluetoothClient`/`ImageEncoder` for the NIIMBOT B1 specifically (`printDirection: "top"`, `printheadPixels: 384`).
 - `brand-icon.tsx` — `brandIcon(size)` + `BRAND_MINT`/`BRAND_INK`: the
   printkit "P" mark as a `ReactElement` for `ImageResponse`-generated icons
   (favicon, apple-touch) — hex literals, not theme tokens, since

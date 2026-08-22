@@ -11,10 +11,12 @@ import {
   disconnectPrinter,
 } from "@/lib/niimbot-print";
 import { renderLabelCanvas } from "@/lib/label-render";
+import { payloadField } from "@/lib/print-job-payload";
 import { useJobDelivery } from "./use-job-delivery";
 import { useBridgePresence } from "./use-bridge-presence";
-import { reportPrintResult } from "./actions";
+import { reportPrintResult, logBridgeEvent } from "./actions";
 import type { NiimbotBluetoothClient } from "@mmote/niimbluelib";
+import type { Json } from "@/lib/types";
 
 type PairState = "unpaired" | "connecting" | "connected" | "error";
 
@@ -29,6 +31,11 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
   const [enabled, setEnabled] = useState(false);
   const [pairState, setPairState] = useState<PairState>("unpaired");
   const clientRef = useRef<NiimbotBluetoothClient | null>(null);
+  // Chains print attempts so two jobs queued close together never run their
+  // Bluetooth print sequences concurrently against the same client — a
+  // second printLabel() starting mid-sequence can fire printEnd() while the
+  // first is still printing.
+  const queueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     // localStorage is unavailable during SSR; reading it post-mount (rather
@@ -39,14 +46,14 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
 
   useBridgePresence(vendorId, enabled);
 
-  const printJob = useCallback(async (jobId: string) => {
+  const doPrintJob = useCallback(async (jobId: string, payload: Json) => {
     const client = clientRef.current;
     if (!client) return;
 
     try {
       const canvas = renderLabelCanvas({
-        customerName: "",
-        orderNumber: jobId,
+        customerName: payloadField(payload, "customer_name", ""),
+        orderNumber: payloadField(payload, "order_number", ""),
       });
       await printLabel(client, canvas);
       await reportPrintResult(jobId, "printed");
@@ -56,6 +63,21 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
       await reportPrintResult(jobId, "failed");
     }
   }, []);
+
+  const printJob = useCallback(
+    (jobId: string, payload: Json) => {
+      // .catch() resets the chain to resolved after each job — doPrintJob
+      // already swallows print/report failures internally, but this is a
+      // backstop so an unexpected throw can't leave every future job
+      // permanently chained onto a rejected promise.
+      queueRef.current = queueRef.current
+        .then(() => doPrintJob(jobId, payload))
+        .catch((err: unknown) => {
+          console.error("Unexpected error in print queue", err);
+        });
+    },
+    [doPrintJob],
+  );
 
   useJobDelivery(vendorId, printJob);
 
@@ -67,6 +89,7 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
       if (client) disconnectPrinter(client).catch(() => {});
       clientRef.current = null;
       setPairState("unpaired");
+      logBridgeEvent("bridge_disconnected").catch(() => {});
     }
   };
 
@@ -76,6 +99,7 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
       const client = await connectPrinter();
       clientRef.current = client;
       setPairState("connected");
+      logBridgeEvent("printer_paired").catch(() => {});
     } catch (err) {
       console.error("Pairing failed", err);
       toast.error("Could not pair with the printer.");

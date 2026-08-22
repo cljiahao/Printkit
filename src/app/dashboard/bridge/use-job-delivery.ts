@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import type { Json } from "@/lib/types";
 
 /**
  * Job delivery: reuses Postgres's own replication feed (postgres_changes)
@@ -16,7 +17,7 @@ import { createClient } from "@/lib/supabase/client";
  */
 export function useJobDelivery(
   vendorId: string,
-  onJobQueued: (jobId: string) => void,
+  onJobQueued: (jobId: string, payload: Json) => void,
 ): void {
   useEffect(() => {
     const supabase = createClient();
@@ -35,14 +36,16 @@ export function useJobDelivery(
           payload: RealtimePostgresChangesPayload<{
             id: string;
             status: string;
+            payload: Json;
           }>,
         ) => {
           if (
             "id" in payload.new &&
             "status" in payload.new &&
+            "payload" in payload.new &&
             payload.new.status === "queued"
           ) {
-            onJobQueued(payload.new.id);
+            onJobQueued(payload.new.id, payload.new.payload);
           }
         },
       )

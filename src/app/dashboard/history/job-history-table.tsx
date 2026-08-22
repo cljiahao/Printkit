@@ -9,15 +9,8 @@ import {
 import { JobStatusBadge } from "../job-status-badge";
 import { ReprintButton } from "./reprint-button";
 import { formatDateTime } from "@/lib/utils";
+import { payloadField } from "@/lib/print-job-payload";
 import type { PrintJob } from "@/lib/print-jobs-list";
-import type { Json } from "@/lib/types";
-
-function payloadField(payload: Json, key: string): string {
-  if (typeof payload !== "object" || payload === null || Array.isArray(payload))
-    return "—";
-  const value = payload[key];
-  return typeof value === "string" ? value : "—";
-}
 
 export function JobHistoryTable({ jobs }: { jobs: PrintJob[] }) {
   if (jobs.length === 0) {

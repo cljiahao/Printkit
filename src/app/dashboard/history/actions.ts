@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 import { getVendorSession } from "@/lib/vendor-session";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -47,5 +48,6 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
     console.error("reprintJob: admin_audit insert failed", auditError.message);
   }
 
+  revalidatePath("/dashboard/history");
   return { success: true };
 }

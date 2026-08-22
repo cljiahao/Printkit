@@ -53,7 +53,31 @@ describe("useJobDelivery", () => {
     );
   });
 
-  it("calls onJobQueued with the job id when a row arrives with status 'queued'", () => {
+  it("calls onJobQueued with the job id and payload when a row arrives with status 'queued'", () => {
+    const onJobQueued = vi.fn();
+    renderHook(() => useJobDelivery("vendor-1", onJobQueued));
+
+    changeCallback?.({
+      schema: "printkit",
+      table: "print_jobs",
+      commit_timestamp: "2026-08-22T00:00:00Z",
+      errors: [],
+      eventType: "UPDATE",
+      new: {
+        id: "job-1",
+        status: "queued",
+        payload: { customer_name: "Ada", order_number: "0007" },
+      },
+      old: {},
+    });
+
+    expect(onJobQueued).toHaveBeenCalledWith("job-1", {
+      customer_name: "Ada",
+      order_number: "0007",
+    });
+  });
+
+  it("ignores a change whose row has no payload field", () => {
     const onJobQueued = vi.fn();
     renderHook(() => useJobDelivery("vendor-1", onJobQueued));
 
@@ -67,7 +91,7 @@ describe("useJobDelivery", () => {
       old: {},
     });
 
-    expect(onJobQueued).toHaveBeenCalledWith("job-1");
+    expect(onJobQueued).not.toHaveBeenCalled();
   });
 
   it("ignores a change whose new status isn't 'queued'", () => {

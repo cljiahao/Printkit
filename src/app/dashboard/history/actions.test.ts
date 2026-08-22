@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const revalidatePathMock = vi.fn();
+vi.mock("next/cache", () => ({
+  revalidatePath: (...args: unknown[]) => revalidatePathMock(...args),
+}));
+
 const getVendorSessionMock = vi.fn();
 vi.mock("@/lib/vendor-session", () => ({
   getVendorSession: () => getVendorSessionMock(),
@@ -46,6 +51,7 @@ describe("reprintJob", () => {
     insertMock.mockClear();
     sessionFromMock.mockClear();
     serviceFromMock.mockClear();
+    revalidatePathMock.mockClear();
     getVendorSessionMock.mockResolvedValue({
       supabase: { from: sessionFromMock },
       user: { id: "vendor-1" },
@@ -93,5 +99,14 @@ describe("reprintJob", () => {
       }),
     );
     expect(result).toEqual({ success: true });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/history");
+  });
+
+  it("does not revalidate when the job isn't found or isn't failed", async () => {
+    maybeSingleMock.mockResolvedValue({ data: null, error: null });
+
+    await reprintJob("job-1");
+
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });

@@ -22,9 +22,16 @@ everything else sits flat here.
   `updatePrintJobStatus(jobId, status)`: the single choke point for
   changing a row's status — updates it, then (only when `source_kit` is
   `"qkit"` and the new status is terminal, `"printed"`/`"failed"`) calls
-  `notifyQkitPrintStatus` to tell qkit. Not yet called by any UI or bridge
-  code — Plan 3's manual-reprint action and Plan 4's bridge print-result
-  handler both will.
+  `notifyQkitPrintStatus` to tell qkit. Called by `history/actions.ts`'s
+  `reprintJob` and `bridge/actions.ts`'s `reportPrintResult`, both of
+  which check the calling vendor owns the job first.
+- `print-jobs-list.ts` — `listPrintJobs(supabase, vendorId)`: the vendor's
+  own job history, newest first, narrowed to the `PrintJob` type (`status`/
+  `job_type` as real literal unions instead of the generated `string`).
+- `print-job-payload.ts` — `payloadField(payload, key, fallback = "—")`:
+  the one place that defensively narrows a string field out of a
+  `print_jobs.payload` jsonb value, shared by the history table's display
+  columns and the bridge's auto-print label extraction.
 - `qkit-client.ts` — `notifyQkitPrintStatus(orderId, status)`: fire-and-forget
   outbound callback to qkit's `POST /api/printkit/print-status`, a plain
   (no `kit_slug:` prefix) shared-secret bearer check — different from this

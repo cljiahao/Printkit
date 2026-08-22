@@ -41,11 +41,6 @@ everything else sits flat here.
 - `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
   (gets a session-scoped Supabase client and the authenticated user,
   redirects to `/login` if none).
-- `merqo-auth.ts` — `bearerOk`/`provisionBearerOk` (constant-time bearer-secret
-  checks against `MERQO_METRICS_SECRET`/`MERQO_PROVISION_SECRET` respectively)
-  — a separate auth mechanism from `kit-auth.ts`'s `verifyKitAuth` (which is
-  for peer-kit-to-kit calls, keyed by `kit_api_keys`). Not yet wired to any
-  route in this repo — no `/api/merqo/*` routes exist here yet.
 - `merqo-rpc.ts` — shared `.schema("merqo").rpc(...)` caller for every cross-kit `merqo.*` RPC below.
 - `merqo-vendor-profile.ts` — `getOrCreateVendorProfile`/`upsertVendorProfile`, the shared vendor display-name source used by `dashboard-nav.tsx`.
 - `merqo-vendor-feedback.ts` — `submitVendorFeedback`, backs `AccountMenu`'s required `onFeedbackSubmit`.

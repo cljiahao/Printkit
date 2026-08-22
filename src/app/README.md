@@ -7,6 +7,7 @@ for this project.
 
 ## Contents
 
+- `actions/` — server actions backing Sheet-embedded widgets on the dashboard nav (feedback, "Get help") plus sign-out; see its own README.
 - `api/v1/print-jobs/` — inbound `POST` route for calling kits (qkit) to
   queue a print job. Verifies the caller's bearer secret via
   `verifyKitAuth` (`@/lib/kit-auth`), validates the body with a Zod schema
@@ -16,9 +17,8 @@ for this project.
   `createPrintJob` error's own status (e.g. 409 on a duplicate
   `source_kit`+`source_ref`).
 - `apple-icon.tsx` — `AppleIcon` route handler; renders `brandIcon(180)` as a 180×180 PNG for iOS home-screen touch icons.
-- `actions/` — server actions backing Sheet-embedded widgets on the dashboard nav (feedback, "Get help") plus sign-out; see its own README.
 - `auth/callback/` — Supabase auth callback route (`GET`, OAuth code exchange via `exchangeCodeForSession`); redirects to `next` (same-origin only) or `/dashboard` on success, `/login?error=oauth` on failure or a missing code.
-- `dashboard/` — authenticated vendor area. `layout.tsx` gates every `dashboard/*` route via `getVendorSession()`, resolves the vendor's profile (`getOrCreateVendorProfile`), and wraps `children` in `dashboard-nav.tsx`'s `DashboardNav` + a `max-w-7xl` `<main>`. `dashboard-nav.tsx` composes `@merqo/ui`'s shared `DashboardNav`/`AccountMenu` (wordmark, Overview/History links, account dropdown with sign-out, cross-kit "Switch products", and the shared feedback/get-help sheets wired to `submitFeedbackAction`/`submitSupportMessageAction`). `page.tsx` is still the placeholder overview. `history/` is the print job history list — see its own README.
+- `dashboard/` — authenticated vendor area, gated by `layout.tsx`'s `getVendorSession()` and wrapped in `dashboard-nav.tsx`'s composed `@merqo/ui` `DashboardNav`/`AccountMenu` — see its own README.
 - `error.tsx` — root-level error boundary (`"use client"`) for every route (landing, login, auth, dashboard — there is no more specific one yet). Branded like `login/page.tsx` (`ElevatedCard` + `Wordmark`), with a "Try again" (`reset()`) and a "Back to home" (`next/link`) action. Logs the caught error to the console.
 - `globals.css` — Tailwind v4 entry point: theme tokens, base layer, and custom utility classes; `@source` includes `node_modules/@merqo/ui/dist` so its components' Tailwind classes get compiled here too. Color tokens are named "Banknote Engrave" in the file's own header comment (engraved teal-green primary, steel-blue secondary) — the cross-kit brand pick this repo was seeded with.
 - `icon.tsx` — `Icon` route handler; renders `brandIcon(32)` as a 32×32 PNG favicon.

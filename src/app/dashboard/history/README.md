@@ -11,4 +11,4 @@ Vendor-facing print job history — full list, newest first.
 
 ## Parent
 
-See [../README.md](../README.md) (not yet created — see repo root `README.md` for the full layout until it is).
+See [../README.md](../README.md).

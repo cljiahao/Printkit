@@ -16,21 +16,21 @@ else sits flat here.
   shared raised-card container (rounded, bordered, soft shadow) used by the
   login page and the root error boundary, matching every other kit's
   login page.
+- `bridge-status.tsx` — read-only online/offline pill for the vendor's
+  bridge device, subscribed to a Supabase Realtime Presence channel
+  (`printkit:presence:{vendorId}`). The bridge device is the publisher.
 - `wordmark.tsx` — `Wordmark({ className })`: the "PrintKit" brand mark
   (mint-green "Print" + plain "Kit"). Used by `src/app/error.tsx` and
   `src/app/login/page.tsx`.
-- `bridge-status.tsx` — read-only online/offline pill for the vendor's
-  bridge device, subscribed to a Supabase Realtime Presence channel
-  (`printkit:presence:{vendorId}`). Plan 4's bridge device is the publisher.
 
 ## Connectivity
 
-`BackButton` is not yet wired to any dashboard route (the dashboard is
-currently a single placeholder page — see `src/app/README.md`).
-`elevated-card.tsx` is used by `login/page.tsx` and `src/app/error.tsx`.
-`wordmark.tsx` is used by `src/app/error.tsx` and `src/app/login/page.tsx`
-(not by `src/app/page.tsx`, which is a bare placeholder). `bridge-status.tsx`
-is not yet wired to any page (will be consumed by Task 8's overview page).
+`BackButton` is not yet wired to any dashboard route — the dashboard now has
+real content (see `src/app/dashboard/README.md`) but none of its routes need
+a "back" link yet. `elevated-card.tsx` is used by `login/page.tsx` and
+`src/app/error.tsx`. `wordmark.tsx` is used by `src/app/error.tsx` and
+`src/app/login/page.tsx` (not by `src/app/page.tsx`, which is a bare
+placeholder). `bridge-status.tsx` is used by `src/app/dashboard/page.tsx`.
 `ui/` is used throughout `src/app/` and `src/components/`.
 
 ## Parent

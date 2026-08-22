@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JobStatusBadge } from "../job-status-badge";
+import { formatDateTime } from "@/lib/utils";
 import type { PrintJob } from "@/lib/print-jobs-list";
 import type { Json } from "@/lib/types";
 
@@ -45,7 +46,7 @@ export function JobHistoryTable({ jobs }: { jobs: PrintJob[] }) {
               <JobStatusBadge status={job.status} />
             </TableCell>
             <TableCell className="text-muted-foreground text-sm">
-              {new Date(job.created_at).toLocaleString()}
+              {formatDateTime(job.created_at)}
             </TableCell>
           </TableRow>
         ))}

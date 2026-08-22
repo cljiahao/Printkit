@@ -24,6 +24,14 @@ describe("JobHistoryTable", () => {
     expect(screen.getByText("Printed")).toBeInTheDocument();
   });
 
+  it("renders the created timestamp pinned to Asia/Singapore, not the runtime timezone", () => {
+    render(<JobHistoryTable jobs={[JOB]} />);
+    // JOB.created_at is 2026-08-22T10:00:00Z, which is 6:00 pm in Singapore.
+    // A locale-dependent `toLocaleString()` on a UTC-runtime server would
+    // show 10:00 am instead.
+    expect(screen.getByText("22 Aug 2026, 6:00 pm")).toBeInTheDocument();
+  });
+
   it("shows an empty state when there are no jobs", () => {
     render(<JobHistoryTable jobs={[]} />);
     expect(screen.getByText(/no print jobs yet/i)).toBeInTheDocument();

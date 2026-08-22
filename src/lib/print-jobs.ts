@@ -91,7 +91,8 @@ export async function updatePrintJobStatus(
     data.source_kit === "qkit" &&
     (status === "printed" || status === "failed")
   ) {
-    await notifyQkitPrintStatus(data.source_ref, status);
+    // Fire-and-forget — never throws, must not add qkit's timeout to this call.
+    void notifyQkitPrintStatus(data.source_ref, status);
   }
 
   return { ok: true };

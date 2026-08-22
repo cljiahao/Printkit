@@ -12,8 +12,7 @@ vi.mock("@/lib/print-jobs", () => ({
 }));
 
 const maybeSingleMock = vi.fn();
-const insertMock = vi.fn().mockResolvedValue({ error: null });
-const fromMock = vi.fn((table: string) => {
+const sessionFromMock = vi.fn((table: string) => {
   if (table === "print_jobs") {
     return {
       select: () => ({
@@ -21,12 +20,20 @@ const fromMock = vi.fn((table: string) => {
       }),
     };
   }
-  return { insert: insertMock };
+  throw new Error(`unexpected table on session client: ${table}`);
 });
-const supabase = { from: fromMock };
+
+const insertMock = vi.fn().mockResolvedValue({ error: null });
+const serviceFromMock = vi.fn((table: string) => {
+  if (table === "admin_audit") {
+    return { insert: insertMock };
+  }
+  throw new Error(`unexpected table on service client: ${table}`);
+});
+const service = { from: serviceFromMock };
 
 vi.mock("@/lib/supabase/server", () => ({
-  createServiceClient: () => Promise.resolve(supabase),
+  createServiceClient: () => Promise.resolve(service),
 }));
 
 import { reprintJob } from "./actions";
@@ -37,9 +44,10 @@ describe("reprintJob", () => {
     updatePrintJobStatusMock.mockReset();
     maybeSingleMock.mockReset();
     insertMock.mockClear();
-    fromMock.mockClear();
+    sessionFromMock.mockClear();
+    serviceFromMock.mockClear();
     getVendorSessionMock.mockResolvedValue({
-      supabase: {},
+      supabase: { from: sessionFromMock },
       user: { id: "vendor-1" },
     });
   });

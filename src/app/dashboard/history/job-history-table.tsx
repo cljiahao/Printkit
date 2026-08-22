@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { JobStatusBadge } from "../job-status-badge";
+import { ReprintButton } from "./reprint-button";
 import { formatDateTime } from "@/lib/utils";
 import type { PrintJob } from "@/lib/print-jobs-list";
 import type { Json } from "@/lib/types";
@@ -35,6 +36,7 @@ export function JobHistoryTable({ jobs }: { jobs: PrintJob[] }) {
           <TableHead>Order #</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
+          <TableHead>Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -47,6 +49,11 @@ export function JobHistoryTable({ jobs }: { jobs: PrintJob[] }) {
             </TableCell>
             <TableCell className="text-muted-foreground text-sm">
               {formatDateTime(job.created_at)}
+            </TableCell>
+            <TableCell>
+              {job.status === "failed" ? (
+                <ReprintButton jobId={job.id} />
+              ) : null}
             </TableCell>
           </TableRow>
         ))}

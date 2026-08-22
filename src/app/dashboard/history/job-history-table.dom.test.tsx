@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { JobHistoryTable } from "./job-history-table";
 import type { PrintJob } from "@/lib/print-jobs-list";
+
+vi.mock("./actions", () => ({ reprintJob: vi.fn() }));
 
 const JOB: PrintJob = {
   id: "job-1",
@@ -35,5 +37,19 @@ describe("JobHistoryTable", () => {
   it("shows an empty state when there are no jobs", () => {
     render(<JobHistoryTable jobs={[]} />);
     expect(screen.getByText(/no print jobs yet/i)).toBeInTheDocument();
+  });
+
+  it("renders a Reprint button only for a failed job", () => {
+    render(<JobHistoryTable jobs={[{ ...JOB, status: "failed" }]} />);
+    expect(
+      screen.getByRole("button", { name: /reprint/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders no Reprint button for a printed job", () => {
+    render(<JobHistoryTable jobs={[JOB]} />);
+    expect(
+      screen.queryByRole("button", { name: /reprint/i }),
+    ).not.toBeInTheDocument();
   });
 });

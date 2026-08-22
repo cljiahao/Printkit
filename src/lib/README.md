@@ -54,10 +54,12 @@ everything else sits flat here.
   returns.
 - `env.ts` — `publicEnv`: required-env-var accessors that throw at import
   time if unset, instead of silently reading `undefined`.
-- `utils.ts` — `cn()` (clsx + tailwind-merge) and `formatDate()` (a
+- `utils.ts` — `cn()` (clsx + tailwind-merge), `formatDate()` (a
   `date`-column "YYYY-MM-DD" string -> display date, parsed/formatted with
   an explicit UTC anchor so it never shifts by a day depending on the
-  server's runtime timezone).
+  server's runtime timezone), and `formatDateTime()` (a `timestamptz`
+  string -> display date+time, pinned to `en-SG`/`Asia/Singapore` for the
+  same reason).
 
 ## Connectivity
 

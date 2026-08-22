@@ -10,7 +10,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    environment: "node",
+    environment: "jsdom",
     testTimeout: 10000,
     env: {
       NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",

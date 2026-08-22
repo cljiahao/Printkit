@@ -29,7 +29,9 @@ The authenticated vendor area (`/dashboard/*`).
   the vendor's stall name, plus the page `children`.
 - `job-status-badge.tsx` / `job-status-badge.dom.test.tsx` — shared status
   badge (queued/printing/done/failed) used by `history/`'s table.
-- `page.tsx` — placeholder overview page; no dashboard widgets yet.
+- `page.tsx` / `page.dom.test.tsx` — dashboard overview: displays bridge status
+  (`BridgeStatus`), a qkit connection info card, and recent print jobs via
+  `JobHistoryTable` (limited to 5 jobs).
 - `history/` — vendor-facing print job history — see its own README.
 
 ## Connectivity

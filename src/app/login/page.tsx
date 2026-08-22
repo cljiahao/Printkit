@@ -163,7 +163,7 @@ function LoginForm() {
         <div className="mb-8 text-center">
           <Wordmark className="text-3xl" />
           <p className="mt-1 text-sm text-muted-foreground">
-            Manage your payment setup and transactions.
+            Manage your printer connection and print jobs.
           </p>
         </div>
 

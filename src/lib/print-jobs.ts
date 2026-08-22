@@ -76,7 +76,7 @@ export async function updatePrintJobStatus(
     .from("print_jobs")
     .update({
       status,
-      printed_at: status === "printed" ? new Date().toISOString() : null,
+      ...(status === "printed" ? { printed_at: new Date().toISOString() } : {}),
     })
     .eq("id", jobId)
     .select("source_kit, source_ref")

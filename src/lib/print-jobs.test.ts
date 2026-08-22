@@ -184,6 +184,45 @@ describe("updatePrintJobStatus", () => {
     expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
   });
 
+  it("does not include printed_at in the update payload for a non-printed status", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "qkit", source_ref: "order-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    await updatePrintJobStatus("job-1", "failed");
+
+    expect(updateMock).toHaveBeenCalledWith({ status: "failed" });
+  });
+
+  it("sets printed_at on a printed status", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "qkit", source_ref: "order-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    await updatePrintJobStatus("job-1", "printed");
+
+    expect(updateMock).toHaveBeenCalledWith({
+      status: "printed",
+      printed_at: expect.any(String),
+    });
+  });
+
   it("returns ok:false when the row isn't found", async () => {
     updateMock.mockReturnValue({
       eq: () => ({

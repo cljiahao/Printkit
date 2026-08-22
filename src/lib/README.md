@@ -39,6 +39,10 @@ everything else sits flat here.
   — a separate auth mechanism from `kit-auth.ts`'s `verifyKitAuth` (which is
   for peer-kit-to-kit calls, keyed by `kit_api_keys`). Not yet wired to any
   route in this repo — no `/api/merqo/*` routes exist here yet.
+- `merqo-rpc.ts` — shared `.schema("merqo").rpc(...)` caller for every cross-kit `merqo.*` RPC below.
+- `merqo-vendor-profile.ts` — `getOrCreateVendorProfile`/`upsertVendorProfile`, the shared vendor display-name source used by `dashboard-nav.tsx`.
+- `merqo-vendor-feedback.ts` — `submitVendorFeedback`, backs `AccountMenu`'s required `onFeedbackSubmit`.
+- `merqo-support.ts` — `submitSupportMessage`, backs `AccountMenu`'s required `getHelp` (form mode).
 - `brand-icon.tsx` — `brandIcon(size)` + `BRAND_MINT`/`BRAND_INK`: the
   printkit "P" mark as a `ReactElement` for `ImageResponse`-generated icons
   (favicon, apple-touch) — hex literals, not theme tokens, since

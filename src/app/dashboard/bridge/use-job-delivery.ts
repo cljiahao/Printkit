@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-
-type PrintJobsChangePayload = {
-  new: { id: string; status: string };
-};
 
 /**
  * Job delivery: reuses Postgres's own replication feed (postgres_changes)
@@ -27,15 +24,26 @@ export function useJobDelivery(
 
     channel
       .on(
-        "postgres_changes" as any,
+        "postgres_changes",
         {
           event: "*",
           schema: "printkit",
           table: "print_jobs",
           filter: `vendor_id=eq.${vendorId}`,
         },
-        (payload: PrintJobsChangePayload) => {
-          if (payload.new.status === "queued") onJobQueued(payload.new.id);
+        (
+          payload: RealtimePostgresChangesPayload<{
+            id: string;
+            status: string;
+          }>,
+        ) => {
+          if (
+            "id" in payload.new &&
+            "status" in payload.new &&
+            payload.new.status === "queued"
+          ) {
+            onJobQueued(payload.new.id);
+          }
         },
       )
       .subscribe();

@@ -13,10 +13,11 @@ const channelMock = {
     changeCallback = cb;
     return channelMock;
   }),
+  subscribe: vi.fn(),
   unsubscribe: vi.fn(),
   state: "joined",
-} as any;
-channelMock.subscribe = vi.fn().mockReturnValue(channelMock);
+};
+channelMock.subscribe.mockReturnValue(channelMock);
 const channelFactory = vi.fn().mockReturnValue(channelMock);
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -56,7 +57,15 @@ describe("useJobDelivery", () => {
     const onJobQueued = vi.fn();
     renderHook(() => useJobDelivery("vendor-1", onJobQueued));
 
-    changeCallback?.({ new: { id: "job-1", status: "queued" } });
+    changeCallback?.({
+      schema: "printkit",
+      table: "print_jobs",
+      commit_timestamp: "2026-08-22T00:00:00Z",
+      errors: [],
+      eventType: "UPDATE",
+      new: { id: "job-1", status: "queued" },
+      old: {},
+    });
 
     expect(onJobQueued).toHaveBeenCalledWith("job-1");
   });
@@ -65,7 +74,32 @@ describe("useJobDelivery", () => {
     const onJobQueued = vi.fn();
     renderHook(() => useJobDelivery("vendor-1", onJobQueued));
 
-    changeCallback?.({ new: { id: "job-1", status: "printed" } });
+    changeCallback?.({
+      schema: "printkit",
+      table: "print_jobs",
+      commit_timestamp: "2026-08-22T00:00:00Z",
+      errors: [],
+      eventType: "UPDATE",
+      new: { id: "job-1", status: "printed" },
+      old: { status: "pending" },
+    });
+
+    expect(onJobQueued).not.toHaveBeenCalled();
+  });
+
+  it("ignores a DELETE event whose payload.new is empty", () => {
+    const onJobQueued = vi.fn();
+    renderHook(() => useJobDelivery("vendor-1", onJobQueued));
+
+    changeCallback?.({
+      schema: "printkit",
+      table: "print_jobs",
+      commit_timestamp: "2026-08-22T00:00:00Z",
+      errors: [],
+      eventType: "DELETE",
+      new: {},
+      old: { id: "job-1", status: "queued" },
+    });
 
     expect(onJobQueued).not.toHaveBeenCalled();
   });

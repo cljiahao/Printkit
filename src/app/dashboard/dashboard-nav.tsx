@@ -10,6 +10,7 @@ import { submitSupportMessageAction } from "@/app/actions/support";
 
 const LINKS = [
   { href: "/dashboard", label: "Overview" },
+  { href: "/dashboard/bridge", label: "Bridge" },
   { href: "/dashboard/history", label: "History" },
 ];
 

@@ -13,8 +13,8 @@ The authenticated vendor area (`/dashboard/*`).
   `dashboard-nav.tsx`'s `DashboardNav` and a `max-w-7xl` `<main>`.
 - `dashboard-nav.tsx` — `DashboardNav`: composes `@merqo/ui`'s shared
   `DashboardNav`/`AccountMenu` — same shared-component contract every
-  sibling kit uses. Owns the printkit wordmark, the Overview/History nav
-  links, active-route highlighting, and thin throw-adapting wrappers
+  sibling kit uses. Owns the printkit wordmark, the Overview/Bridge/History
+  nav links, active-route highlighting, and thin throw-adapting wrappers
   around `submitFeedbackAction`/`submitSupportMessageAction`
   (`@/app/actions/{feedback,support}`), which both return a
   `{success, error}` result rather than throwing, while the shared
@@ -33,6 +33,8 @@ The authenticated vendor area (`/dashboard/*`).
   (`BridgeStatus`), a qkit connection info card, and recent print jobs via
   `JobHistoryTable` (limited to 5 jobs).
 - `history/` — vendor-facing print job history — see its own README.
+- `bridge/` — Bridge-mode runtime (Web Bluetooth pairing, auto-print,
+  presence, wake lock) — see its own README.
 
 ## Connectivity
 

@@ -1,13 +1,16 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 const trackMock = vi.fn().mockResolvedValue(undefined);
 const untrackMock = vi.fn().mockResolvedValue(undefined);
-const channelMock: any = {};
-channelMock.subscribe = vi.fn().mockReturnValue(channelMock);
-channelMock.track = trackMock;
-channelMock.untrack = untrackMock;
-channelMock.unsubscribe = vi.fn();
+const channelMock = {
+  subscribe: vi.fn(),
+  track: trackMock,
+  untrack: untrackMock,
+  unsubscribe: vi.fn(),
+};
+channelMock.subscribe.mockReturnValue(channelMock);
 const channelFactory = vi.fn().mockReturnValue(channelMock);
 
 vi.mock("@/lib/supabase/client", () => ({

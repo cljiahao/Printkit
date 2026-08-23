@@ -56,13 +56,34 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
  * Manually routes an "unrouted" job (location_id null) to a booth. Distinct
  * from reprintJob: no status precondition, and never touches status — a
  * queued job stays queued, it just now has a location to print at.
+ *
+ * print_jobs has no UPDATE grant/policy for `authenticated` (only SELECT —
+ * see 0001_printkit_core.sql), so the write goes through the service-role
+ * client, same as updatePrintJobStatus/createPrintJob. That makes the
+ * `.eq("id", jobId).eq("vendor_id", user.id)` scoping below the real
+ * authorization boundary, not defense-in-depth on top of RLS. locationId is
+ * separately verified to belong to this vendor before the write — the FK
+ * on print_jobs.location_id only checks the id exists, not who owns it.
  */
 export async function assignPrintLocation(
   jobId: string,
   locationId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const { supabase, user } = await getVendorSession();
-  const { error } = await supabase
+  const { user } = await getVendorSession();
+  const service = await createServiceClient();
+
+  const { data: location } = await service
+    .from("print_locations")
+    .select("id")
+    .eq("id", locationId)
+    .eq("vendor_id", user.id)
+    .maybeSingle();
+
+  if (!location) {
+    return { ok: false, error: "That booth doesn't belong to your account." };
+  }
+
+  const { error } = await service
     .from("print_jobs")
     .update({ location_id: locationId })
     .eq("id", jobId)

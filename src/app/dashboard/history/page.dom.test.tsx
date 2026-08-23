@@ -14,6 +14,8 @@ vi.mock("@/lib/print-jobs-list", () => ({
       id: "job-1",
       vendor_id: "vendor-1",
       job_type: "label",
+      location_id: "loc-1",
+      print_locations: { label: "Kopitiam Cart" },
       payload: { customer_name: "Ada", order_number: "0007" },
       status: "printed",
       source_kit: "qkit",
@@ -22,6 +24,9 @@ vi.mock("@/lib/print-jobs-list", () => ({
       printed_at: "2026-08-22T10:00:05Z",
     },
   ]),
+}));
+vi.mock("@/lib/print-locations", () => ({
+  listActiveLocations: vi.fn().mockResolvedValue([]),
 }));
 
 import HistoryPage from "./page";

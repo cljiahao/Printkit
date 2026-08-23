@@ -16,13 +16,15 @@ export type PrintJob = Omit<
 > & {
   status: PrintJobStatus;
   job_type: "label";
+  print_locations: { label: string } | null;
 };
 
 /**
- * Vendor's own job history, newest first — relies on print_jobs' RLS
- * policy (vendor reads only their own rows) as the real authorization
- * boundary; the explicit .eq("vendor_id", ...) here is defense in depth,
- * not the sole guard.
+ * Vendor's own job history, newest first, with each row's booth label
+ * embedded via the location_id FK — relies on print_jobs' RLS policy
+ * (vendor reads only their own rows) as the real authorization boundary;
+ * the explicit .eq("vendor_id", ...) here is defense in depth, not the
+ * sole guard.
  */
 export async function listPrintJobs(
   supabase: SupabaseClient<Database, "printkit">,
@@ -31,7 +33,7 @@ export async function listPrintJobs(
 ): Promise<PrintJob[]> {
   const { data, error } = await supabase
     .from("print_jobs")
-    .select("*")
+    .select("*, print_locations(label)")
     .eq("vendor_id", vendorId)
     .order("created_at", { ascending: false })
     .limit(limit);

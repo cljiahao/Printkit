@@ -70,7 +70,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <div className="mt-3">
-          <JobHistoryTable jobs={recentJobs} />
+          <JobHistoryTable jobs={recentJobs} locations={locations} />
         </div>
       </div>
     </div>

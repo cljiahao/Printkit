@@ -35,7 +35,8 @@ The authenticated vendor area (`/dashboard/*`).
   none), a qkit connection info card, an unrouted-print-jobs callout (from
   `countUnroutedJobs`, `@/lib/print-jobs-list`) linking to
   `/dashboard/history?unrouted=1` when the count is above zero, and recent
-  print jobs via `JobHistoryTable` (limited to 5 jobs).
+  print jobs via `JobHistoryTable` (limited to 5 jobs), passing the same
+  `listActiveLocations` result down so unrouted rows get an assign control.
 - `history/` — vendor-facing print job history — see its own README.
 - `bridge/` — Bridge-mode runtime (Web Bluetooth pairing, auto-print,
   presence, wake lock) — see its own README.

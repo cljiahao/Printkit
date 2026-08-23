@@ -17,12 +17,17 @@ vi.mock("@/lib/print-jobs", () => ({
 }));
 
 const maybeSingleMock = vi.fn();
+const updateEqEqMock = vi.fn();
+const updateMock = vi.fn(() => ({
+  eq: () => ({ eq: updateEqEqMock }),
+}));
 const sessionFromMock = vi.fn((table: string) => {
   if (table === "print_jobs") {
     return {
       select: () => ({
         eq: () => ({ eq: () => ({ maybeSingle: maybeSingleMock }) }),
       }),
+      update: updateMock,
     };
   }
   throw new Error(`unexpected table on session client: ${table}`);
@@ -41,13 +46,15 @@ vi.mock("@/lib/supabase/server", () => ({
   createServiceClient: () => Promise.resolve(service),
 }));
 
-import { reprintJob } from "./actions";
+import { reprintJob, assignPrintLocation } from "./actions";
 
 describe("reprintJob", () => {
   beforeEach(() => {
     getVendorSessionMock.mockReset();
     updatePrintJobStatusMock.mockReset();
     maybeSingleMock.mockReset();
+    updateMock.mockClear();
+    updateEqEqMock.mockReset();
     insertMock.mockClear();
     sessionFromMock.mockClear();
     serviceFromMock.mockClear();
@@ -108,5 +115,52 @@ describe("reprintJob", () => {
     await reprintJob("job-1");
 
     expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("assignPrintLocation", () => {
+  beforeEach(() => {
+    getVendorSessionMock.mockReset();
+    updateMock.mockClear();
+    updateEqEqMock.mockReset();
+    maybeSingleMock.mockReset();
+    updatePrintJobStatusMock.mockReset();
+    sessionFromMock.mockClear();
+    getVendorSessionMock.mockResolvedValue({
+      supabase: { from: sessionFromMock },
+      user: { id: "vendor-1" },
+    });
+  });
+
+  it("sets location_id regardless of the job's current status, without touching status", async () => {
+    updateEqEqMock.mockResolvedValue({ error: null });
+
+    const result = await assignPrintLocation("job-1", "loc-1");
+
+    expect(updateMock).toHaveBeenCalledWith({ location_id: "loc-1" });
+    expect(updateMock).not.toHaveBeenCalledWith(
+      expect.objectContaining({ status: expect.anything() }),
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("returns an error result on a database failure", async () => {
+    updateEqEqMock.mockResolvedValue({ error: { message: "boom" } });
+
+    const result = await assignPrintLocation("job-1", "loc-1");
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Could not assign a booth to this job.",
+    });
+  });
+
+  it("never reads or checks job status before assigning", async () => {
+    updateEqEqMock.mockResolvedValue({ error: null });
+
+    await assignPrintLocation("job-1", "loc-1");
+
+    expect(maybeSingleMock).not.toHaveBeenCalled();
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
   });
 });

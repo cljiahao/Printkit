@@ -30,11 +30,14 @@ everything else sits flat here.
   which check the calling vendor owns the job first.
 - `print-jobs-list.ts` — `listPrintJobs(supabase, vendorId)`: the vendor's
   own job history, newest first, narrowed to the `PrintJob` type (`status`/
-  `job_type` as real literal unions instead of the generated `string`).
-  `countUnroutedJobs(vendorId)`: count of the vendor's `queued` jobs with a
-  `null location_id` — jobs that never resolved to a print location — used
-  by the dashboard overview's unrouted-jobs callout. Fails open (returns
-  `0`) on a query error, same convention as `listPrintJobs`.
+  `job_type` as real literal unions instead of the generated `string`),
+  with each row's booth embedded via `select("*, print_locations(label)")`
+  (`print_locations: { label } | null` on `PrintJob`, null when
+  `location_id` is null). `countUnroutedJobs(vendorId)`: count of the
+  vendor's `queued` jobs with a `null location_id` — jobs that never
+  resolved to a print location — used by the dashboard overview's
+  unrouted-jobs callout. Fails open (returns `0`) on a query error, same
+  convention as `listPrintJobs`.
 - `print-job-payload.ts` — `payloadField(payload, key, fallback = "—")`:
   the one place that defensively narrows a string field out of a
   `print_jobs.payload` jsonb value, shared by the history table's display

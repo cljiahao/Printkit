@@ -51,3 +51,28 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
   revalidatePath("/dashboard/history");
   return { success: true };
 }
+
+/**
+ * Manually routes an "unrouted" job (location_id null) to a booth. Distinct
+ * from reprintJob: no status precondition, and never touches status — a
+ * queued job stays queued, it just now has a location to print at.
+ */
+export async function assignPrintLocation(
+  jobId: string,
+  locationId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { supabase, user } = await getVendorSession();
+  const { error } = await supabase
+    .from("print_jobs")
+    .update({ location_id: locationId })
+    .eq("id", jobId)
+    .eq("vendor_id", user.id);
+
+  if (error) {
+    console.error("assignPrintLocation failed", error.message);
+    return { ok: false, error: "Could not assign a booth to this job." };
+  }
+
+  revalidatePath("/dashboard/history");
+  return { ok: true };
+}

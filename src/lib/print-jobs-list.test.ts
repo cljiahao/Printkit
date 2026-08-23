@@ -19,7 +19,7 @@ describe("listPrintJobs", () => {
 
     const result = await listPrintJobs(supabase, "vendor-1", 5);
 
-    expect(selectMock).toHaveBeenCalledWith("*");
+    expect(selectMock).toHaveBeenCalledWith("*, print_locations(label)");
     expect(eqMock).toHaveBeenCalledWith("vendor_id", "vendor-1");
     expect(orderMock).toHaveBeenCalledWith("created_at", { ascending: false });
     expect(limitMock).toHaveBeenCalledWith(5);

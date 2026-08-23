@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types";
 import type { PrintJobStatus } from "@/lib/print-jobs";
+import { createServerClient } from "@/lib/supabase/server";
 
 /**
  * `print_jobs.status`/`job_type` come back as plain `string` from the
@@ -40,4 +41,24 @@ export async function listPrintJobs(
     return [];
   }
   return (data ?? []) as PrintJob[];
+}
+
+/**
+ * Count of the vendor's queued jobs that never resolved to a print
+ * location — surfaced on the Overview page as a callout pointing at History.
+ */
+export async function countUnroutedJobs(vendorId: string): Promise<number> {
+  const supabase = await createServerClient();
+  const { count, error } = await supabase
+    .from("print_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("vendor_id", vendorId)
+    .is("location_id", null)
+    .eq("status", "queued");
+
+  if (error) {
+    console.error("countUnroutedJobs failed", error.message);
+    return 0;
+  }
+  return count ?? 0;
 }

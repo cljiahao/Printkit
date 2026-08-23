@@ -110,7 +110,7 @@ export type Database = {
           {
             foreignKeyName: "print_jobs_location_id_fkey";
             columns: ["location_id"];
-            isOneToMany: false;
+            isOneToOne: true;
             referencedRelation: "print_locations";
             referencedColumns: ["id"];
           },

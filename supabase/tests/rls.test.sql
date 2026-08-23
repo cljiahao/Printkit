@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(11);
 
 select has_table('printkit', 'print_jobs', 'print_jobs table exists');
 select has_table('printkit', 'admin_audit', 'admin_audit table exists');
@@ -60,17 +60,31 @@ insert into printkit.print_locations (vendor_id, source_kit, source_ref, label)
 values (
   '11111111-1111-1111-1111-111111111111',
   'qkit',
-  'booth-1'::text,
+  'booth-1',
   'Main Booth'
+),
+(
+  '22222222-2222-2222-2222-222222222222',
+  'qkit',
+  'booth-2',
+  'Side Booth'
 );
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub": "11111111-1111-1111-1111-111111111111"}';
 
-select is(
-  (select count(*)::int from printkit.print_locations where vendor_id = '11111111-1111-1111-1111-111111111111'),
-  1,
+select results_eq(
+  $$ select count(*) from printkit.print_locations $$,
+  $$ values (1::bigint) $$,
   'vendor A sees only their own print_locations row'
+);
+
+set local request.jwt.claims = '{"sub": "22222222-2222-2222-2222-222222222222"}';
+
+select results_eq(
+  $$ select count(*) from printkit.print_locations $$,
+  $$ values (1::bigint) $$,
+  'vendor B does not see vendor A''s print_locations row'
 );
 
 reset role;

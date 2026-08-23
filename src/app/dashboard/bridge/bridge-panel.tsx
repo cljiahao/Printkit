@@ -80,7 +80,8 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
     [doPrintJob],
   );
 
-  useJobDelivery(vendorId, printJob);
+  // Placeholder locationId; Task 7 wires in the real selected location.
+  useJobDelivery(vendorId, "", printJob);
 
   const handleToggle = (next: boolean) => {
     setEnabled(next);

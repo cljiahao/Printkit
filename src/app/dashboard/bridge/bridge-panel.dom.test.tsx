@@ -130,7 +130,8 @@ describe("BridgePanel", () => {
     function deliveredJob() {
       const call = vi.mocked(useJobDelivery).mock.calls.at(-1);
       if (!call) throw new Error("useJobDelivery was never called");
-      return call[1];
+      // index 2: (vendorId, locationId, onJobQueued)
+      return call[2];
     }
 
     it("prints the job's real customer name and order number, not its id", async () => {

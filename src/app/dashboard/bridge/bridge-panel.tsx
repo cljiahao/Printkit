@@ -44,7 +44,8 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
     setEnabled(isBridgeModeEnabled());
   }, []);
 
-  useBridgePresence(vendorId, enabled);
+  // Placeholder locationId; Task 7 wires in the real selected location.
+  useBridgePresence(vendorId, "", enabled);
 
   const doPrintJob = useCallback(async (jobId: string, payload: Json) => {
     const client = clientRef.current;

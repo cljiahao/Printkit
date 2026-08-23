@@ -18,7 +18,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="rounded-lg border p-4">
-        <BridgeStatus vendorId={user.id} />
+        {/* Placeholder locationId/label; Task 7 wires in the real selected location. */}
+        <BridgeStatus vendorId={user.id} locationId="" label="" />
       </div>
 
       <div className="rounded-lg border p-4">

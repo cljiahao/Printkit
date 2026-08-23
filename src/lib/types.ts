@@ -74,6 +74,7 @@ export type Database = {
           created_at: string;
           id: string;
           job_type: string;
+          location_id: string | null;
           payload: Json;
           printed_at: string | null;
           source_kit: string;
@@ -85,6 +86,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           job_type?: string;
+          location_id?: string | null;
           payload: Json;
           printed_at?: string | null;
           source_kit: string;
@@ -96,11 +98,50 @@ export type Database = {
           created_at?: string;
           id?: string;
           job_type?: string;
+          location_id?: string | null;
           payload?: Json;
           printed_at?: string | null;
           source_kit?: string;
           source_ref?: string;
           status?: string;
+          vendor_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "print_jobs_location_id_fkey";
+            columns: ["location_id"];
+            isOneToMany: false;
+            referencedRelation: "print_locations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      print_locations: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          id: string;
+          label: string;
+          source_kit: string;
+          source_ref: string;
+          vendor_id: string;
+        };
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          label: string;
+          source_kit: string;
+          source_ref: string;
+          vendor_id: string;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          label?: string;
+          source_kit?: string;
+          source_ref?: string;
           vendor_id?: string;
         };
         Relationships: [];

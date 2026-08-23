@@ -10,6 +10,7 @@ const JOB: PrintJob = {
   id: "job-1",
   vendor_id: "vendor-1",
   job_type: "label",
+  location_id: null,
   payload: { customer_name: "Ada", order_number: "0007" },
   status: "printed",
   source_kit: "qkit",

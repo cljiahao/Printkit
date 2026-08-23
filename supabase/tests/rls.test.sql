@@ -1,5 +1,5 @@
 begin;
-select plan(9);
+select plan(10);
 
 select has_table('printkit', 'print_jobs', 'print_jobs table exists');
 select has_table('printkit', 'admin_audit', 'admin_audit table exists');
@@ -54,6 +54,26 @@ select throws_ok(
   null,
   'duplicate (source_kit, source_ref) is rejected by the real unique constraint'
 );
+
+-- print_locations: vendor reads only their own rows
+insert into printkit.print_locations (vendor_id, source_kit, source_ref, label)
+values (
+  '11111111-1111-1111-1111-111111111111',
+  'qkit',
+  'booth-1'::text,
+  'Main Booth'
+);
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "11111111-1111-1111-1111-111111111111"}';
+
+select is(
+  (select count(*)::int from printkit.print_locations where vendor_id = '11111111-1111-1111-1111-111111111111'),
+  1,
+  'vendor A sees only their own print_locations row'
+);
+
+reset role;
 
 -- admin_audit: non-admin authenticated user sees nothing
 set local role authenticated;

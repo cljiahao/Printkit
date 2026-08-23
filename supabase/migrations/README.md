@@ -11,6 +11,7 @@ tables, RLS policies, and grants, applied in order.
 - `0002_printkit_admin.sql` — `admins` (allow-list) + `is_admin(uid)` + `admin_audit`, immutable from creation (no update/delete grant ever issued to service_role).
 - `0003_printkit_print_jobs_idempotency.sql` — unique `(source_kit, source_ref)` constraint on `print_jobs`, so a retried job-creation call can't create a duplicate physical label; also drops `print_jobs_source_idx` (0001), now redundant with the new unique index on the same columns.
 - `0004_printkit_realtime.sql` — adds `print_jobs` to the `supabase_realtime` publication so the bridge device's `postgres_changes` subscription (Plan 4) receives job-delivery events. RLS still governs which rows a session receives.
+- `0005_print_locations.sql` — `print_locations` (location/booth registry per calling kit), `location_id` FK on `print_jobs`, per-vendor RLS.
 
 ## Parent
 

@@ -18,7 +18,10 @@ everything else sits flat here.
 - `print-jobs.ts` — `createPrintJob(input)`: inserts a queued `print_jobs`
   row via the service client and returns its `id`. `(source_kit, source_ref)`
   is unique, so a retried call for the same source order returns a clean
-  `{ok:false, status:409}` instead of a generic 500.
+  `{ok:false, status:409}` instead of a generic 500. An optional
+  `input.locationRef` is resolved via `print-locations.ts`'s
+  `resolveActiveLocation` and stored as `location_id`; a missing or
+  unresolved ref is a no-op (`location_id: null`), never a rejection.
   `updatePrintJobStatus(jobId, status)`: the single choke point for
   changing a row's status — updates it, then (only when `source_kit` is
   `"qkit"` and the new status is terminal, `"printed"`/`"failed"`) calls

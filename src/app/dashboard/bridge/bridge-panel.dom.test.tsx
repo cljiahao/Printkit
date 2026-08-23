@@ -53,18 +53,18 @@ describe("BridgePanel", () => {
   });
 
   it("renders the Bridge mode toggle off by default", () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     expect(screen.getByRole("switch")).not.toBeChecked();
   });
 
   it("persists enabling Bridge mode via setBridgeModeEnabled", () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch"));
     expect(setBridgeModeEnabled).toHaveBeenCalledWith(true);
   });
 
   it("shows a Pair printer button only once Bridge mode is enabled", () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     expect(
       screen.queryByRole("button", { name: /pair printer/i }),
     ).not.toBeInTheDocument();
@@ -76,7 +76,7 @@ describe("BridgePanel", () => {
   });
 
   it("connects the printer when Pair printer is clicked", async () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch"));
     fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
 
@@ -85,7 +85,7 @@ describe("BridgePanel", () => {
   });
 
   it("shows a Print test button once paired", async () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch"));
     fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
 
@@ -95,7 +95,7 @@ describe("BridgePanel", () => {
   });
 
   it("logs a printer_paired admin_audit event once pairing succeeds", async () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch"));
     fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
 
@@ -105,7 +105,7 @@ describe("BridgePanel", () => {
   });
 
   it("logs a bridge_disconnected admin_audit event when Bridge mode is toggled off", () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch")); // on
     fireEvent.click(screen.getByRole("switch")); // off
 
@@ -113,7 +113,7 @@ describe("BridgePanel", () => {
   });
 
   it("does not log bridge_disconnected on the initial enable", () => {
-    render(<BridgePanel vendorId="vendor-1" />);
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch")); // on
 
     expect(logBridgeEvent).not.toHaveBeenCalledWith("bridge_disconnected");
@@ -121,7 +121,7 @@ describe("BridgePanel", () => {
 
   describe("auto-print via job delivery", () => {
     async function pair() {
-      render(<BridgePanel vendorId="vendor-1" />);
+      render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
       fireEvent.click(screen.getByRole("switch"));
       fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
       await waitFor(() => expect(connectPrinter).toHaveBeenCalled());

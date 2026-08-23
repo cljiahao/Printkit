@@ -46,12 +46,10 @@ describe("createOrUpdatePrintLocation", () => {
   it("returns a 500 result on an unexpected database error", async () => {
     const upsert = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
-        single: vi
-          .fn()
-          .mockResolvedValue({
-            data: null,
-            error: { message: "boom", code: "500" },
-          }),
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { message: "boom", code: "500" },
+        }),
       }),
     });
     fromMock.mockReturnValue({ upsert });
@@ -70,12 +68,10 @@ describe("createOrUpdatePrintLocation", () => {
 
 describe("resolveActiveLocation", () => {
   it("returns the location when an active match exists", async () => {
-    const maybeSingle = vi
-      .fn()
-      .mockResolvedValue({
-        data: { id: "loc-1", vendor_id: "vendor-1" },
-        error: null,
-      });
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { id: "loc-1", vendor_id: "vendor-1" },
+      error: null,
+    });
     fromMock.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnThis(),

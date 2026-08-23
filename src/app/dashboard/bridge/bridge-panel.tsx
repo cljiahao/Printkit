@@ -27,7 +27,13 @@ type PairState = "unpaired" | "connecting" | "connected" | "error";
  * contracts this composes (useJobDelivery, useBridgePresence,
  * reportPrintResult, updatePrintJobStatus indirectly via the action).
  */
-export function BridgePanel({ vendorId }: { vendorId: string }) {
+export function BridgePanel({
+  vendorId,
+  locationId,
+}: {
+  vendorId: string;
+  locationId: string;
+}) {
   const [enabled, setEnabled] = useState(false);
   const [pairState, setPairState] = useState<PairState>("unpaired");
   const clientRef = useRef<NiimbotBluetoothClient | null>(null);
@@ -44,8 +50,7 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
     setEnabled(isBridgeModeEnabled());
   }, []);
 
-  // Placeholder locationId; Task 7 wires in the real selected location.
-  useBridgePresence(vendorId, "", enabled);
+  useBridgePresence(vendorId, locationId, enabled);
 
   const doPrintJob = useCallback(async (jobId: string, payload: Json) => {
     const client = clientRef.current;
@@ -80,8 +85,7 @@ export function BridgePanel({ vendorId }: { vendorId: string }) {
     [doPrintJob],
   );
 
-  // Placeholder locationId; Task 7 wires in the real selected location.
-  useJobDelivery(vendorId, "", printJob);
+  useJobDelivery(vendorId, locationId, printJob);
 
   const handleToggle = (next: boolean) => {
     setEnabled(next);

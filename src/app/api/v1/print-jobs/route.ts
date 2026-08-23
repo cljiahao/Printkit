@@ -7,6 +7,7 @@ const bodySchema = z.object({
   vendor_id: z.string().uuid(),
   payload: z.record(z.string(), z.unknown()),
   source_ref: z.string().min(1),
+  location_ref: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     payload: parsed.data.payload,
     sourceKit: auth.kitSlug,
     sourceRef: parsed.data.source_ref,
+    locationRef: parsed.data.location_ref,
   });
 
   if (!result.ok) {

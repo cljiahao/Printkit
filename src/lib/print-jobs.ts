@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { notifyQkitPrintStatus } from "@/lib/qkit-client";
+import { resolveActiveLocation } from "@/lib/print-locations";
 import type { Json } from "@/lib/types";
 
 export type CreatePrintJobInput = {
@@ -7,6 +8,7 @@ export type CreatePrintJobInput = {
   payload: Record<string, unknown>;
   sourceKit: string;
   sourceRef: string;
+  locationRef?: string;
 };
 
 export type CreatePrintJobResult =
@@ -20,6 +22,15 @@ export type CreatePrintJobResult =
 export async function createPrintJob(
   input: CreatePrintJobInput,
 ): Promise<CreatePrintJobResult> {
+  let locationId: string | null = null;
+  if (input.locationRef) {
+    const location = await resolveActiveLocation(
+      input.sourceKit,
+      input.locationRef,
+    );
+    if (location) locationId = location.id;
+  }
+
   const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from("print_jobs")
@@ -29,6 +40,7 @@ export async function createPrintJob(
       payload: input.payload as unknown as Json,
       source_kit: input.sourceKit,
       source_ref: input.sourceRef,
+      location_id: locationId,
     })
     .select("id")
     .single();

@@ -1,11 +1,17 @@
-// @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const { redirectMock } = vi.hoisted(() => ({ redirectMock: vi.fn() }));
+vi.mock("next/navigation", () => ({ redirect: redirectMock }));
+
 import Home from "./page";
 
 describe("Home", () => {
-  it("renders the printkit heading", () => {
-    render(<Home />);
-    expect(screen.getByText("printkit")).toBeInTheDocument();
+  beforeEach(() => {
+    redirectMock.mockReset();
+  });
+
+  it("redirects to /dashboard", () => {
+    Home();
+    expect(redirectMock).toHaveBeenCalledWith("/dashboard");
   });
 });

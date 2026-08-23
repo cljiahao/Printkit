@@ -30,20 +30,26 @@ const sessionFromMock = vi.fn((table: string) => {
 
 const insertMock = vi.fn().mockResolvedValue({ error: null });
 const locationMaybeSingleMock = vi.fn();
-const jobUpdateEqEqMock = vi.fn();
-const jobUpdateMock = vi.fn(() => ({
-  eq: () => ({ eq: jobUpdateEqEqMock }),
+const locationSelectMock = vi.fn();
+const locationEqIdMock = vi.fn();
+const locationEqVendorMock = vi.fn();
+locationSelectMock.mockImplementation(() => ({ eq: locationEqIdMock }));
+locationEqIdMock.mockImplementation(() => ({ eq: locationEqVendorMock }));
+locationEqVendorMock.mockImplementation(() => ({
+  maybeSingle: locationMaybeSingleMock,
 }));
+
+const jobUpdateEqIdMock = vi.fn();
+const jobUpdateEqVendorMock = vi.fn();
+const jobUpdateMock = vi.fn(() => ({ eq: jobUpdateEqIdMock }));
+jobUpdateEqIdMock.mockImplementation(() => ({ eq: jobUpdateEqVendorMock }));
+
 const serviceFromMock = vi.fn((table: string) => {
   if (table === "admin_audit") {
     return { insert: insertMock };
   }
   if (table === "print_locations") {
-    return {
-      select: () => ({
-        eq: () => ({ eq: () => ({ maybeSingle: locationMaybeSingleMock }) }),
-      }),
-    };
+    return { select: locationSelectMock };
   }
   if (table === "print_jobs") {
     return { update: jobUpdateMock };
@@ -132,8 +138,15 @@ describe("assignPrintLocation", () => {
     maybeSingleMock.mockReset();
     updatePrintJobStatusMock.mockReset();
     locationMaybeSingleMock.mockReset();
+    // Structural chain mocks (select/eq/update/eq) keep their
+    // mockImplementation across tests — only clear call history so the
+    // exact-args assertions below start from a clean slate each test.
+    locationSelectMock.mockClear();
+    locationEqIdMock.mockClear();
+    locationEqVendorMock.mockClear();
     jobUpdateMock.mockClear();
-    jobUpdateEqEqMock.mockReset();
+    jobUpdateEqIdMock.mockClear();
+    jobUpdateEqVendorMock.mockReset();
     sessionFromMock.mockClear();
     serviceFromMock.mockClear();
     revalidatePathMock.mockClear();
@@ -148,7 +161,7 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqEqMock.mockResolvedValue({ error: null });
+    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
 
     const result = await assignPrintLocation("job-1", "loc-1");
 
@@ -159,12 +172,39 @@ describe("assignPrintLocation", () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it("scopes the print_locations ownership lookup by exact id and vendor_id", async () => {
+    locationMaybeSingleMock.mockResolvedValue({
+      data: { id: "loc-1" },
+      error: null,
+    });
+    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+
+    await assignPrintLocation("job-1", "loc-1");
+
+    expect(locationSelectMock).toHaveBeenCalledWith("id");
+    expect(locationEqIdMock).toHaveBeenCalledWith("id", "loc-1");
+    expect(locationEqVendorMock).toHaveBeenCalledWith("vendor_id", "vendor-1");
+  });
+
+  it("scopes the print_jobs update by exact id and vendor_id", async () => {
+    locationMaybeSingleMock.mockResolvedValue({
+      data: { id: "loc-1" },
+      error: null,
+    });
+    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+
+    await assignPrintLocation("job-1", "loc-1");
+
+    expect(jobUpdateEqIdMock).toHaveBeenCalledWith("id", "job-1");
+    expect(jobUpdateEqVendorMock).toHaveBeenCalledWith("vendor_id", "vendor-1");
+  });
+
   it("writes through the service-role client, not the session-scoped client", async () => {
     locationMaybeSingleMock.mockResolvedValue({
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqEqMock.mockResolvedValue({ error: null });
+    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
 
     await assignPrintLocation("job-1", "loc-1");
 
@@ -172,7 +212,7 @@ describe("assignPrintLocation", () => {
     // service client can write it. The session client is never touched.
     expect(sessionFromMock).not.toHaveBeenCalled();
     expect(serviceFromMock).toHaveBeenCalledWith("print_jobs");
-    expect(jobUpdateEqEqMock).toHaveBeenCalled();
+    expect(jobUpdateEqVendorMock).toHaveBeenCalled();
   });
 
   it("rejects a locationId that doesn't belong to the calling vendor", async () => {
@@ -192,7 +232,7 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqEqMock.mockResolvedValue({ error: { message: "boom" } });
+    jobUpdateEqVendorMock.mockResolvedValue({ error: { message: "boom" } });
 
     const result = await assignPrintLocation("job-1", "loc-1");
 
@@ -207,7 +247,7 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqEqMock.mockResolvedValue({ error: null });
+    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
 
     await assignPrintLocation("job-1", "loc-1");
 

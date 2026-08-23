@@ -42,7 +42,7 @@ export async function resolveActiveLocation(
   sourceRef: string,
 ): Promise<{ id: string; vendorId: string } | null> {
   const service = await createServiceClient();
-  const { data } = await service
+  const { data, error } = await service
     .from("print_locations")
     .select("id, vendor_id")
     .eq("source_kit", sourceKit)
@@ -50,6 +50,9 @@ export async function resolveActiveLocation(
     .eq("active", true)
     .maybeSingle();
 
+  if (error) {
+    console.error("resolveActiveLocation failed", error.message);
+  }
   if (!data) return null;
   return { id: data.id, vendorId: data.vendor_id };
 }

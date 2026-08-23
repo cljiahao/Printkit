@@ -20,14 +20,35 @@ everything else sits flat here.
   is unique, so a retried call for the same source order returns a clean
   `{ok:false, status:409}` instead of a generic 500. An optional
   `input.locationRef` is resolved via `print-locations.ts`'s
-  `resolveActiveLocation` and stored as `location_id`; a missing or
-  unresolved ref is a no-op (`location_id: null`), never a rejection.
+  `resolveActiveLocation`, but only used when the resolved location's
+  `vendor_id` matches `input.vendorId` (it isn't itself vendor-scoped —
+  a cross-vendor match is treated as unresolved rather than routing the
+  job somewhere no bridge of the real owning vendor will ever see it).
+  When `location_id` is still null after that (ref omitted, unresolved,
+  or cross-vendor), `listActiveLocations` is checked as a fallback: a
+  vendor with exactly one active location has no routing ambiguity, so
+  the job auto-delivers there; zero or 2+ active locations leaves it
+  truly unrouted (`location_id: null`). Both the resolve and the fallback
+  are best-effort — a missing ref, an unresolved/cross-vendor match, or
+  either lookup throwing is a no-op, never a rejection.
   `updatePrintJobStatus(jobId, status)`: the single choke point for
   changing a row's status — updates it, then (only when `source_kit` is
   `"qkit"` and the new status is terminal, `"printed"`/`"failed"`) calls
   `notifyQkitPrintStatus` to tell qkit. Called by `history/actions.ts`'s
   `reprintJob` and `bridge/actions.ts`'s `reportPrintResult`, both of
   which check the calling vendor owns the job first.
+- `print-locations.ts` — `print_locations` CRUD via the service client
+  (RLS is bypassed, so each function's `.eq(...)` vendor/id scoping is the
+  real authorization boundary, not defense in depth).
+  `createOrUpdatePrintLocation(args)`: upserts on `(source_kit, source_ref)`.
+  `resolveActiveLocation(sourceKit, sourceRef)`: looks up an active location
+  by `(source_kit, source_ref)` only — not vendor-scoped, so callers (see
+  `print-jobs.ts`) must check the returned `vendorId` themselves before
+  trusting the match. `listActiveLocations(vendorId)`: a vendor's active
+  locations, oldest first; also backs `print-jobs.ts`'s
+  single-active-location auto-delivery fallback. All three fail open
+  (`[]`/`null`/a `{ok:false}` result plus a logged error) on a query error,
+  never throwing.
 - `print-jobs-list.ts` — `listPrintJobs(supabase, vendorId)`: the vendor's
   own job history, newest first, narrowed to the `PrintJob` type (`status`/
   `job_type` as real literal unions instead of the generated `string`),

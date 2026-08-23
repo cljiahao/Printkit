@@ -1,6 +1,9 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { notifyQkitPrintStatus } from "@/lib/qkit-client";
-import { resolveActiveLocation } from "@/lib/print-locations";
+import {
+  resolveActiveLocation,
+  listActiveLocations,
+} from "@/lib/print-locations";
 import type { Json } from "@/lib/types";
 
 export type CreatePrintJobInput = {
@@ -15,6 +18,45 @@ export type CreatePrintJobResult =
   { ok: true; id: string } | { ok: false; status: number; error: string };
 
 /**
+ * Best-effort `locationRef` -> `location_id` resolution for
+ * `createPrintJob` — never throws, since a routing failure must not block
+ * job creation. `resolveActiveLocation` isn't itself vendor-scoped, so a
+ * match belonging to a different vendor is treated as unresolved rather
+ * than silently routing the job somewhere that vendor's bridges will
+ * never poll.
+ */
+async function resolveLocationRef(
+  sourceKit: string,
+  locationRef: string,
+  vendorId: string,
+): Promise<string | null> {
+  try {
+    const location = await resolveActiveLocation(sourceKit, locationRef);
+    if (location && location.vendorId === vendorId) return location.id;
+  } catch (err) {
+    console.error("resolveActiveLocation failed", err);
+  }
+  return null;
+}
+
+/**
+ * Single-booth vendors have no routing ambiguity — auto-deliver to their
+ * one active location rather than leaving the job permanently unrouted.
+ * Best-effort, same never-throws contract as resolveLocationRef.
+ */
+async function resolveSingleActiveLocation(
+  vendorId: string,
+): Promise<string | null> {
+  try {
+    const activeLocations = await listActiveLocations(vendorId);
+    if (activeLocations.length === 1) return activeLocations[0].id;
+  } catch (err) {
+    console.error("listActiveLocations failed", err);
+  }
+  return null;
+}
+
+/**
  * Creates a queued print_jobs row. `(source_kit, source_ref)` is unique
  * (0003_printkit_print_jobs_idempotency.sql) — a retried call for the same
  * source order returns a clean 409, not a generic 500.
@@ -22,17 +64,16 @@ export type CreatePrintJobResult =
 export async function createPrintJob(
   input: CreatePrintJobInput,
 ): Promise<CreatePrintJobResult> {
-  let locationId: string | null = null;
-  if (input.locationRef) {
-    try {
-      const location = await resolveActiveLocation(
+  let locationId = input.locationRef
+    ? await resolveLocationRef(
         input.sourceKit,
         input.locationRef,
-      );
-      if (location) locationId = location.id;
-    } catch (err) {
-      console.error("resolveActiveLocation failed", err);
-    }
+        input.vendorId,
+      )
+    : null;
+
+  if (locationId === null) {
+    locationId = await resolveSingleActiveLocation(input.vendorId);
   }
 
   const supabase = await createServiceClient();

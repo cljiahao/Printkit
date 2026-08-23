@@ -16,14 +16,21 @@ import { createClient } from "@/lib/supabase/client";
  * back on its own) — both are the spec's documented Reliability mitigations
  * for the same underlying failure mode (backgrounding).
  */
-export function useBridgePresence(vendorId: string, enabled: boolean): void {
+export function useBridgePresence(
+  vendorId: string,
+  locationId: string,
+  enabled: boolean,
+): void {
   useEffect(() => {
     if (!enabled) return;
 
     const supabase = createClient();
-    const channel = supabase.channel(`printkit:presence:${vendorId}`, {
-      config: { presence: { key: "bridge" } },
-    });
+    const channel = supabase.channel(
+      `printkit:presence:${vendorId}:${locationId}`,
+      {
+        config: { presence: { key: "bridge" } },
+      },
+    );
     channel.subscribe(async (status: string) => {
       if (status === "SUBSCRIBED") {
         await channel.track({ online: true });
@@ -52,5 +59,5 @@ export function useBridgePresence(vendorId: string, enabled: boolean): void {
       channel.untrack().catch(() => {});
       channel.unsubscribe();
     };
-  }, [vendorId, enabled]);
+  }, [vendorId, locationId, enabled]);
 }

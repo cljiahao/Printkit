@@ -26,6 +26,10 @@ app _asks_ the database for, never what the database _permits_.
   - **`kit_api_keys` is service-role only** — an authenticated user's select
     throws `insufficient_privilege` (42501); the table has zero policies and
     zero grants to `authenticated`/`anon`.
+  - **`print_locations` cross-vendor isolation** — Vendor A and Vendor B
+    each register a location; each vendor's select returns only their own
+    row, proving `print_locations_vendor_select` isn't a `using (true)`
+    policy in disguise.
 
   The `throws_ok` assertions pin errcode `42501` (`insufficient_privilege`)
   rather than accepting any error, so the suite can't pass on an unrelated

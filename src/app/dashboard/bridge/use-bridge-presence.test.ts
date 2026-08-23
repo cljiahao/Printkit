@@ -31,20 +31,23 @@ describe("useBridgePresence", () => {
 
   it("does nothing when disabled", async () => {
     const { useBridgePresence } = await import("./use-bridge-presence");
-    renderHook(() => useBridgePresence("vendor-1", false));
+    renderHook(() => useBridgePresence("vendor-1", "loc-1", false));
     expect(channelFactory).not.toHaveBeenCalled();
     expect(requestMock).not.toHaveBeenCalled();
   });
 
-  it("tracks presence on the vendor-scoped channel and acquires a wake lock when enabled", async () => {
+  it("tracks presence on the location-scoped channel and acquires a wake lock when enabled", async () => {
     const { useBridgePresence } = await import("./use-bridge-presence");
-    renderHook(() => useBridgePresence("vendor-1", true));
+    renderHook(() => useBridgePresence("vendor-1", "loc-1", true));
 
     await Promise.resolve();
 
-    expect(channelFactory).toHaveBeenCalledWith("printkit:presence:vendor-1", {
-      config: { presence: { key: "bridge" } },
-    });
+    expect(channelFactory).toHaveBeenCalledWith(
+      "printkit:presence:vendor-1:loc-1",
+      {
+        config: { presence: { key: "bridge" } },
+      },
+    );
     expect(requestMock).toHaveBeenCalledWith("screen");
   });
 });

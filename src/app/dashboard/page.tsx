@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { getVendorSession } from "@/lib/vendor-session";
-import { listPrintJobs } from "@/lib/print-jobs-list";
+import { listPrintJobs, countUnroutedJobs } from "@/lib/print-jobs-list";
+import { listActiveLocations } from "@/lib/print-locations";
 import { BridgeStatus } from "@/components/bridge-status";
 import { JobHistoryTable } from "./history/job-history-table";
 
 export default async function DashboardPage() {
   const { supabase, user } = await getVendorSession();
-  const recentJobs = await listPrintJobs(supabase, user.id, 5);
+  const [recentJobs, locations, unroutedCount] = await Promise.all([
+    listPrintJobs(supabase, user.id, 5),
+    listActiveLocations(user.id),
+    countUnroutedJobs(user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -17,8 +22,22 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="rounded-lg border p-4">
-        <BridgeStatus vendorId={user.id} />
+      <div className="rounded-lg border p-4 space-y-3">
+        {locations.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            No booths have printing enabled yet — turn it on in qkit&apos;s
+            booth settings.
+          </p>
+        ) : (
+          locations.map((loc) => (
+            <BridgeStatus
+              key={loc.id}
+              vendorId={user.id}
+              locationId={loc.id}
+              label={loc.label}
+            />
+          ))
+        )}
       </div>
 
       <div className="rounded-lg border p-4">
@@ -27,6 +46,18 @@ export default async function DashboardPage() {
           New orders from qkit print automatically once your bridge is online.
         </p>
       </div>
+
+      {unroutedCount > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950">
+          <Link
+            href="/dashboard/history?unrouted=1"
+            className="text-amber-900 hover:underline dark:text-amber-200"
+          >
+            {unroutedCount} unrouted print job
+            {unroutedCount === 1 ? "" : "s"} — needs a booth assigned
+          </Link>
+        </div>
+      )}
 
       <div>
         <div className="flex items-center justify-between">
@@ -39,7 +70,7 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <div className="mt-3">
-          <JobHistoryTable jobs={recentJobs} />
+          <JobHistoryTable jobs={recentJobs} locations={locations} />
         </div>
       </div>
     </div>

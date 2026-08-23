@@ -6,6 +6,10 @@ the NIIMBOT B1; architecture is job-type-agnostic for later job types
 through a vendor's existing sibling-kit relationship (qkit today), no
 public marketing site or pricing; `/` redirects straight to `/dashboard`.
 
-See `AGENTS.md` for the full stack, commands, and data model.
+See `AGENTS.md` for the full stack, commands, and data model. A vendor can
+pair a separate physical bridge/printer to each of their booths, not just
+one shared bridge per vendor — see `print_locations` in `AGENTS.md`'s
+data model section.
 
-Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`
+Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
+`docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`

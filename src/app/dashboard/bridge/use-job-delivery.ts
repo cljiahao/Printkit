@@ -17,11 +17,14 @@ import type { Json } from "@/lib/types";
  */
 export function useJobDelivery(
   vendorId: string,
+  locationId: string,
   onJobQueued: (jobId: string, payload: Json) => void,
 ): void {
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase.channel(`printkit:job-delivery:${vendorId}`);
+    const channel = supabase.channel(
+      `printkit:job-delivery:${vendorId}:${locationId}`,
+    );
 
     channel
       .on(
@@ -30,7 +33,7 @@ export function useJobDelivery(
           event: "*",
           schema: "printkit",
           table: "print_jobs",
-          filter: `vendor_id=eq.${vendorId}`,
+          filter: `location_id=eq.${locationId}`,
         },
         (
           payload: RealtimePostgresChangesPayload<{
@@ -65,5 +68,5 @@ export function useJobDelivery(
       document.removeEventListener("visibilitychange", onVisibilityChange);
       channel.unsubscribe();
     };
-  }, [vendorId, onJobQueued]);
+  }, [vendorId, locationId, onJobQueued]);
 }

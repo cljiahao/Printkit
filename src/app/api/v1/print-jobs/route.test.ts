@@ -67,6 +67,53 @@ describe("POST /api/v1/print-jobs", () => {
     });
   });
 
+  it("passes location_ref through to createPrintJob as locationRef", async () => {
+    verifyKitAuthMock.mockResolvedValue({ kitSlug: "qkit" });
+    createPrintJobMock.mockResolvedValue({ ok: true, id: "job-1" });
+
+    const res = await POST(
+      requestWith({
+        vendor_id: "11111111-1111-1111-1111-111111111111",
+        payload: { customer_name: "Ada", order_number: "0007" },
+        source_ref: "order-uuid-1",
+        location_ref: "booth-1",
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(createPrintJobMock).toHaveBeenCalledWith({
+      vendorId: "11111111-1111-1111-1111-111111111111",
+      payload: { customer_name: "Ada", order_number: "0007" },
+      sourceKit: "qkit",
+      sourceRef: "order-uuid-1",
+      locationRef: "booth-1",
+    });
+  });
+
+  it("creates a print job when location_ref is omitted (backward compatibility)", async () => {
+    verifyKitAuthMock.mockResolvedValue({ kitSlug: "qkit" });
+    createPrintJobMock.mockResolvedValue({ ok: true, id: "job-1" });
+
+    const res = await POST(
+      requestWith({
+        vendor_id: "11111111-1111-1111-1111-111111111111",
+        payload: { customer_name: "Ada", order_number: "0007" },
+        source_ref: "order-uuid-1",
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body).toEqual({ id: "job-1" });
+    expect(createPrintJobMock).toHaveBeenCalledWith({
+      vendorId: "11111111-1111-1111-1111-111111111111",
+      payload: { customer_name: "Ada", order_number: "0007" },
+      sourceKit: "qkit",
+      sourceRef: "order-uuid-1",
+      locationRef: undefined,
+    });
+  });
+
   it("returns the createPrintJob error status/message on failure (e.g. 409 duplicate)", async () => {
     verifyKitAuthMock.mockResolvedValue({ kitSlug: "qkit" });
     createPrintJobMock.mockResolvedValue({

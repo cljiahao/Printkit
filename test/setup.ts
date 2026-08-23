@@ -15,6 +15,15 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   };
 }
 
+// jsdom has no scrollIntoView — radix-ui's Select scrolls the highlighted
+// option into view when it opens. A no-op stub is enough for DOM tests.
+if (
+  typeof Element !== "undefined" &&
+  typeof Element.prototype.scrollIntoView === "undefined"
+) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 afterEach(async () => {
   if (typeof document !== "undefined") {
     const { cleanup } = await import("@testing-library/react");

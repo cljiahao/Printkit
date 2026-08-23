@@ -11,11 +11,16 @@ for this project.
 - `api/v1/print-jobs/` — inbound `POST` route for calling kits (qkit) to
   queue a print job. Verifies the caller's bearer secret via
   `verifyKitAuth` (`@/lib/kit-auth`), validates the body with a Zod schema
-  (`vendor_id` UUID, `payload` object, `source_ref`), then delegates to
-  `createPrintJob` (`@/lib/print-jobs`). Returns 401 unauthenticated, 400
-  invalid body, 201 with the new row's `id` on success, or the
-  `createPrintJob` error's own status (e.g. 409 on a duplicate
-  `source_kit`+`source_ref`).
+  (`vendor_id` UUID, `payload` object, `source_ref`, optional
+  `location_ref`), then delegates to `createPrintJob` (`@/lib/print-jobs`),
+  which resolves `location_ref` to a `location_id` (never rejecting the
+  job if it doesn't resolve). Returns 401 unauthenticated, 400 invalid
+  body, 201 with the new row's `id` on success, or the `createPrintJob`
+  error's own status (e.g. 409 on a duplicate `source_kit`+`source_ref`) —
+  see its own README.
+- `api/v1/print-locations/` — inbound `POST` route calling kits use to
+  register/update a print location (e.g. one of qkit's booths) that a
+  vendor can pair a bridge device to — see its own README.
 - `apple-icon.tsx` — `AppleIcon` route handler; renders `brandIcon(180)` as a 180×180 PNG for iOS home-screen touch icons.
 - `auth/callback/` — Supabase auth callback route (`GET`, OAuth code exchange via `exchangeCodeForSession`); redirects to `next` (same-origin only) or `/dashboard` on success, `/login?error=oauth` on failure or a missing code.
 - `dashboard/` — authenticated vendor area, gated by `layout.tsx`'s `getVendorSession()` and wrapped in `dashboard-nav.tsx`'s composed `@merqo/ui` `DashboardNav`/`AccountMenu` — see its own README.

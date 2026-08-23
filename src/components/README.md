@@ -12,9 +12,12 @@ else sits flat here.
   `Button asChild variant="ghost"` + `ArrowLeft` "leave this page" link.
   Used in place of a plain underlined `<Link>` so the back-to-dashboard nav
   is a real hit target with hover/focus state.
-- `bridge-status.tsx` — read-only online/offline pill for the vendor's
-  bridge device, subscribed to a Supabase Realtime Presence channel
-  (`printkit:presence:{vendorId}`). The bridge device is the publisher.
+- `bridge-status.tsx` — `BridgeStatus({ vendorId, locationId, label })`:
+  read-only online/offline pill for a location's bridge device, subscribed
+  to a Supabase Realtime Presence channel
+  (`printkit:presence:{vendorId}:{locationId}`), labeled with `label` so a
+  vendor with multiple locations can tell them apart. The bridge device is
+  the publisher.
 - `elevated-card.tsx` — `ElevatedCard({ as, className, children })`: the
   shared raised-card container (rounded, bordered, soft shadow) used by the
   login page and the root error boundary, matching every other kit's

@@ -37,19 +37,34 @@ describe("BridgeStatus", () => {
     presenceStateMock.mockReset().mockReturnValue({});
   });
 
-  it("subscribes to the vendor-scoped presence channel", () => {
-    render(<BridgeStatus vendorId="vendor-1" />);
-    expect(channelFactory).toHaveBeenCalledWith("printkit:presence:vendor-1");
+  it("subscribes to the location-scoped presence channel", () => {
+    render(
+      <BridgeStatus vendorId="vendor-1" locationId="loc-1" label="Main St" />,
+    );
+    expect(channelFactory).toHaveBeenCalledWith(
+      "printkit:presence:vendor-1:loc-1",
+    );
   });
 
   it("shows offline when presenceState has no bridge key", () => {
-    render(<BridgeStatus vendorId="vendor-1" />);
+    render(
+      <BridgeStatus vendorId="vendor-1" locationId="loc-1" label="Main St" />,
+    );
     expect(screen.getByText(/offline/i)).toBeInTheDocument();
+  });
+
+  it("renders the location label", () => {
+    render(
+      <BridgeStatus vendorId="vendor-1" locationId="loc-1" label="Main St" />,
+    );
+    expect(screen.getByText(/Main St/)).toBeInTheDocument();
   });
 
   it("shows online once the presence sync callback fires with a bridge key present", async () => {
     presenceStateMock.mockReturnValue({});
-    render(<BridgeStatus vendorId="vendor-1" />);
+    render(
+      <BridgeStatus vendorId="vendor-1" locationId="loc-1" label="Main St" />,
+    );
 
     presenceStateMock.mockReturnValue({ bridge: [{ online: true }] });
     presenceCallback?.();

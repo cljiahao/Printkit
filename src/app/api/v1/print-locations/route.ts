@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyKitAuth } from "@/lib/kit-auth";
-import { createPrintJob } from "@/lib/print-jobs";
+import { createOrUpdatePrintLocation } from "@/lib/print-locations";
 
 const bodySchema = z.object({
   vendor_id: z.string().uuid(),
-  payload: z.record(z.string(), z.unknown()),
   source_ref: z.string().min(1),
-  location_ref: z.string().optional(),
+  label: z.string().min(1),
+  active: z.boolean(),
 });
 
 export async function POST(request: Request) {
@@ -33,12 +33,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await createPrintJob({
+  const result = await createOrUpdatePrintLocation({
     vendorId: parsed.data.vendor_id,
-    payload: parsed.data.payload,
     sourceKit: auth.kitSlug,
     sourceRef: parsed.data.source_ref,
-    locationRef: parsed.data.location_ref,
+    label: parsed.data.label,
+    active: parsed.data.active,
   });
 
   if (!result.ok) {

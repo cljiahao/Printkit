@@ -35,11 +35,11 @@ describe("useJobDelivery", () => {
     changeCallback = undefined;
   });
 
-  it("subscribes to postgres_changes on print_jobs, filtered to the vendor", () => {
-    renderHook(() => useJobDelivery("vendor-1", vi.fn()));
+  it("subscribes to postgres_changes on print_jobs, filtered to the location", () => {
+    renderHook(() => useJobDelivery("vendor-1", "loc-1", vi.fn()));
 
     expect(channelFactory).toHaveBeenCalledWith(
-      "printkit:job-delivery:vendor-1",
+      "printkit:job-delivery:vendor-1:loc-1",
     );
     expect(channelMock.on).toHaveBeenCalledWith(
       "postgres_changes",
@@ -47,7 +47,7 @@ describe("useJobDelivery", () => {
         event: "*",
         schema: "printkit",
         table: "print_jobs",
-        filter: "vendor_id=eq.vendor-1",
+        filter: "location_id=eq.loc-1",
       },
       expect.any(Function),
     );
@@ -55,7 +55,7 @@ describe("useJobDelivery", () => {
 
   it("calls onJobQueued with the job id and payload when a row arrives with status 'queued'", () => {
     const onJobQueued = vi.fn();
-    renderHook(() => useJobDelivery("vendor-1", onJobQueued));
+    renderHook(() => useJobDelivery("vendor-1", "loc-1", onJobQueued));
 
     changeCallback?.({
       schema: "printkit",
@@ -79,7 +79,7 @@ describe("useJobDelivery", () => {
 
   it("ignores a change whose row has no payload field", () => {
     const onJobQueued = vi.fn();
-    renderHook(() => useJobDelivery("vendor-1", onJobQueued));
+    renderHook(() => useJobDelivery("vendor-1", "loc-1", onJobQueued));
 
     changeCallback?.({
       schema: "printkit",
@@ -96,7 +96,7 @@ describe("useJobDelivery", () => {
 
   it("ignores a change whose new status isn't 'queued'", () => {
     const onJobQueued = vi.fn();
-    renderHook(() => useJobDelivery("vendor-1", onJobQueued));
+    renderHook(() => useJobDelivery("vendor-1", "loc-1", onJobQueued));
 
     changeCallback?.({
       schema: "printkit",
@@ -113,7 +113,7 @@ describe("useJobDelivery", () => {
 
   it("ignores a DELETE event whose payload.new is empty", () => {
     const onJobQueued = vi.fn();
-    renderHook(() => useJobDelivery("vendor-1", onJobQueued));
+    renderHook(() => useJobDelivery("vendor-1", "loc-1", onJobQueued));
 
     changeCallback?.({
       schema: "printkit",

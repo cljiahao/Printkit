@@ -9,12 +9,22 @@ import { cn } from "@/lib/utils";
  * publishes to (channel name/key contract declared in Plan 3's Global
  * Constraints) — never calls .track() itself.
  */
-export function BridgeStatus({ vendorId }: { vendorId: string }) {
+export function BridgeStatus({
+  vendorId,
+  locationId,
+  label,
+}: {
+  vendorId: string;
+  locationId: string;
+  label: string;
+}) {
   const [online, setOnline] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase.channel(`printkit:presence:${vendorId}`);
+    const channel = supabase.channel(
+      `printkit:presence:${vendorId}:${locationId}`,
+    );
 
     const syncState = () => {
       const state = channel.presenceState() as Record<string, unknown[]>;
@@ -26,7 +36,7 @@ export function BridgeStatus({ vendorId }: { vendorId: string }) {
     return () => {
       channel.unsubscribe();
     };
-  }, [vendorId]);
+  }, [vendorId, locationId]);
 
   return (
     <div className="flex items-center gap-2 text-sm">
@@ -40,7 +50,7 @@ export function BridgeStatus({ vendorId }: { vendorId: string }) {
       <span
         className={online ? "text-mint font-medium" : "text-muted-foreground"}
       >
-        Bridge {online ? "online" : "offline"}
+        {label} Bridge {online ? "online" : "offline"}
       </span>
     </div>
   );

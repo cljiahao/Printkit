@@ -24,7 +24,7 @@ for this project.
 - `icon.tsx` — `Icon` route handler; renders `brandIcon(32)` as a 32×32 PNG favicon.
 - `layout.tsx` — `RootLayout`. Loads `Fraunces`/`Inter`/`JetBrains_Mono` via `next/font/google`, sets `metadata`, wraps children in `next-themes`' `ThemeProvider` (`attribute="class"`, system default), then `TooltipProvider` + `Toaster`.
 - `login/` — combined sign-in/sign-up page, including the "Forgot password?" flow — see its own README.
-- `page.tsx` — `Home`, the marketing landing page. Currently a placeholder ("printkit" heading + one line of copy); no landing-page component sections exist yet.
+- `page.tsx` — `Home`. Redirects to `/dashboard` (which `src/proxy.ts` bounces on to `/login` if unauthenticated) — printkit has no cold-acquisition funnel, so `/` is not a marketing landing page (see the design spec's "Internal Merqo product" section).
 
 ## Connectivity
 
@@ -34,8 +34,9 @@ vendor area, gated by `getVendorSession()` (`@/lib/vendor-session`) inside
 the layout now, not its own `page.tsx`). `src/proxy.ts` also runs
 `updateSession` (session refresh + `/dashboard/*` → `/login` redirect) on
 every request via `src/lib/supabase/middleware.ts`. `layout.tsx` (root)
-is the ancestor of every route below; `page.tsx` (the landing page) is
-the only route directly under `app/` besides the special Next.js files.
+is the ancestor of every route below; `page.tsx` (a redirect to
+`/dashboard`) is the only route directly under `app/` besides the special
+Next.js files.
 `api/v1/print-jobs/` is the inbound route qkit calls on order-placed;
 printkit's own outbound call back into qkit on job status change is
 `src/lib/qkit-client.ts`'s `notifyQkitPrintStatus`, invoked from

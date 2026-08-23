@@ -24,11 +24,15 @@ export async function createPrintJob(
 ): Promise<CreatePrintJobResult> {
   let locationId: string | null = null;
   if (input.locationRef) {
-    const location = await resolveActiveLocation(
-      input.sourceKit,
-      input.locationRef,
-    );
-    if (location) locationId = location.id;
+    try {
+      const location = await resolveActiveLocation(
+        input.sourceKit,
+        input.locationRef,
+      );
+      if (location) locationId = location.id;
+    } catch (err) {
+      console.error("resolveActiveLocation failed", err);
+    }
   }
 
   const supabase = await createServiceClient();

@@ -190,6 +190,33 @@ describe("createPrintJob", () => {
     });
   });
 
+  it("creates the job with location_id null when resolveActiveLocation throws", async () => {
+    resolveActiveLocationMock.mockRejectedValue(new Error("network down"));
+    insertMock.mockReturnValue({
+      select: () => ({
+        single: () => Promise.resolve({ data: { id: "job-1" }, error: null }),
+      }),
+    });
+
+    const result = await createPrintJob({
+      vendorId: "vendor-1",
+      payload: { customer_name: "Ada", order_number: "0007" },
+      sourceKit: "qkit",
+      sourceRef: "order-uuid-1",
+      locationRef: "booth-1",
+    });
+
+    expect(result).toEqual({ ok: true, id: "job-1" });
+    expect(insertMock).toHaveBeenCalledWith({
+      vendor_id: "vendor-1",
+      job_type: "label",
+      payload: { customer_name: "Ada", order_number: "0007" },
+      source_kit: "qkit",
+      source_ref: "order-uuid-1",
+      location_id: null,
+    });
+  });
+
   it("creates the job with location_id null when locationRef is omitted", async () => {
     insertMock.mockReturnValue({
       select: () => ({

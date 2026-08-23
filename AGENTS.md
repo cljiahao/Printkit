@@ -55,6 +55,12 @@ supabase/tests/rls.test.sql       — pgTAP RLS suite
   `status` (`queued`→`sent`→`printed`|`failed`), `source_kit`/`source_ref`
   identify the calling kit's order. RLS: vendor reads (not writes) only their
   own rows; writes are service-role + bearer-secret, server-only.
+- `print_locations`: one row per `(source_kit, source_ref)` — a calling
+  kit's own opaque location id (e.g. qkit's `booths.id`), never
+  interpreted by printkit itself. Lets a vendor pair a separate physical
+  bridge to each location instead of one shared bridge per vendor.
+  `print_jobs.location_id` (nullable) references it; RLS: vendor
+  read-only own rows, writes service-role + bearer-secret.
 - `kit_api_keys`: one hashed bearer secret per calling kit, service-role only.
 - `admins`/`is_admin(uid)`/`admin_audit`: internal platform-operator
   allow-list + immutable audit trail (service-role insert/select only, no

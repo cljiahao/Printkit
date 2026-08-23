@@ -55,4 +55,28 @@ describe("POST /api/v1/print-locations", () => {
       active: true,
     });
   });
+
+  it("returns the createOrUpdatePrintLocation error status/message on failure (e.g. 500)", async () => {
+    verifyKitAuth.mockResolvedValue({ kitSlug: "qkit" });
+    createOrUpdatePrintLocation.mockResolvedValue({
+      ok: false,
+      status: 500,
+      error: "Could not save print location.",
+    });
+
+    const res = await POST(
+      req({
+        vendor_id: "11111111-1111-1111-1111-111111111111",
+        source_ref: "booth-1",
+        label: "Kopitiam Cart",
+        active: true,
+      }),
+    );
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toEqual({
+      error: "Could not save print location.",
+    });
+  });
 });

@@ -15,6 +15,7 @@ create table printkit.print_locations (
   created_at timestamptz not null default now(),
   unique (source_kit, source_ref)
 );
+create index print_locations_vendor_idx on printkit.print_locations (vendor_id, created_at asc);
 
 alter table printkit.print_locations enable row level security;
 
@@ -26,3 +27,4 @@ grant all on printkit.print_locations to service_role;
 
 alter table printkit.print_jobs
   add column location_id uuid references printkit.print_locations(id);
+create index print_jobs_location_idx on printkit.print_jobs (location_id);

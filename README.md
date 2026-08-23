@@ -13,3 +13,6 @@ data model section.
 
 Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 `docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`
+
+Shared dashboard nav/account menu come from `@merqo/ui`
+(`github:cljiahao/merqo-ui#v0.19.0`, `package.json`).

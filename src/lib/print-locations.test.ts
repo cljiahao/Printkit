@@ -129,7 +129,7 @@ describe("resolveActiveLocation", () => {
 describe("listActiveLocations", () => {
   it("returns active locations for a vendor, scoping by exact filter args", async () => {
     const orderMock = vi.fn().mockResolvedValue({
-      data: [{ id: "loc-1", label: "Kopitiam Cart" }],
+      data: [{ id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" }],
       error: null,
     });
     const eqActiveMock = vi.fn().mockReturnValue({ order: orderMock });
@@ -139,11 +139,13 @@ describe("listActiveLocations", () => {
 
     const result = await listActiveLocations("vendor-1");
 
-    expect(selectMock).toHaveBeenCalledWith("id, label");
+    expect(selectMock).toHaveBeenCalledWith("id, label, source_ref");
     expect(eqVendorMock).toHaveBeenCalledWith("vendor_id", "vendor-1");
     expect(eqActiveMock).toHaveBeenCalledWith("active", true);
     expect(orderMock).toHaveBeenCalledWith("created_at", { ascending: true });
-    expect(result).toEqual([{ id: "loc-1", label: "Kopitiam Cart" }]);
+    expect(result).toEqual([
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+    ]);
   });
 
   it("returns an empty array on a query error rather than throwing", async () => {

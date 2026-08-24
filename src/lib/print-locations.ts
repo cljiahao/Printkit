@@ -59,11 +59,11 @@ export async function resolveActiveLocation(
 
 export async function listActiveLocations(
   vendorId: string,
-): Promise<{ id: string; label: string }[]> {
+): Promise<{ id: string; label: string; source_ref: string }[]> {
   const service = await createServiceClient();
   const { data, error } = await service
     .from("print_locations")
-    .select("id, label")
+    .select("id, label, source_ref")
     .eq("vendor_id", vendorId)
     .eq("active", true)
     .order("created_at", { ascending: true });

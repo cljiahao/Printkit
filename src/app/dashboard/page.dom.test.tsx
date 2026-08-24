@@ -40,8 +40,8 @@ describe("DashboardPage", () => {
 
   it("renders a bridge status per active location and a qkit-connected info card", async () => {
     vi.mocked(listActiveLocations).mockResolvedValue([
-      { id: "loc-1", label: "Kopitiam Cart" },
-      { id: "loc-2", label: "Ice Cream Cart" },
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+      { id: "loc-2", label: "Ice Cream Cart", source_ref: "booth-2" },
     ]);
     render(await DashboardPage());
     expect(

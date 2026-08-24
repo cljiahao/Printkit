@@ -45,8 +45,10 @@ everything else sits flat here.
   by `(source_kit, source_ref)` only — not vendor-scoped, so callers (see
   `print-jobs.ts`) must check the returned `vendorId` themselves before
   trusting the match. `listActiveLocations(vendorId)`: a vendor's active
-  locations, oldest first; also backs `print-jobs.ts`'s
-  single-active-location auto-delivery fallback. All three fail open
+  locations (`id`, `label`, `source_ref`), oldest first; also backs
+  `print-jobs.ts`'s single-active-location auto-delivery fallback and
+  `dashboard/bridge/page.tsx`'s `?booth=` deep-link matching (against
+  `source_ref`, the calling kit's own opaque location id). All three fail open
   (`[]`/`null`/a `{ok:false}` result plus a logged error) on a query error,
   never throwing.
 - `print-jobs-list.ts` — `listPrintJobs(supabase, vendorId)`: the vendor's

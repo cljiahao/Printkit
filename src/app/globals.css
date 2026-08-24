@@ -16,8 +16,7 @@
   --popover-foreground: oklch(0.227 0.006 156);
   --primary: oklch(0.431 0.066 177);
   --primary-foreground: oklch(0.949 0.015 88);
-  /* warm grey, not blue/green — reads as pewter/aged-paper against the
-     banknote-ink primary rather than competing with it for the same hue. */
+  /* warm grey, distinct from the primary's own teal-green hue. */
   --secondary: oklch(0.52 0.02 70);
   --secondary-foreground: oklch(0.949 0.015 88);
   --muted: oklch(0.97 0 0);

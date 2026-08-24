@@ -6,9 +6,11 @@ import { BridgeLocationGate } from "./bridge-location-gate";
 function BridgeBody({
   vendorId,
   locations,
+  preselectedLocationId,
 }: {
   vendorId: string;
   locations: { id: string; label: string }[];
+  preselectedLocationId: string | null;
 }) {
   if (locations.length === 0) {
     return (
@@ -18,15 +20,30 @@ function BridgeBody({
       </p>
     );
   }
-  if (locations.length === 1) {
-    return <BridgePanel vendorId={vendorId} locationId={locations[0].id} />;
+  const resolvedId =
+    preselectedLocationId ?? (locations.length === 1 ? locations[0].id : null);
+  if (resolvedId) {
+    return <BridgePanel vendorId={vendorId} locationId={resolvedId} />;
   }
   return <BridgeLocationGate vendorId={vendorId} locations={locations} />;
 }
 
-export default async function BridgePage() {
+export default async function BridgePage({
+  searchParams,
+}: {
+  // Deep-linked from qkit's booth settings, keyed by that booth's own id
+  // (stored here as a print_location's source_ref) — skips straight to
+  // that booth's pairing panel instead of the picker.
+  searchParams: Promise<{ booth?: string }>;
+}) {
   const { user } = await getVendorSession();
-  const locations = await listActiveLocations(user.id);
+  const [locations, { booth }] = await Promise.all([
+    listActiveLocations(user.id),
+    searchParams,
+  ]);
+  const preselectedLocationId = booth
+    ? (locations.find((loc) => loc.source_ref === booth)?.id ?? null)
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -36,7 +53,11 @@ export default async function BridgePage() {
         pair it.
       </p>
       <div className="mt-6">
-        <BridgeBody vendorId={user.id} locations={locations} />
+        <BridgeBody
+          vendorId={user.id}
+          locations={locations}
+          preselectedLocationId={preselectedLocationId}
+        />
       </div>
     </div>
   );

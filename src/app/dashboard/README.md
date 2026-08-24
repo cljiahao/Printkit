@@ -48,6 +48,9 @@ The authenticated vendor area (`/dashboard/*`).
 ahead of this `layout.tsx`'s own `getVendorSession()` check.
 `dashboard-nav.tsx`'s sign-out button calls `actions/auth.ts`'s
 `signOutAction`, passed down from `layout.tsx`.
+`page.dom.test.tsx`'s `listActiveLocations` mocks now include each
+location's `source_ref`, matching `@/lib/print-locations`' return shape —
+see `bridge/README.md` for what reads it.
 
 ## Parent
 

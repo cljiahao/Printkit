@@ -34,9 +34,9 @@ describe("BridgePage", () => {
 
   it("auto-selects the single active location and renders the bridge panel", async () => {
     vi.mocked(listActiveLocations).mockResolvedValue([
-      { id: "loc-1", label: "Kopitiam Cart" },
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
     ]);
-    render(await BridgePage());
+    render(await BridgePage({ searchParams: Promise.resolve({}) }));
     expect(
       screen.getByText("bridge panel for vendor-1 at loc-1"),
     ).toBeInTheDocument();
@@ -44,7 +44,7 @@ describe("BridgePage", () => {
 
   it("shows a message directing the vendor to qkit's booth settings when there are no active locations", async () => {
     vi.mocked(listActiveLocations).mockResolvedValue([]);
-    render(await BridgePage());
+    render(await BridgePage({ searchParams: Promise.resolve({}) }));
     expect(
       screen.getByText(/no booths have printing enabled yet/i),
     ).toBeInTheDocument();
@@ -53,10 +53,10 @@ describe("BridgePage", () => {
 
   it("renders a picker for multiple active locations and shows the bridge panel once one is picked", async () => {
     vi.mocked(listActiveLocations).mockResolvedValue([
-      { id: "loc-1", label: "Kopitiam Cart" },
-      { id: "loc-2", label: "Ice Cream Cart" },
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+      { id: "loc-2", label: "Ice Cream Cart", source_ref: "booth-2" },
     ]);
-    render(await BridgePage());
+    render(await BridgePage({ searchParams: Promise.resolve({}) }));
 
     expect(screen.queryByText(/bridge panel for/)).not.toBeInTheDocument();
     expect(screen.getByText("Ice Cream Cart")).toBeInTheDocument();
@@ -66,5 +66,35 @@ describe("BridgePage", () => {
     expect(
       screen.getByText("bridge panel for vendor-1 at loc-2"),
     ).toBeInTheDocument();
+  });
+
+  it("skips the picker and goes straight to the bridge panel when ?booth matches a location's source_ref", async () => {
+    vi.mocked(listActiveLocations).mockResolvedValue([
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+      { id: "loc-2", label: "Ice Cream Cart", source_ref: "booth-2" },
+    ]);
+    render(
+      await BridgePage({ searchParams: Promise.resolve({ booth: "booth-2" }) }),
+    );
+
+    expect(
+      screen.getByText("bridge panel for vendor-1 at loc-2"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Ice Cream Cart")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the picker when ?booth doesn't match any active location", async () => {
+    vi.mocked(listActiveLocations).mockResolvedValue([
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+      { id: "loc-2", label: "Ice Cream Cart", source_ref: "booth-2" },
+    ]);
+    render(
+      await BridgePage({
+        searchParams: Promise.resolve({ booth: "unknown-booth" }),
+      }),
+    );
+
+    expect(screen.queryByText(/bridge panel for/)).not.toBeInTheDocument();
+    expect(screen.getByText("Ice Cream Cart")).toBeInTheDocument();
   });
 });

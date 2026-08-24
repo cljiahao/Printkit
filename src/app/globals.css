@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ── printkit — "Banknote Engrave" — engraved teal-green ink + steel-blue secondary, replacing "Signal & Mint". */
+/* ── printkit — "Banknote Engrave" — engraved teal-green ink + warm-grey secondary, replacing "Signal & Mint". */
 
 :root {
   --radius: 0.625rem;
@@ -16,7 +16,9 @@
   --popover-foreground: oklch(0.227 0.006 156);
   --primary: oklch(0.431 0.066 177);
   --primary-foreground: oklch(0.949 0.015 88);
-  --secondary: oklch(0.517 0.071 238);
+  /* warm grey, not blue/green — reads as pewter/aged-paper against the
+     banknote-ink primary rather than competing with it for the same hue. */
+  --secondary: oklch(0.52 0.02 70);
   --secondary-foreground: oklch(0.949 0.015 88);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
@@ -51,7 +53,7 @@
   --popover-foreground: oklch(0.949 0.007 127);
   --primary: oklch(0.63 0.098 172);
   --primary-foreground: oklch(0.231 0.019 172);
-  --secondary: oklch(0.683 0.069 234);
+  --secondary: oklch(0.62 0.02 70);
   --secondary-foreground: oklch(0.231 0.019 172);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);

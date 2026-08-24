@@ -19,3 +19,6 @@ Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 
 Shared dashboard nav/account menu come from `@merqo/ui`
 (`github:cljiahao/merqo-ui#v0.19.0`, `package.json`).
+
+Brand theme is "Banknote Engrave" (engraved teal-green primary, warm-grey
+secondary) — see `src/app/globals.css`'s own header comment.

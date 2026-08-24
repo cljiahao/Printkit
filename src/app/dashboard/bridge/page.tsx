@@ -31,9 +31,7 @@ function BridgeBody({
 export default async function BridgePage({
   searchParams,
 }: {
-  // Deep-linked from qkit's booth settings, keyed by that booth's own id
-  // (stored here as a print_location's source_ref) — skips straight to
-  // that booth's pairing panel instead of the picker.
+  // booth = a location's source_ref; skips the picker when it matches.
   searchParams: Promise<{ booth?: string }>;
 }) {
   const { user } = await getVendorSession();

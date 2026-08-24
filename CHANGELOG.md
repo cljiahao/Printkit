@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Root page (`/`) now redirects to `/dashboard` instead of showing a placeholder — printkit has no cold-acquisition funnel, so it needs no marketing landing page.
 - Bumped `@merqo/ui` to v0.19.0: the account menu's theme control now sits behind a collapsed "Theme · {current}" submenu instead of three always-expanded radio options.
+- Trimmed a couple of over-long code comments down to one line each; no behavior change.
 - The bridge page (`/dashboard/bridge`) now accepts a `?booth=<id>` search param (matched against a location's `source_ref`) that skips straight to that booth's pairing panel — deep-linked from qkit's booth settings "Choose the printer for this booth" link, instead of making the vendor find it in a list.
 - "Banknote Engrave" theme's secondary color is now a warm grey instead of steel-blue — it read too close to the primary's own teal-green hue at a glance.
 

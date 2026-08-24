@@ -9,7 +9,10 @@ public marketing site or pricing; `/` redirects straight to `/dashboard`.
 See `AGENTS.md` for the full stack, commands, and data model. A vendor can
 pair a separate physical bridge/printer to each of their booths, not just
 one shared bridge per vendor — see `print_locations` in `AGENTS.md`'s
-data model section.
+data model section. The bridge page also accepts a `?booth=<id>` deep link
+(matched against a location's `source_ref`) so a calling kit — qkit's booth
+settings today — can send a vendor straight to one booth's pairing panel;
+see `src/app/dashboard/bridge/README.md`.
 
 Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 `docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`

@@ -19,6 +19,10 @@ everything else sits flat here.
   row via the service client and returns its `id`. `(source_kit, source_ref)`
   is unique, so a retried call for the same source order returns a clean
   `{ok:false, status:409}` instead of a generic 500. An optional
+  `input.jobType` is passed through to the insert (defaulting to `'label'`
+  when omitted, since the DB column's own default still only accepts that
+  value) — this keeps the function's own shape from hardcoding one job
+  type ahead of the DB constraint widening. An optional
   `input.locationRef` is resolved via `print-locations.ts`'s
   `resolveActiveLocation`, but only used when the resolved location's
   `vendor_id` matches `input.vendorId` (it isn't itself vendor-scoped —

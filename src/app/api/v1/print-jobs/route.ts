@@ -8,6 +8,9 @@ const bodySchema = z.object({
   payload: z.record(z.string(), z.unknown()),
   source_ref: z.string().min(1),
   location_ref: z.string().optional(),
+  // DB still only accepts 'label' today — accepted here so the API shape
+  // isn't hardcoded to one job type ahead of the DB constraint widening.
+  job_type: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -39,6 +42,7 @@ export async function POST(request: Request) {
     sourceKit: auth.kitSlug,
     sourceRef: parsed.data.source_ref,
     locationRef: parsed.data.location_ref,
+    jobType: parsed.data.job_type,
   });
 
   if (!result.ok) {

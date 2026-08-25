@@ -12,6 +12,10 @@ export type CreatePrintJobInput = {
   sourceKit: string;
   sourceRef: string;
   locationRef?: string;
+  // The DB column still only accepts 'label' (0001_printkit_core.sql) — this
+  // just lets a caller be explicit rather than relying on the insert's own
+  // default, so the API shape isn't hardcoded to one job type.
+  jobType?: string;
 };
 
 export type CreatePrintJobResult =
@@ -81,7 +85,7 @@ export async function createPrintJob(
     .from("print_jobs")
     .insert({
       vendor_id: input.vendorId,
-      job_type: "label",
+      job_type: input.jobType ?? "label",
       payload: input.payload as unknown as Json,
       source_kit: input.sourceKit,
       source_ref: input.sourceRef,

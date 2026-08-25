@@ -36,11 +36,12 @@ everything else sits flat here.
   are best-effort — a missing ref, an unresolved/cross-vendor match, or
   either lookup throwing is a no-op, never a rejection.
   `updatePrintJobStatus(jobId, status)`: the single choke point for
-  changing a row's status — updates it, then (only when `source_kit` is
-  `"qkit"` and the new status is terminal, `"printed"`/`"failed"`) calls
-  `notifyQkitPrintStatus` to tell qkit. Called by `history/actions.ts`'s
-  `reprintJob` and `bridge/actions.ts`'s `reportPrintResult`, both of
-  which check the calling vendor owns the job first.
+  changing a row's status — updates it, then (on a terminal status,
+  `"printed"`/`"failed"`) calls `notifyKitPrintStatus` with the row's own
+  `source_kit`, kit-agnostic — no longer hardcoded to qkit. Called by
+  `history/actions.ts`'s `reprintJob` and `bridge/actions.ts`'s
+  `reportPrintResult`, both of which check the calling vendor owns the job
+  first.
 - `print-locations.ts` — `print_locations` CRUD via the service client
   (RLS is bypassed, so each function's `.eq(...)` vendor/id scoping is the
   real authorization boundary, not defense in depth).
@@ -69,12 +70,13 @@ everything else sits flat here.
   the one place that defensively narrows a string field out of a
   `print_jobs.payload` jsonb value, shared by the history table's display
   columns and the bridge's auto-print label extraction.
-- `qkit-client.ts` — `notifyQkitPrintStatus(orderId, status)`: fire-and-forget
-  outbound callback to qkit's `POST /api/printkit/print-status`, a plain
-  (no `kit_slug:` prefix) shared-secret bearer check — different from this
-  repo's own multi-caller `kit-auth.ts` convention, since qkit has exactly
-  one caller for that route. Never throws; every failure (missing secret,
-  network error, non-2xx) is swallowed after a log line.
+- `kit-callback.ts` — `notifyKitPrintStatus(kitSlug, sourceRef, status)`:
+  fire-and-forget outbound callback on job status change, kit-agnostic —
+  looks the calling kit's `callback_url`/`callback_secret` up from
+  `kit_api_keys` (`0006_kit_api_keys_callback.sql`) instead of assuming
+  qkit via env vars, and no-ops silently if either is unset (not every
+  calling kit needs a callback). Never throws; every failure (lookup error,
+  missing config, network error, non-2xx) is swallowed after a log line.
 - `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
   (gets a session-scoped Supabase client and the authenticated user,
   redirects to `/login` if none).

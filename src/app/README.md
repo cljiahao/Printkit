@@ -43,9 +43,11 @@ is the ancestor of every route below; `page.tsx` (a redirect to
 `/dashboard`) is the only route directly under `app/` besides the special
 Next.js files.
 `api/v1/print-jobs/` is the inbound route qkit calls on order-placed;
-printkit's own outbound call back into qkit on job status change is
-`src/lib/qkit-client.ts`'s `notifyQkitPrintStatus`, invoked from
-`updatePrintJobStatus` (`@/lib/print-jobs`). `dashboard/dashboard-nav.tsx`
+printkit's own outbound callback on job status change is kit-agnostic —
+`src/lib/kit-callback.ts`'s `notifyKitPrintStatus`, invoked from
+`updatePrintJobStatus` (`@/lib/print-jobs`), looks the calling kit's own
+callback config up from `kit_api_keys` rather than assuming qkit.
+`dashboard/dashboard-nav.tsx`
 calls `actions/feedback.ts` and `actions/support.ts` directly (their
 Sheet UI lives inside `@merqo/ui`'s `DashboardNav`, not a page route);
 `dashboard/layout.tsx` calls `actions/auth.ts`'s `signOutAction`. No

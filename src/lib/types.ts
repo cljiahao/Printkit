@@ -53,16 +53,22 @@ export type Database = {
       };
       kit_api_keys: {
         Row: {
+          callback_secret: string | null;
+          callback_url: string | null;
           created_at: string;
           kit_slug: string;
           secret_hash: string;
         };
         Insert: {
+          callback_secret?: string | null;
+          callback_url?: string | null;
           created_at?: string;
           kit_slug: string;
           secret_hash: string;
         };
         Update: {
+          callback_secret?: string | null;
+          callback_url?: string | null;
           created_at?: string;
           kit_slug?: string;
           secret_hash?: string;

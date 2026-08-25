@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `POST /api/v1/print-jobs` accepts an optional `job_type` field, threaded through to `createPrintJob` — the DB still only allows `'label'` today, this just decouples the API shape from that constraint ahead of a second job type.
+- `kit_api_keys` gains optional `callback_url`/`callback_secret` columns (plaintext, service-role only) so a calling kit's print-status callback is configured per-row instead of hardcoded to qkit's own env vars. New `src/lib/kit-callback.ts` (`notifyKitPrintStatus`) replaces the qkit-only `qkit-client.ts`; `updatePrintJobStatus` now notifies whichever kit created the job, not just qkit. `scripts/create-kit-key.mjs` gains optional trailing `callback_url`/`callback_secret` args to populate them.
 
 - Per-location print routing: a new `print_locations` table lets a vendor pair a separate physical bridge/printer to each of their booths instead of one shared bridge per vendor, closing the multi-simultaneous-location gap in the v0.1 design. New `POST /api/v1/print-locations` registration endpoint; `POST /api/v1/print-jobs` gains an optional `location_ref` field. Presence and job-delivery Realtime channels are now location-scoped. Bridge pairing gains a location picker; the Overview page shows per-location bridge status plus an "unrouted jobs" callout; History gets a location column and a manual location-assign action for unrouted jobs.
 

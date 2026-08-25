@@ -70,6 +70,11 @@ everything else sits flat here.
   the one place that defensively narrows a string field out of a
   `print_jobs.payload` jsonb value, shared by the history table's display
   columns and the bridge's auto-print label extraction.
+- `print-job-renderers.ts` — `getJobRenderer(jobType)`: `job_type` → canvas
+  renderer lookup, one entry today (`'label'`, wrapping `label-render.ts`'s
+  `renderLabelCanvas`) — the seam a second job type plugs into, returns
+  `null` for an unrecognized type so the bridge can report a clear failure
+  instead of guessing.
 - `kit-callback.ts` — `notifyKitPrintStatus(kitSlug, sourceRef, status)`:
   fire-and-forget outbound callback on job status change, kit-agnostic —
   looks the calling kit's `callback_url`/`callback_secret` up from

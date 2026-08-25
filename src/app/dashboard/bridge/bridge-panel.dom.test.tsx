@@ -19,8 +19,12 @@ vi.mock("@/lib/niimbot-print", () => ({
   printLabel: vi.fn().mockResolvedValue(undefined),
   disconnectPrinter: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("@/lib/label-render", () => ({
-  renderLabelCanvas: vi.fn().mockReturnValue(document.createElement("canvas")),
+const labelRendererMock = vi
+  .fn()
+  .mockReturnValue(document.createElement("canvas"));
+vi.mock("@/lib/print-job-renderers", () => ({
+  getJobRenderer: (jobType: string) =>
+    jobType === "label" ? labelRendererMock : null,
 }));
 vi.mock("./actions", () => ({
   reportPrintResult: vi.fn().mockResolvedValue({ success: true }),
@@ -29,7 +33,6 @@ vi.mock("./actions", () => ({
 
 import { isBridgeModeEnabled, setBridgeModeEnabled } from "@/lib/bridge-mode";
 import { connectPrinter, printLabel } from "@/lib/niimbot-print";
-import { renderLabelCanvas } from "@/lib/label-render";
 import { reportPrintResult, logBridgeEvent } from "./actions";
 import { useJobDelivery } from "./use-job-delivery";
 import { BridgePanel } from "./bridge-panel";
@@ -44,7 +47,8 @@ describe("BridgePanel", () => {
     } as never);
     vi.mocked(printLabel).mockClear();
     vi.mocked(printLabel).mockResolvedValue(undefined);
-    vi.mocked(renderLabelCanvas).mockClear();
+    labelRendererMock.mockClear();
+    labelRendererMock.mockReturnValue(document.createElement("canvas"));
     vi.mocked(reportPrintResult).mockClear();
     vi.mocked(reportPrintResult).mockResolvedValue({ success: true });
     vi.mocked(logBridgeEvent).mockClear();
@@ -134,40 +138,40 @@ describe("BridgePanel", () => {
       return call[2];
     }
 
-    it("prints the job's real customer name and order number, not its id", async () => {
+    it("prints the job's real payload, not just its id", async () => {
       await pair();
       const onJobQueued = deliveredJob();
 
       await act(async () => {
-        onJobQueued("job-uuid-1", {
-          customer_name: "Ada Lovelace",
-          order_number: "0042",
-        });
+        onJobQueued(
+          "job-uuid-1",
+          { customer_name: "Ada Lovelace", order_number: "0042" },
+          "label",
+        );
       });
 
       await waitFor(() =>
-        expect(renderLabelCanvas).toHaveBeenCalledWith({
-          customerName: "Ada Lovelace",
-          orderNumber: "0042",
+        expect(labelRendererMock).toHaveBeenCalledWith({
+          customer_name: "Ada Lovelace",
+          order_number: "0042",
         }),
       );
       expect(reportPrintResult).toHaveBeenCalledWith("job-uuid-1", "printed");
     });
 
-    it("falls back to blank fields when the payload is missing them", async () => {
+    it("reports failure and never prints when the job_type has no renderer", async () => {
       await pair();
       const onJobQueued = deliveredJob();
 
       await act(async () => {
-        onJobQueued("job-uuid-2", {});
+        onJobQueued("job-uuid-2", { customer_name: "Ada" }, "receipt");
       });
 
       await waitFor(() =>
-        expect(renderLabelCanvas).toHaveBeenCalledWith({
-          customerName: "",
-          orderNumber: "",
-        }),
+        expect(reportPrintResult).toHaveBeenCalledWith("job-uuid-2", "failed"),
       );
+      expect(labelRendererMock).not.toHaveBeenCalled();
+      expect(printLabel).not.toHaveBeenCalled();
     });
 
     it("serializes two jobs queued back to back so their prints don't overlap", async () => {
@@ -189,8 +193,16 @@ describe("BridgePanel", () => {
       });
 
       act(() => {
-        onJobQueued("job-1", { customer_name: "A", order_number: "1" });
-        onJobQueued("job-2", { customer_name: "B", order_number: "2" });
+        onJobQueued(
+          "job-1",
+          { customer_name: "A", order_number: "1" },
+          "label",
+        );
+        onJobQueued(
+          "job-2",
+          { customer_name: "B", order_number: "2" },
+          "label",
+        );
       });
 
       await waitFor(() => expect(order).toContain("first-start"));
@@ -215,14 +227,22 @@ describe("BridgePanel", () => {
         .mockResolvedValueOnce(undefined);
 
       await act(async () => {
-        onJobQueued("job-1", { customer_name: "A", order_number: "1" });
+        onJobQueued(
+          "job-1",
+          { customer_name: "A", order_number: "1" },
+          "label",
+        );
       });
       await waitFor(() =>
         expect(reportPrintResult).toHaveBeenCalledWith("job-1", "failed"),
       );
 
       await act(async () => {
-        onJobQueued("job-2", { customer_name: "B", order_number: "2" });
+        onJobQueued(
+          "job-2",
+          { customer_name: "B", order_number: "2" },
+          "label",
+        );
       });
       await waitFor(() =>
         expect(reportPrintResult).toHaveBeenCalledWith("job-2", "printed"),
@@ -238,12 +258,20 @@ describe("BridgePanel", () => {
       vi.mocked(reportPrintResult).mockRejectedValue(new Error("network"));
 
       await act(async () => {
-        onJobQueued("job-1", { customer_name: "A", order_number: "1" });
+        onJobQueued(
+          "job-1",
+          { customer_name: "A", order_number: "1" },
+          "label",
+        );
       });
 
       vi.mocked(reportPrintResult).mockResolvedValue({ success: true });
       await act(async () => {
-        onJobQueued("job-2", { customer_name: "B", order_number: "2" });
+        onJobQueued(
+          "job-2",
+          { customer_name: "B", order_number: "2" },
+          "label",
+        );
       });
 
       await waitFor(() => expect(printLabel).toHaveBeenCalledTimes(2));

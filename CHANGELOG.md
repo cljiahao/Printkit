@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Job-type-keyed render dispatch in the bridge (`src/lib/print-job-renderers.ts`), replacing `bridge-panel.tsx`'s two hardcoded `renderLabelCanvas` calls — one entry today (`'label'`), a real seam for a second job type. A job whose type has no renderer is now reported `failed` with a clear log line instead of silently doing nothing.
+
 - `POST /api/v1/print-jobs` accepts an optional `job_type` field, threaded through to `createPrintJob` — the DB still only allows `'label'` today, this just decouples the API shape from that constraint ahead of a second job type.
 - `kit_api_keys` gains optional `callback_url`/`callback_secret` columns (plaintext, service-role only) so a calling kit's print-status callback is configured per-row instead of hardcoded to qkit's own env vars. New `src/lib/kit-callback.ts` (`notifyKitPrintStatus`) replaces the qkit-only `qkit-client.ts`; `updatePrintJobStatus` now notifies whichever kit created the job, not just qkit. `scripts/create-kit-key.mjs` gains optional trailing `callback_url`/`callback_secret` args to populate them.
 

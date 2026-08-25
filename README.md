@@ -10,6 +10,8 @@ still only allows `'label'` for now) so the API shape isn't hardcoded to
 today's one job type ahead of that widening. The outbound print-status
 callback is kit-agnostic too — configured per calling kit in
 `kit_api_keys` (`callback_url`/`callback_secret`), not hardcoded to qkit.
+The bridge's own print dispatch is job-type-keyed too
+(`src/lib/print-job-renderers.ts`), one renderer today.
 
 See `AGENTS.md` for the full stack, commands, and data model. A vendor can
 pair a separate physical bridge/printer to each of their booths, not just

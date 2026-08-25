@@ -10,8 +10,7 @@ import {
   printLabel,
   disconnectPrinter,
 } from "@/lib/niimbot-print";
-import { renderLabelCanvas } from "@/lib/label-render";
-import { payloadField } from "@/lib/print-job-payload";
+import { getJobRenderer } from "@/lib/print-job-renderers";
 import { useJobDelivery } from "./use-job-delivery";
 import { useBridgePresence } from "./use-bridge-presence";
 import { reportPrintResult, logBridgeEvent } from "./actions";
@@ -52,32 +51,40 @@ export function BridgePanel({
 
   useBridgePresence(vendorId, locationId, enabled);
 
-  const doPrintJob = useCallback(async (jobId: string, payload: Json) => {
-    const client = clientRef.current;
-    if (!client) return;
+  const doPrintJob = useCallback(
+    async (jobId: string, payload: Json, jobType: string) => {
+      const client = clientRef.current;
+      if (!client) return;
 
-    try {
-      const canvas = renderLabelCanvas({
-        customerName: payloadField(payload, "customer_name", ""),
-        orderNumber: payloadField(payload, "order_number", ""),
-      });
-      await printLabel(client, canvas);
-      await reportPrintResult(jobId, "printed");
-    } catch (err) {
-      console.error("Print failed", err);
-      toast.error("Print failed — check the printer and try again.");
-      await reportPrintResult(jobId, "failed");
-    }
-  }, []);
+      const render = getJobRenderer(jobType);
+      if (!render) {
+        console.error(`No renderer for job_type "${jobType}"`);
+        toast.error("Can't print this job type — contact support.");
+        await reportPrintResult(jobId, "failed");
+        return;
+      }
+
+      try {
+        const canvas = render(payload);
+        await printLabel(client, canvas);
+        await reportPrintResult(jobId, "printed");
+      } catch (err) {
+        console.error("Print failed", err);
+        toast.error("Print failed — check the printer and try again.");
+        await reportPrintResult(jobId, "failed");
+      }
+    },
+    [],
+  );
 
   const printJob = useCallback(
-    (jobId: string, payload: Json) => {
+    (jobId: string, payload: Json, jobType: string) => {
       // .catch() resets the chain to resolved after each job — doPrintJob
       // already swallows print/report failures internally, but this is a
       // backstop so an unexpected throw can't leave every future job
       // permanently chained onto a rejected promise.
       queueRef.current = queueRef.current
-        .then(() => doPrintJob(jobId, payload))
+        .then(() => doPrintJob(jobId, payload, jobType))
         .catch((err: unknown) => {
           console.error("Unexpected error in print queue", err);
         });
@@ -116,11 +123,12 @@ export function BridgePanel({
   const handleTestPrint = async () => {
     const client = clientRef.current;
     if (!client) return;
+    // Always tests the 'label' renderer specifically — this button verifies
+    // the paired printer works, not any real queued job.
+    const render = getJobRenderer("label");
+    if (!render) return;
     try {
-      const canvas = renderLabelCanvas({
-        customerName: "Test",
-        orderNumber: "0000",
-      });
+      const canvas = render({ customer_name: "Test", order_number: "0000" });
       await printLabel(client, canvas);
       toast.success("Test label sent.");
     } catch (err) {

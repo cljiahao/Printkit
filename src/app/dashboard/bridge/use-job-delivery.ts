@@ -18,7 +18,7 @@ import type { Json } from "@/lib/types";
 export function useJobDelivery(
   vendorId: string,
   locationId: string,
-  onJobQueued: (jobId: string, payload: Json) => void,
+  onJobQueued: (jobId: string, payload: Json, jobType: string) => void,
 ): void {
   useEffect(() => {
     const supabase = createClient();
@@ -40,6 +40,7 @@ export function useJobDelivery(
             id: string;
             status: string;
             payload: Json;
+            job_type: string;
           }>,
         ) => {
           if (
@@ -48,7 +49,14 @@ export function useJobDelivery(
             "payload" in payload.new &&
             payload.new.status === "queued"
           ) {
-            onJobQueued(payload.new.id, payload.new.payload);
+            // job_type defaults to 'label' defensively — the DB column
+            // itself defaults to 'label' too, so this only matters for a
+            // row shape postgres_changes hasn't actually sent in practice.
+            const jobType =
+              "job_type" in payload.new && payload.new.job_type
+                ? payload.new.job_type
+                : "label";
+            onJobQueued(payload.new.id, payload.new.payload, jobType);
           }
         },
       )

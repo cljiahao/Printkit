@@ -53,7 +53,33 @@ describe("useJobDelivery", () => {
     );
   });
 
-  it("calls onJobQueued with the job id and payload when a row arrives with status 'queued'", () => {
+  it("calls onJobQueued with the job id, payload, and job_type when a row arrives with status 'queued'", () => {
+    const onJobQueued = vi.fn();
+    renderHook(() => useJobDelivery("vendor-1", "loc-1", onJobQueued));
+
+    changeCallback?.({
+      schema: "printkit",
+      table: "print_jobs",
+      commit_timestamp: "2026-08-22T00:00:00Z",
+      errors: [],
+      eventType: "UPDATE",
+      new: {
+        id: "job-1",
+        status: "queued",
+        payload: { customer_name: "Ada", order_number: "0007" },
+        job_type: "label",
+      },
+      old: {},
+    });
+
+    expect(onJobQueued).toHaveBeenCalledWith(
+      "job-1",
+      { customer_name: "Ada", order_number: "0007" },
+      "label",
+    );
+  });
+
+  it("defaults job_type to 'label' when the row doesn't carry one", () => {
     const onJobQueued = vi.fn();
     renderHook(() => useJobDelivery("vendor-1", "loc-1", onJobQueued));
 
@@ -71,10 +97,11 @@ describe("useJobDelivery", () => {
       old: {},
     });
 
-    expect(onJobQueued).toHaveBeenCalledWith("job-1", {
-      customer_name: "Ada",
-      order_number: "0007",
-    });
+    expect(onJobQueued).toHaveBeenCalledWith(
+      "job-1",
+      { customer_name: "Ada", order_number: "0007" },
+      "label",
+    );
   });
 
   it("ignores a change whose row has no payload field", () => {

@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Per-NIIMBOT-model print config (`src/lib/niimbot-model.ts`), replacing the hardcoded `"B1"`/`"top"` literals in `niimbot-print.ts` — `niimbluelib` already supports other NIIMBOT models (B18, D110), so this was purely an app-side hardcode. `printLabel` gains an optional `model` param, defaulting to today's only supported model. No behavior change.
+
 - Job-type-keyed render dispatch in the bridge (`src/lib/print-job-renderers.ts`), replacing `bridge-panel.tsx`'s two hardcoded `renderLabelCanvas` calls — one entry today (`'label'`), a real seam for a second job type. A job whose type has no renderer is now reported `failed` with a clear log line instead of silently doing nothing.
 
 - `POST /api/v1/print-jobs` accepts an optional `job_type` field, threaded through to `createPrintJob` — the DB still only allows `'label'` today, this just decouples the API shape from that constraint ahead of a second job type.

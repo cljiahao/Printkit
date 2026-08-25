@@ -11,7 +11,10 @@ today's one job type ahead of that widening. The outbound print-status
 callback is kit-agnostic too — configured per calling kit in
 `kit_api_keys` (`callback_url`/`callback_secret`), not hardcoded to qkit.
 The bridge's own print dispatch is job-type-keyed too
-(`src/lib/print-job-renderers.ts`), one renderer today.
+(`src/lib/print-job-renderers.ts`), one renderer today. Printer-model
+config (`src/lib/niimbot-model.ts`) is likewise a lookup, not a hardcode —
+`niimbluelib` already supports other NIIMBOT models, one is configured
+today.
 
 See `AGENTS.md` for the full stack, commands, and data model. A vendor can
 pair a separate physical bridge/printer to each of their booths, not just

@@ -82,6 +82,16 @@ describe("printLabel", () => {
     expect(printEndMock).toHaveBeenCalled();
   });
 
+  it("accepts an explicit model and looks up its own printDirection, not a hardcoded one", async () => {
+    const client = await connectPrinter();
+    const canvas = document.createElement("canvas");
+
+    await printLabel(client, canvas, 1, "B1");
+
+    expect(ImageEncoder.encodeCanvas).toHaveBeenCalledWith(canvas, "top");
+    expect(newPrintTaskMock).toHaveBeenCalledWith("B1", { totalPages: 1 });
+  });
+
   it("still calls printEnd when a print step throws (cleanup on failure)", async () => {
     const client = await connectPrinter();
     printPageMock.mockRejectedValueOnce(new Error("printer jammed"));

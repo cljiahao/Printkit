@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/server";
-import { notifyQkitPrintStatus } from "@/lib/qkit-client";
+import { notifyKitPrintStatus } from "@/lib/kit-callback";
 import {
   resolveActiveLocation,
   listActiveLocations,
@@ -147,12 +147,12 @@ export async function updatePrintJobStatus(
     return { ok: false, error: "Could not update print job status." };
   }
 
-  if (
-    data.source_kit === "qkit" &&
-    (status === "printed" || status === "failed")
-  ) {
-    // Fire-and-forget — never throws, must not add qkit's timeout to this call.
-    void notifyQkitPrintStatus(data.source_ref, status);
+  if (status === "printed" || status === "failed") {
+    // Fire-and-forget — never throws, must not add the callback's own
+    // timeout to this call. Kit-agnostic: notifyKitPrintStatus looks up
+    // whichever kit created this job and no-ops if it has no callback
+    // configured.
+    void notifyKitPrintStatus(data.source_kit, data.source_ref, status);
   }
 
   return { ok: true };

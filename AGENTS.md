@@ -13,9 +13,11 @@
 Hardware print connector for Merqo vendors — job-type-agnostic architecture,
 v0.1 ships one job type (label, via the NIIMBOT B1). Owns the `printkit`
 schema in the shared Supabase project. qkit calls printkit's bearer-secret
-`POST /api/v1/print-jobs` on order-placed; printkit calls back into qkit on
-job status change. Full design: `docs/superpowers/specs/2026-08-21-printkit-
-v0.1-design.md`.
+`POST /api/v1/print-jobs` on order-placed; printkit calls back on job status
+change via a kit-agnostic lookup (`kit_api_keys.callback_url`/
+`callback_secret`, `src/lib/kit-callback.ts`) — qkit is the only calling kit
+configured today, not the only one supported. Full design:
+`docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`.
 
 ## Stack
 

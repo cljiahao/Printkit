@@ -12,10 +12,10 @@ vi.mock("@/lib/supabase/server", () => ({
     }),
 }));
 
-const notifyQkitPrintStatusMock = vi.fn().mockResolvedValue(undefined);
-vi.mock("@/lib/qkit-client", () => ({
-  notifyQkitPrintStatus: (...args: unknown[]) =>
-    notifyQkitPrintStatusMock(...args),
+const notifyKitPrintStatusMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/kit-callback", () => ({
+  notifyKitPrintStatus: (...args: unknown[]) =>
+    notifyKitPrintStatusMock(...args),
 }));
 
 const resolveActiveLocationMock = vi.fn();
@@ -429,11 +429,11 @@ describe("resolveActiveLocation vendor-scoping", () => {
 
 describe("updatePrintJobStatus", () => {
   beforeEach(() => {
-    notifyQkitPrintStatusMock.mockClear();
+    notifyKitPrintStatusMock.mockClear();
     updateMock.mockReset();
   });
 
-  it("updates the row and notifies qkit when source_kit is qkit and status is failed", async () => {
+  it("updates the row and notifies the calling kit when status is failed", async () => {
     updateMock.mockReturnValue({
       eq: () => ({
         select: () => ({
@@ -449,10 +449,14 @@ describe("updatePrintJobStatus", () => {
     const result = await updatePrintJobStatus("job-1", "failed");
 
     expect(result).toEqual({ ok: true });
-    expect(notifyQkitPrintStatusMock).toHaveBeenCalledWith("order-1", "failed");
+    expect(notifyKitPrintStatusMock).toHaveBeenCalledWith(
+      "qkit",
+      "order-1",
+      "failed",
+    );
   });
 
-  it("does not notify qkit for a non-terminal status (queued/sent)", async () => {
+  it("does not notify the calling kit for a non-terminal status (queued/sent)", async () => {
     updateMock.mockReturnValue({
       eq: () => ({
         select: () => ({
@@ -467,10 +471,10 @@ describe("updatePrintJobStatus", () => {
 
     await updatePrintJobStatus("job-1", "sent");
 
-    expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
+    expect(notifyKitPrintStatusMock).not.toHaveBeenCalled();
   });
 
-  it("does not notify qkit when source_kit is not qkit", async () => {
+  it("notifies whichever kit created the job, not just qkit", async () => {
     updateMock.mockReturnValue({
       eq: () => ({
         select: () => ({
@@ -485,7 +489,11 @@ describe("updatePrintJobStatus", () => {
 
     await updatePrintJobStatus("job-1", "failed");
 
-    expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
+    expect(notifyKitPrintStatusMock).toHaveBeenCalledWith(
+      "some-other-kit",
+      "ref-1",
+      "failed",
+    );
   });
 
   it("does not include printed_at in the update payload for a non-printed status", async () => {
@@ -542,6 +550,6 @@ describe("updatePrintJobStatus", () => {
       ok: false,
       error: "Could not update print job status.",
     });
-    expect(notifyQkitPrintStatusMock).not.toHaveBeenCalled();
+    expect(notifyKitPrintStatusMock).not.toHaveBeenCalled();
   });
 });

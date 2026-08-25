@@ -5,6 +5,9 @@ the NIIMBOT B1; architecture is job-type-agnostic for later job types
 (receipt, kitchen-ticket, shelf-label, invoice). Internal-only — reached
 through a vendor's existing sibling-kit relationship (qkit today), no
 public marketing site or pricing; `/` redirects straight to `/dashboard`.
+`POST /api/v1/print-jobs` accepts an optional `job_type` field (the DB
+still only allows `'label'` for now) so the API shape isn't hardcoded to
+today's one job type ahead of that widening.
 
 See `AGENTS.md` for the full stack, commands, and data model. A vendor can
 pair a separate physical bridge/printer to each of their booths, not just

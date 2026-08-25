@@ -245,6 +245,27 @@ describe("createPrintJob", () => {
       location_id: null,
     });
   });
+
+  it("passes an explicit jobType through identically to omitting it", async () => {
+    insertMock.mockReturnValue({
+      select: () => ({
+        single: () => Promise.resolve({ data: { id: "job-1" }, error: null }),
+      }),
+    });
+
+    const result = await createPrintJob({
+      vendorId: "vendor-1",
+      payload: { customer_name: "Ada", order_number: "0007" },
+      sourceKit: "qkit",
+      sourceRef: "order-uuid-1",
+      jobType: "label",
+    });
+
+    expect(result).toEqual({ ok: true, id: "job-1" });
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ job_type: "label" }),
+    );
+  });
 });
 
 describe("single-active-location auto-delivery fallback", () => {

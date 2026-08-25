@@ -114,6 +114,25 @@ describe("POST /api/v1/print-jobs", () => {
     });
   });
 
+  it("passes job_type through to createPrintJob as jobType", async () => {
+    verifyKitAuthMock.mockResolvedValue({ kitSlug: "qkit" });
+    createPrintJobMock.mockResolvedValue({ ok: true, id: "job-1" });
+
+    const res = await POST(
+      requestWith({
+        vendor_id: "11111111-1111-1111-1111-111111111111",
+        payload: { customer_name: "Ada", order_number: "0007" },
+        source_ref: "order-uuid-1",
+        job_type: "label",
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(createPrintJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({ jobType: "label" }),
+    );
+  });
+
   it("returns the createPrintJob error status/message on failure (e.g. 409 duplicate)", async () => {
     verifyKitAuthMock.mockResolvedValue({ kitSlug: "qkit" });
     createPrintJobMock.mockResolvedValue({

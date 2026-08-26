@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- `@merqo/ui` bumped to v0.22.1. `JobStatusBadge` now renders through the
+  shared `StatusBadge` component instead of shadcn's `Badge`, with each
+  status mapped onto an existing brand token (`secondary`/`flow`/`mint`/
+  `destructive`) instead of the previous raw-literal/token mix.
+
 ### Added
 
 - Per-NIIMBOT-model print config (`src/lib/niimbot-model.ts`), replacing the hardcoded `"B1"`/`"top"` literals in `niimbot-print.ts` — `niimbluelib` already supports other NIIMBOT models (B18, D110), so this was purely an app-side hardcode. `printLabel` gains an optional `model` param, defaulting to today's only supported model. No behavior change.

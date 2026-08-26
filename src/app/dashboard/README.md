@@ -28,7 +28,11 @@ The authenticated vendor area (`/dashboard/*`).
 - `layout.dom.test.tsx` — RTL/jsdom test: renders the nav (mocked) with
   the vendor's stall name, plus the page `children`.
 - `job-status-badge.tsx` / `job-status-badge.dom.test.tsx` — shared status
-  badge (queued/printing/done/failed) used by `history/`'s table.
+  badge (queued/printing/done/failed) used by `history/`'s table. Renders via
+  `@merqo/ui`'s shared `StatusBadge` (dot + bordered pill), replacing the old
+  plain shadcn `Badge`; each status's `className` maps to this repo's own
+  brand tokens (`mint`/`destructive`/`flow`/`secondary`) rather than raw
+  Tailwind color literals.
 - `page.tsx` / `page.dom.test.tsx` — dashboard overview: fetches
   `listActiveLocations` (`@/lib/print-locations`) and renders one
   `BridgeStatus` per active location (empty-state message when there are

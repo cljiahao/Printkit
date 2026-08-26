@@ -27,8 +27,9 @@ see `src/app/dashboard/bridge/README.md`.
 Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 `docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`
 
-Shared dashboard nav/account menu come from `@merqo/ui`
-(`github:cljiahao/merqo-ui#v0.19.0`, `package.json`).
+Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
+`StatusBadge` shape, come from `@merqo/ui`
+(`github:cljiahao/merqo-ui#v0.22.1`, `package.json`).
 
 Brand theme is "Banknote Engrave" (engraved teal-green primary, warm-grey
 secondary) — see `src/app/globals.css`'s own header comment.

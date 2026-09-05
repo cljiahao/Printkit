@@ -24,6 +24,7 @@ for this project.
 - `apple-icon.tsx` — `AppleIcon` route handler; renders `brandIcon(180)` as a 180×180 PNG for iOS home-screen touch icons.
 - `auth/callback/` — Supabase auth callback route (`GET`, OAuth code exchange via `exchangeCodeForSession`); redirects to `next` (same-origin only) or `/dashboard` on success, `/login?error=oauth` on failure or a missing code.
 - `dashboard/` — authenticated vendor area, gated by `layout.tsx`'s `getVendorSession()` and wrapped in `dashboard-nav.tsx`'s composed `@merqo/ui` `DashboardNav`/`AccountMenu` — see its own README.
+- `legal/` — public `/legal/terms` + `/legal/privacy` pages (rendered from `@merqo/ui`'s shared content) and the `/legal/accept` interstitial a signed-in vendor is bounced to when their accepted terms/privacy versions fall behind `@merqo/ui`'s `LEGAL_VERSIONS` — see `src/lib/legal-gate.ts` and its hook in `getVendorSession` (`@/lib/vendor-session`).
 - `error.tsx` — root-level error boundary (`"use client"`) for every route (landing, login, auth, dashboard — there is no more specific one yet). Branded like `login/page.tsx` (`ElevatedCard` + `Wordmark`), with a "Try again" (`reset()`) and a "Back to home" (`next/link`) action. Logs the caught error to the console.
 - `globals.css` — Tailwind v4 entry point: theme tokens, base layer, and custom utility classes; `@source` includes `node_modules/@merqo/ui/dist` so its components' Tailwind classes get compiled here too. Color tokens are named "Banknote Engrave" in the file's own header comment (engraved teal-green primary, warm-grey secondary — was steel-blue until 2026-08-24, changed since it read too close to the primary's own hue) — the cross-kit brand pick this repo was seeded with.
 - `icon.tsx` — `Icon` route handler; renders `brandIcon(32)` as a 32×32 PNG favicon.
@@ -50,8 +51,11 @@ callback config up from `kit_api_keys` rather than assuming qkit.
 `dashboard/dashboard-nav.tsx`
 calls `actions/feedback.ts` and `actions/support.ts` directly (their
 Sheet UI lives inside `@merqo/ui`'s `DashboardNav`, not a page route);
-`dashboard/layout.tsx` calls `actions/auth.ts`'s `signOutAction`. No
-`admin/` directory exists yet.
+`dashboard/layout.tsx` calls `actions/auth.ts`'s `signOutAction` and renders
+`@merqo/ui`'s `LegalFooterLinks` (linking to `legal/terms`/`legal/privacy`)
+below `<main>`. printkit has no public landing page (`page.tsx` redirects to
+`/dashboard`), so the footer link lives in the dashboard shell instead of a
+marketing footer. No `admin/` directory exists yet.
 
 ## Parent
 

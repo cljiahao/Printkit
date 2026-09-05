@@ -13,6 +13,20 @@ everything else sits flat here.
   `supabase-migrate` skill) and regenerated after any schema change. Satisfies
   Supabase's `GenericSchema` constraint with proper `Tables`, `Views`, and
   `Functions` typing for the `printkit` schema.
+- `safe-redirect.ts` — `safeRedirectPath(next, fallback)`: rejects an absolute
+  URL, a protocol-relative `//`/`/\` path, or one carrying an embedded control
+  character, falling back otherwise. The open-redirect guard for the
+  `/legal/accept` flow's `next` search param.
+- `legal-gate.ts` — `checkLegalAcceptance(email)`/
+  `requireCurrentLegalAcceptance(email)`. printkit owns no acceptance
+  record — merqo does — so currency is a bearer-authed (`MERQO_CUSTOMER_SECRET`)
+  `GET /api/merqo/legal-status` call, cached in the new `legal_check_state`
+  table (migration `0007`) for 5 minutes to keep the call off every gated
+  render. Fails closed (returns `false`/redirects to `/legal/accept`) on a
+  missing secret, an unreachable merqo, a non-2xx response, or a malformed
+  body. `requireCurrentLegalAcceptance` is a no-op when `email` is falsy (the
+  caller already handled the no-session case) and redirects a stale vendor to
+  `/legal/accept` otherwise.
 - `kit-auth.ts` — `hashApiKey`/`verifyKitAuth`: bearer-secret verification
   for calling kits, checked on every `/api/v1/*` route before any DB access.
 - `print-jobs.ts` — `createPrintJob(input)`: inserts a queued `print_jobs`
@@ -84,7 +98,11 @@ everything else sits flat here.
   missing config, network error, non-2xx) is swallowed after a log line.
 - `vendor-session.ts` — `getVendorSession()`: shared dashboard auth guard
   (gets a session-scoped Supabase client and the authenticated user,
-  redirects to `/login` if none).
+  redirects to `/login` if none, then bounces to `/legal/accept` via
+  `requireCurrentLegalAcceptance` — see `legal-gate.ts` above — if the
+  vendor's terms/privacy acceptance is stale). This is printkit's single
+  vendor-gate entry point (`dashboard/layout.tsx` calls it), so the legal
+  check lives here once rather than duplicated per call site.
 - `merqo-rpc.ts` — shared `.schema("merqo").rpc(...)` caller for every cross-kit `merqo.*` RPC below.
 - `merqo-vendor-profile.ts` — `getOrCreateVendorProfile`/`upsertVendorProfile`, the shared vendor display-name source used by `dashboard-nav.tsx`.
 - `merqo-vendor-feedback.ts` — `submitVendorFeedback`, backs `AccountMenu`'s required `onFeedbackSubmit`.

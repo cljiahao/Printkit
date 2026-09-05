@@ -6,12 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Legal-acceptance gate: `/legal/terms` + `/legal/privacy` pages (rendered
+  from `@merqo/ui`'s shared content) and the `/legal/accept` interstitial,
+  wired into `getVendorSession()` — a signed-in vendor whose terms/privacy
+  acceptance falls behind `@merqo/ui`'s `LEGAL_VERSIONS` is bounced there
+  before reaching any dashboard page. printkit owns no acceptance record
+  itself (merqo does); currency is checked via a bearer-authed `GET
+/api/merqo/legal-status` call (`src/lib/legal-gate.ts`), cached in the new
+  `printkit.legal_check_state` table for 5 minutes, and failing closed on any
+  error. Acceptance is recorded via `POST /api/merqo/legal-accept`
+  (`src/app/legal/accept/actions.ts`), terms and privacy posted as two
+  independent calls. New `MERQO_BASE_URL`/`MERQO_CUSTOMER_SECRET` env vars
+  (printkit's first kit→merqo outbound call). The dashboard shell's footer
+  now links to Terms/Privacy (`@merqo/ui`'s `LegalFooterLinks`) — printkit
+  has no public landing page for a marketing footer to live on instead.
+
 ### Changed
 
-- `@merqo/ui` bumped to v0.22.1. `JobStatusBadge` now renders through the
-  shared `StatusBadge` component instead of shadcn's `Badge`, with each
-  status mapped onto an existing brand token (`secondary`/`flow`/`mint`/
-  `destructive`) instead of the previous raw-literal/token mix.
+- `@merqo/ui` bumped to v0.23.0 (from v0.22.1, which added `JobStatusBadge`
+  rendering through the shared `StatusBadge` component instead of shadcn's
+  `Badge`, with each status mapped onto an existing brand token
+  (`secondary`/`flow`/`mint`/`destructive`) instead of the previous
+  raw-literal/token mix).
 
 ### Added
 

@@ -13,6 +13,7 @@ tables, RLS policies, and grants, applied in order.
 - `0004_printkit_realtime.sql` — adds `print_jobs` to the `supabase_realtime` publication so the bridge device's `postgres_changes` subscription (Plan 4) receives job-delivery events. RLS still governs which rows a session receives.
 - `0005_print_locations.sql` — `print_locations` (location/booth registry per calling kit), `location_id` FK on `print_jobs`, per-vendor RLS, plus `print_locations_vendor_idx` (vendor_id, created_at) and `print_jobs_location_idx` (location_id) for the same RLS-filtered-by-vendor / FK-lookup access patterns as `0001`'s indexes.
 - `0006_kit_api_keys_callback.sql` — adds nullable `callback_url`/`callback_secret` to `kit_api_keys`, so a calling kit's print-status callback is configured per-row (`src/lib/kit-callback.ts`) instead of hardcoded to one kit's env vars. Plaintext, not hashed — printkit must present them itself.
+- `0007_legal_check_state.sql` — `legal_check_state`, a TTL cache (`email` PK, `checked_at`, `is_current`) for "is this vendor's terms/privacy acceptance current with merqo?" — printkit owns no acceptance record itself, so `src/lib/legal-gate.ts` calls merqo's `GET /api/merqo/legal-status` and caches the result here for 5 minutes, mirroring merqo's own `vendor_sync_state` throttle. Service-role only (RLS on, zero policies), same shape as `kit_api_keys`.
 
 ## Parent
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LegalFooterLinks } from "@merqo/ui";
 import { getVendorSession } from "@/lib/vendor-session";
 import { getOrCreateVendorProfile } from "@/lib/merqo-vendor-profile";
 import { signOutAction } from "@/app/actions/auth";
@@ -25,6 +26,11 @@ export default async function DashboardLayout({
         />
       </div>
       <main className="mx-auto w-full max-w-7xl p-6">{children}</main>
+      <footer className="print:hidden">
+        <div className="mx-auto w-full max-w-7xl px-6 py-6 text-sm text-muted-foreground">
+          <LegalFooterLinks />
+        </div>
+      </footer>
     </div>
   );
 }

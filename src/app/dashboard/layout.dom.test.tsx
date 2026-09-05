@@ -19,6 +19,14 @@ vi.mock("./dashboard-nav", () => ({
     <div>{vendorName}</div>
   ),
 }));
+vi.mock("@merqo/ui", () => ({
+  LegalFooterLinks: () => (
+    <nav>
+      <a href="/legal/terms">Terms</a>
+      <a href="/legal/privacy">Privacy</a>
+    </nav>
+  ),
+}));
 
 import DashboardLayout from "./layout";
 
@@ -27,5 +35,17 @@ describe("DashboardLayout", () => {
     render(await DashboardLayout({ children: <p>page content</p> }));
     expect(screen.getByText("Ada's Prints")).toBeInTheDocument();
     expect(screen.getByText("page content")).toBeInTheDocument();
+  });
+
+  it("renders the legal footer links below main", async () => {
+    render(await DashboardLayout({ children: <p>page content</p> }));
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/legal/terms",
+    );
+    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "/legal/privacy",
+    );
   });
 });

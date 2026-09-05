@@ -75,6 +75,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      legal_check_state: {
+        Row: {
+          checked_at: string;
+          email: string;
+          is_current: boolean;
+        };
+        Insert: {
+          checked_at?: string;
+          email: string;
+          is_current: boolean;
+        };
+        Update: {
+          checked_at?: string;
+          email?: string;
+          is_current?: boolean;
+        };
+        Relationships: [];
+      };
       print_jobs: {
         Row: {
           created_at: string;

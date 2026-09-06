@@ -2,9 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { LEGAL_VERSIONS } from "@merqo/ui";
 
 vi.mock("@/lib/supabase/server", () => ({ createServiceClient: vi.fn() }));
+vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
 const { createServiceClient } = await import("@/lib/supabase/server");
-import { checkLegalAcceptance } from "./legal-gate";
+const { redirect } = await import("next/navigation");
+import {
+  checkLegalAcceptance,
+  requireCurrentLegalAcceptance,
+} from "./legal-gate";
 
 const originalFetch = global.fetch;
 
@@ -145,5 +150,38 @@ describe("checkLegalAcceptance", () => {
 
     expect(await checkLegalAcceptance("vendor@example.com")).toBe(false);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("requireCurrentLegalAcceptance", () => {
+  it("is a no-op when email is falsy", async () => {
+    vi.mocked(redirect).mockClear();
+    await requireCurrentLegalAcceptance(null);
+    await requireCurrentLegalAcceptance(undefined);
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("redirects to /legal/accept when the vendor's acceptance is stale", async () => {
+    const { client } = clientWith({
+      cached: { checked_at: new Date().toISOString(), is_current: false },
+    });
+    vi.mocked(createServiceClient).mockResolvedValue(client as never);
+    vi.mocked(redirect).mockClear();
+
+    await requireCurrentLegalAcceptance("vendor@example.com");
+
+    expect(redirect).toHaveBeenCalledWith("/legal/accept");
+  });
+
+  it("does not redirect when the vendor's acceptance is current", async () => {
+    const { client } = clientWith({
+      cached: { checked_at: new Date().toISOString(), is_current: true },
+    });
+    vi.mocked(createServiceClient).mockResolvedValue(client as never);
+    vi.mocked(redirect).mockClear();
+
+    await requireCurrentLegalAcceptance("vendor@example.com");
+
+    expect(redirect).not.toHaveBeenCalled();
   });
 });

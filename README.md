@@ -29,7 +29,7 @@ Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 
 Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
-(`github:cljiahao/merqo-ui#v0.24.0`, `package.json`). The dashboard shell
+(`github:cljiahao/merqo-ui#v0.25.0`, `package.json`). The dashboard shell
 also gates a signed-in vendor on a current terms/privacy acceptance
 (`/legal/*`, own README) before rendering, redirecting a stale vendor to
 `/legal/accept` — see `src/app/legal/README.md`. As of `v0.24.0`,

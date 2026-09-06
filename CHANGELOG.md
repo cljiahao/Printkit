@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `@merqo/ui` bumped to `v0.25.0`: a "← Back" button on `/legal/terms`
+  and `/legal/privacy`, and a pre-lawyer-review legal-wording pass (no em
+  dashes, PDPA-accurate rights language, added missing no-warranty/IP
+  clauses to the standard Terms). No `/about` page here (printkit has no
+  public landing surface — a vendor only reaches it from qkit's booth
+  settings).
 - Dropped the required typed legal-name field from terms/privacy
   acceptance — a plain ToS/Privacy clickwrap doesn't need a signatory
   name for evidentiary strength beyond the existing (vendor_email,

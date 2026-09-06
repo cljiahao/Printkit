@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Dropped the required typed legal-name field from terms/privacy
+  acceptance — a plain ToS/Privacy clickwrap doesn't need a signatory
+  name for evidentiary strength beyond the existing (vendor_email,
+  auth_uid, doc_type, doc_version, ip, user_agent, timestamp) record kept
+  by merqo. `@merqo/ui` bumped to `v0.24.0` (`TermsAcceptanceCheckbox` no
+  longer takes `legalName`/`onLegalNameChange`).
+
 ### Added
 
 - Legal-acceptance gate: `/legal/terms` + `/legal/privacy` pages (rendered

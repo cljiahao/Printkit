@@ -13,7 +13,6 @@ describe("AcceptForm", () => {
     expect(nextField).toHaveValue("/admin");
     const submit = screen.getByRole("button", { name: "Continue" });
     expect(submit).toBeDisabled();
-    await userEvent.type(screen.getByLabelText(/your name/i), "Jane Vendor");
     await userEvent.click(screen.getByRole("checkbox"));
     expect(submit).toBeEnabled();
   });

@@ -39,9 +39,9 @@ function clientIp(hdrs: Headers): string {
  * On success the local `legal_check_state` TTL cache is primed to
  * `is_current = true` so the very next gated render doesn't re-hit merqo.
  *
- * `legal_name`/`ip`/`user_agent` are the real values from this request (the
- * vendor's own browser submission), forwarded to merqo as the acceptance
- * record's audit fields.
+ * `ip`/`user_agent` are the real values from this request (the vendor's own
+ * browser submission), forwarded to merqo as the acceptance record's audit
+ * fields.
  */
 export async function acceptLegalTerms(formData: FormData): Promise<void> {
   const supabase = await createServerClient();
@@ -57,11 +57,6 @@ export async function acceptLegalTerms(formData: FormData): Promise<void> {
   const secret = process.env.MERQO_CUSTOMER_SECRET;
   if (!secret) {
     throw new Error("MERQO_CUSTOMER_SECRET is not configured");
-  }
-
-  const legalName = String(formData.get("legal_name") || "").trim();
-  if (!legalName) {
-    throw new Error("legal_name is required");
   }
 
   const reqHeaders = await headers();
@@ -82,7 +77,6 @@ export async function acceptLegalTerms(formData: FormData): Promise<void> {
         doc_version: LEGAL_VERSIONS[docType],
         doc_sha256: sha256(getLegalDocSource(docType)),
         kit_slug: "printkit",
-        legal_name: legalName,
         ip,
         user_agent: userAgent,
       }),

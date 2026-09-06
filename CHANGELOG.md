@@ -31,6 +31,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (`secondary`/`flow`/`mint`/`destructive`) instead of the previous
   raw-literal/token mix).
 
+- `@merqo/ui` bumped to v0.23.1 — `acceptLegalTerms` now forwards the
+  vendor's submitted `legal_name` and their real `ip`/`user_agent` (read
+  via `headers()`) in both `legal-accept` POST bodies, matching merqo's
+  now-required `legal_name` field.
+
 ### Added
 
 - Per-NIIMBOT-model print config (`src/lib/niimbot-model.ts`), replacing the hardcoded `"B1"`/`"top"` literals in `niimbot-print.ts` — `niimbluelib` already supports other NIIMBOT models (B18, D110), so this was purely an app-side hardcode. `printLabel` gains an optional `model` param, defaulting to today's only supported model. No behavior change.

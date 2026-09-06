@@ -7,10 +7,14 @@ The authenticated vendor area (`/dashboard/*`).
 ## Contents
 
 - `layout.tsx` — `DashboardLayout`, the ancestor of every route below.
-  Gates access via `getVendorSession()` (`@/lib/vendor-session`), resolves
+  Gates access via `getVendorSession()` (`@/lib/vendor-session`, which also
+  bounces a stale legal acceptance to `/legal/accept`), resolves
   the vendor's stall name via `getOrCreateVendorProfile`
   (`@/lib/merqo-vendor-profile`), then wraps `children` in
-  `dashboard-nav.tsx`'s `DashboardNav` and a `max-w-7xl` `<main>`.
+  `dashboard-nav.tsx`'s `DashboardNav` and a `max-w-7xl` `<main>`, followed by
+  a `<footer>` rendering `@merqo/ui`'s `LegalFooterLinks` — printkit has no
+  public landing page for a marketing footer to live on, so the Terms/Privacy
+  links live in the dashboard shell instead.
 - `dashboard-nav.tsx` — `DashboardNav`: composes `@merqo/ui`'s shared
   `DashboardNav`/`AccountMenu` — same shared-component contract every
   sibling kit uses. Owns the printkit wordmark, the Overview/Bridge/History

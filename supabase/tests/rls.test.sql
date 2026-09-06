@@ -1,5 +1,5 @@
 begin;
-select plan(11);
+select plan(15);
 
 select has_table('printkit', 'print_jobs', 'print_jobs table exists');
 select has_table('printkit', 'admin_audit', 'admin_audit table exists');
@@ -136,6 +136,42 @@ select throws_ok(
   '42501',
   null,
   'authenticated role cannot select kit_api_keys (insufficient_privilege)'
+);
+
+reset role;
+
+-- legal_check_state: service-role-only (RLS on, zero policies), same shape
+-- as kit_api_keys — proves the migration actually enabled RLS and granted no
+-- policy, not just that the migration text lacks one.
+select ok(
+  (select relrowsecurity from pg_class where oid = 'printkit.legal_check_state'::regclass),
+  'RLS on legal_check_state'
+);
+select is(
+  (select count(*)::int from pg_policies
+   where schemaname = 'printkit' and tablename = 'legal_check_state'),
+  0,
+  'legal_check_state has no RLS policies (service-role-only)'
+);
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub": "11111111-1111-1111-1111-111111111111"}';
+
+select throws_ok(
+  $$ select * from printkit.legal_check_state $$,
+  '42501',
+  null,
+  'authenticated role cannot select legal_check_state (insufficient_privilege)'
+);
+
+reset role;
+set local role anon;
+
+select throws_ok(
+  $$ select * from printkit.legal_check_state $$,
+  '42501',
+  null,
+  'anon role cannot select legal_check_state (insufficient_privilege)'
 );
 
 reset role;

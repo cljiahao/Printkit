@@ -30,6 +30,9 @@ app _asks_ the database for, never what the database _permits_.
     each register a location; each vendor's select returns only their own
     row, proving `print_locations_vendor_select` isn't a `using (true)`
     policy in disguise.
+  - **`legal_check_state` is service-role-only** (migration `0007`) — RLS
+    enabled, zero policies; both `authenticated` (vendor A) and `anon`
+    are denied direct `SELECT`, matching `kit_api_keys`'s treatment.
 
   The `throws_ok` assertions pin errcode `42501` (`insufficient_privilege`)
   rather than accepting any error, so the suite can't pass on an unrelated

@@ -29,7 +29,10 @@ Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 
 Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
-(`github:cljiahao/merqo-ui#v0.22.1`, `package.json`).
+(`github:cljiahao/merqo-ui#v0.23.2`, `package.json`). The dashboard shell
+also gates a signed-in vendor on a current terms/privacy acceptance
+(`/legal/*`, own README) before rendering, redirecting a stale vendor to
+`/legal/accept` — see `src/app/legal/README.md`.
 
 Brand theme is "Banknote Engrave" (engraved teal-green primary, warm-grey
 secondary) — see `src/app/globals.css`'s own header comment.

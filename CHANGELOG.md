@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `merqoBaseUrl()` (`src/lib/legal-gate.ts`, `src/app/legal/accept/actions.ts`)
+  hardcoded its no-env-var fallback to `https://merqo-sg.vercel.app`, a dead
+  host: direct curl testing confirmed it 404s on every route including `/`,
+  while merqo's real production host, `https://www.merqo.io`, correctly
+  serves `/api/merqo/legal-accept` (405), `/api/merqo/legal-status` (401),
+  and `/api/merqo/customer-connect-token` (405). `MERQO_BASE_URL` was never
+  set as an explicit Vercel env override on any kit, so every kit-to-merqo
+  call relying on this fallback has silently been hitting a dead host in
+  production. Fixed the literal fallback here; the primary fix is still
+  setting `MERQO_BASE_URL` explicitly in Vercel, this is defense-in-depth.
 - Bumped `@merqo/ui` to `v0.26.0` and switched `legal-gate.ts`/`legal/accept/
 actions.ts` to import `LEGAL_VERSIONS`/`getLegalDocSource`/`isLegalCurrent`
   from its new `@merqo/ui/legal` subpath instead of the package root. Those

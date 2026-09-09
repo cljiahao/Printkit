@@ -14,7 +14,7 @@ function sha256(input: string): string {
 }
 
 function merqoBaseUrl(): string {
-  return process.env.MERQO_BASE_URL ?? "https://merqo-sg.vercel.app";
+  return process.env.MERQO_BASE_URL ?? "https://www.merqo.io";
 }
 
 function clientIp(hdrs: Headers): string {

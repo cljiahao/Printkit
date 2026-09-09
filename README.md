@@ -27,6 +27,10 @@ see `src/app/dashboard/bridge/README.md`.
 Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 `docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`
 
+`next` is pinned to `16.3.4` (see `CHANGELOG.md` for the security context).
+The Vercel build does not use `output: "standalone"`; that config was
+dropped.
+
 Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
 (`github:cljiahao/merqo-ui#v0.25.0`, `package.json`). The dashboard shell

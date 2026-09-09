@@ -23,11 +23,13 @@ const newPrintTaskMock = vi.fn().mockReturnValue({
 const disconnectMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("@mmote/niimbluelib", () => ({
-  NiimbotBluetoothClient: vi.fn().mockImplementation(() => ({
-    connect: connectMock,
-    disconnect: disconnectMock,
-    abstraction: { newPrintTask: newPrintTaskMock },
-  })),
+  NiimbotBluetoothClient: vi.fn().mockImplementation(function () {
+    return {
+      connect: connectMock,
+      disconnect: disconnectMock,
+      abstraction: { newPrintTask: newPrintTaskMock },
+    };
+  }),
   ImageEncoder: {
     encodeCanvas: vi
       .fn()

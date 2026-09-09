@@ -16,6 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   only to Vercel, which bundles functions itself and does not use the
   standalone output, and under `next` 16.3.x that config also made Vercel's
   build finalizer look for a server trace file it no longer writes there.
+- Bumped `vitest` and `@vitest/coverage-v8` to `4.1.11` (from `3.2.6`).
+  Clears GHSA-82fw-gwwq-j7x9 (`@vitest/mocker` path traversal / arbitrary
+  file read, patched only in `4.1.11`). Also `fast-uri` to `4.1.4` and the
+  `qs` override to `>=6.16.0`, clearing four high and two moderate advisories
+  reaching in through `@stryker-mutator`. The dependency audit is now clean
+  at every level. `src/lib/niimbot-print.test.ts`'s `NiimbotBluetoothClient`
+  mock switched from an arrow `mockImplementation` to a `function`
+  expression: `vitest` 4 no longer lets an arrow `vi.fn()` be `new`-ed.
 
 ### Changed
 

@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- Bumped `next` to `16.3.4` (`eslint-config-next` to match), which pulls
+  `sharp` to `0.35.4`. Clears two critical Next.js RCE advisories
+  (GHSA-p293-qw3h-jr36, GHSA-2xp9-vwfh-vxw4) and a high `sharp`/libheif
+  advisory. `browserslist` was already at a patched version.
+- Dropped `output: "standalone"` from `next.config.ts`. printkit deploys
+  only to Vercel, which bundles functions itself and does not use the
+  standalone output, and under `next` 16.3.x that config also made Vercel's
+  build finalizer look for a server trace file it no longer writes there.
+
 ### Changed
 
 - `@merqo/ui` bumped to `v0.25.0`: a "← Back" button on `/legal/terms`

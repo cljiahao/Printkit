@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import { isLegalCurrent, LEGAL_VERSIONS } from "@merqo/ui";
+import { isLegalCurrent, LEGAL_VERSIONS } from "@merqo/ui/legal";
 import { createServiceClient } from "@/lib/supabase/server";
 
 const TTL_MS = 5 * 60 * 1000;
 
 function merqoBaseUrl(): string {
-  return process.env.MERQO_BASE_URL ?? "https://merqo-sg.vercel.app";
+  return process.env.MERQO_BASE_URL ?? "https://www.merqo.io";
 }
 
 /**

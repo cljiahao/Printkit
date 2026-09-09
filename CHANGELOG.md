@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Bumped `@merqo/ui` to `v0.26.0` and switched `legal-gate.ts`/`legal/accept/
+actions.ts` to import `LEGAL_VERSIONS`/`getLegalDocSource`/`isLegalCurrent`
+  from its new `@merqo/ui/legal` subpath instead of the package root. Those
+  are plain non-React functions, but the root export is bundled under a
+  package-wide `"use client"` banner — calling them from server code (a
+  Server Action, the server-only legal gate) threw "Attempted to call X()
+  from the server but X is on the client". The gate's own fail-closed
+  try/catch silently swallowed this, redirecting every vendor to
+  `/legal/accept` instead of surfacing the real error.
+
 ### Security
 
 - Bumped `next` to `16.3.4` (`eslint-config-next` to match), which pulls

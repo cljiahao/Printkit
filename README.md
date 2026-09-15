@@ -45,3 +45,6 @@ agree checkbox.
 
 Brand theme is "Banknote Engrave" (engraved teal-green primary, warm-grey
 secondary) — see `src/app/globals.css`'s own header comment.
+
+A vendor can now reprint an already-`printed` label, not just a `failed`
+one — see `src/app/dashboard/history/README.md`'s `reprintJob` entry.

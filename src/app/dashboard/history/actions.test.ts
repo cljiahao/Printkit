@@ -88,9 +88,9 @@ describe("reprintJob", () => {
     expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
   });
 
-  it("returns an error when the job isn't currently failed", async () => {
+  it("returns an error when the job is still queued or sent (would race an in-flight print)", async () => {
     maybeSingleMock.mockResolvedValue({
-      data: { status: "printed" },
+      data: { status: "queued" },
       error: null,
     });
 
@@ -98,7 +98,7 @@ describe("reprintJob", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "Only a failed job can be reprinted",
+      error: "Only a failed or already-printed job can be reprinted",
     });
   });
 
@@ -121,6 +121,19 @@ describe("reprintJob", () => {
     );
     expect(result).toEqual({ success: true });
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/history");
+  });
+
+  it("also allows resetting an already-printed job to queued (vendor lost/peeled the label)", async () => {
+    maybeSingleMock.mockResolvedValue({
+      data: { status: "printed" },
+      error: null,
+    });
+    updatePrintJobStatusMock.mockResolvedValue({ ok: true });
+
+    const result = await reprintJob("job-1");
+
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "queued");
+    expect(result).toEqual({ success: true });
   });
 
   it("does not revalidate when the job isn't found or isn't failed", async () => {

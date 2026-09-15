@@ -64,7 +64,7 @@ export function JobHistoryTable({
               {formatDateTime(job.created_at)}
             </TableCell>
             <TableCell>
-              {job.status === "failed" ? (
+              {job.status === "failed" || job.status === "printed" ? (
                 <ReprintButton jobId={job.id} />
               ) : null}
             </TableCell>

@@ -11,10 +11,11 @@ import type { ActionResult } from "@/lib/action-result";
  * `print_jobs_vendor_select` RLS policy (`auth.uid() = vendor_id`) already
  * refuses a cross-vendor read as the real authorization boundary; the
  * explicit `.eq("vendor_id", ...)` here is belt-and-braces on top of that,
- * not the sole check. Only a 'failed' job may be reprinted — reprinting a
- * 'queued'/'sent' job would race an in-flight print, and reprinting an
- * already-'printed' one isn't what the print-failure UX this button lives
- * in is for. The service-role client is used only for the write path
+ * not the sole check. Only a 'failed' or already-'printed' job may be
+ * reprinted — a vendor who peeled/lost a good label needs this too, not
+ * just a genuine print failure. 'queued'/'sent' stay excluded: reprinting
+ * either would race an in-flight print. The service-role client is used
+ * only for the write path
  * (updatePrintJobStatus, which bypasses RLS internally) and the
  * admin_audit insert (whose own RLS restricts reads to admins, so writing
  * on behalf of the acting vendor as audit actor needs to bypass that too).
@@ -31,8 +32,11 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
     .maybeSingle();
 
   if (!job) return { success: false, error: "Print job not found" };
-  if (job.status !== "failed") {
-    return { success: false, error: "Only a failed job can be reprinted" };
+  if (job.status !== "failed" && job.status !== "printed") {
+    return {
+      success: false,
+      error: "Only a failed or already-printed job can be reprinted",
+    };
   }
 
   const result = await updatePrintJobStatus(jobId, "queued");

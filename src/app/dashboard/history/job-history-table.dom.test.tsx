@@ -52,15 +52,22 @@ describe("JobHistoryTable", () => {
     expect(screen.getByText(/no print jobs yet/i)).toBeInTheDocument();
   });
 
-  it("renders a Reprint button only for a failed job", () => {
+  it("renders a Reprint button for a failed job", () => {
     render(<JobHistoryTable jobs={[{ ...JOB, status: "failed" }]} />);
     expect(
       screen.getByRole("button", { name: /reprint/i }),
     ).toBeInTheDocument();
   });
 
-  it("renders no Reprint button for a printed job", () => {
+  it("renders a Reprint button for an already-printed job (lost/peeled label)", () => {
     render(<JobHistoryTable jobs={[JOB]} />);
+    expect(
+      screen.getByRole("button", { name: /reprint/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders no Reprint button for a still-queued job (would race an in-flight print)", () => {
+    render(<JobHistoryTable jobs={[{ ...JOB, status: "queued" }]} />);
     expect(
       screen.queryByRole("button", { name: /reprint/i }),
     ).not.toBeInTheDocument();

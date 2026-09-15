@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- `reprintJob` now also accepts an already-`printed` job, not just a
+  `failed` one — a vendor who lost or peeled off a good label had no way to
+  print another copy.
+
 ### Fixed
 
 - `merqoBaseUrl()` (`src/lib/legal-gate.ts`, `src/app/legal/accept/actions.ts`)

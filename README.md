@@ -33,15 +33,22 @@ for the security context). The Vercel build does not use
 
 Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
-(`github:cljiahao/merqo-ui#v0.27.0`, `package.json` — bumped 2026-09-15 for
+(`github:cljiahao/merqo-ui#v0.30.0`, `package.json` — bumped 2026-09-15 for
 `DashboardTours`, a route-matched multi-tour router for kits with more than
 one dashboard-page tour; purely additive, this kit's own `DashboardTour`
-usage is unchanged). The dashboard shell
+usage is unchanged; bumped again 2026-09-16 for per-kit terms-schedule
+scoping and the founder's public-name fix, see below). The dashboard shell
 also gates a signed-in vendor on a current terms/privacy acceptance
 (`/legal/*`, own README) before rendering, redirecting a stale vendor to
 `/legal/accept` — see `src/app/legal/README.md`. As of `v0.24.0`,
 `TermsAcceptanceCheckbox` no longer collects a typed legal name — just the
 agree checkbox.
+
+`/legal/terms` now renders only printkit's own Annex schedule
+(`<LegalDocument doc="terms" kit="printkit" />`), not every sibling kit's —
+previously every kit's `/legal/terms` page showed the full multi-kit annex
+since none passed kit context. `legal/accept/actions.ts`'s recorded
+`doc_sha256` hashes that same scoped content.
 
 Brand theme is "Banknote Engrave" (engraved teal-green primary, warm-grey
 secondary) — see `src/app/globals.css`'s own header comment.

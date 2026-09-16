@@ -11,8 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `reprintJob` now also accepts an already-`printed` job, not just a
   `failed` one — a vendor who lost or peeled off a good label had no way to
   print another copy.
+- Bumped `@merqo/ui` to `v0.30.0`.
 
 ### Fixed
+
+- `/legal/terms` now shows only printkit's own Annex schedule, not every
+  sibling kit's, via `@merqo/ui`'s new per-kit `getLegalDocSource`/
+  `LegalDocument` scoping. `legal/accept/actions.ts`'s recorded
+  `doc_sha256` now hashes that same scoped content.
+
 
 - `merqoBaseUrl()` (`src/lib/legal-gate.ts`, `src/app/legal/accept/actions.ts`)
   hardcoded its no-env-var fallback to `https://merqo-sg.vercel.app`, a dead

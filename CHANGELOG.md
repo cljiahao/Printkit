@@ -20,7 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `LegalDocument` scoping. `legal/accept/actions.ts`'s recorded
   `doc_sha256` now hashes that same scoped content.
 
-
 - `merqoBaseUrl()` (`src/lib/legal-gate.ts`, `src/app/legal/accept/actions.ts`)
   hardcoded its no-env-var fallback to `https://merqo-sg.vercel.app`, a dead
   host: direct curl testing confirmed it 404s on every route including `/`,

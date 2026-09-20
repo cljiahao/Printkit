@@ -22,6 +22,10 @@ const JOB: PrintJob = {
   source_ref: "order-1",
   created_at: "2026-08-22T10:00:00Z",
   printed_at: "2026-08-22T10:00:05Z",
+  sent_at: "2026-08-22T10:00:02Z",
+  requeued_at: null,
+  driver_ref: null,
+  failure_reason: null,
 };
 
 const UNROUTED_JOB: PrintJob = {

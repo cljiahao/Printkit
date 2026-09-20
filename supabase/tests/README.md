@@ -33,6 +33,11 @@ app _asks_ the database for, never what the database _permits_.
   - **`legal_check_state` is service-role-only** (migration `0007`) — RLS
     enabled, zero policies; both `authenticated` (vendor A) and `anon`
     are denied direct `SELECT`, matching `kit_api_keys`'s treatment.
+  - **Printer-connectors core** (migration `0008`) — `printers` carries a
+    vendor select policy; `device_credentials` and `bridge_pairing_codes`
+    hold no grant to `anon`/`authenticated`; and `claim_job` is executable
+    by `service_role` only, so no browser session can move a job from
+    `queued` to `sent` itself.
 
   The `throws_ok` assertions pin errcode `42501` (`insufficient_privilege`)
   rather than accepting any error, so the suite can't pass on an unrelated

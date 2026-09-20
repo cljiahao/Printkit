@@ -96,11 +96,15 @@ export type Database = {
       print_jobs: {
         Row: {
           created_at: string;
+          driver_ref: string | null;
+          failure_reason: string | null;
           id: string;
           job_type: string;
           location_id: string | null;
           payload: Json;
           printed_at: string | null;
+          requeued_at: string | null;
+          sent_at: string | null;
           source_kit: string;
           source_ref: string;
           status: string;
@@ -108,11 +112,15 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          driver_ref?: string | null;
+          failure_reason?: string | null;
           id?: string;
           job_type?: string;
           location_id?: string | null;
           payload: Json;
           printed_at?: string | null;
+          requeued_at?: string | null;
+          sent_at?: string | null;
           source_kit: string;
           source_ref: string;
           status?: string;
@@ -120,11 +128,15 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          driver_ref?: string | null;
+          failure_reason?: string | null;
           id?: string;
           job_type?: string;
           location_id?: string | null;
           payload?: Json;
           printed_at?: string | null;
+          requeued_at?: string | null;
+          sent_at?: string | null;
           source_kit?: string;
           source_ref?: string;
           status?: string;
@@ -136,6 +148,120 @@ export type Database = {
             columns: ["location_id"];
             isOneToOne: true;
             referencedRelation: "print_locations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      printers: {
+        Row: {
+          catalog_id: string;
+          connector: string;
+          created_at: string;
+          device_ref: string | null;
+          display_name: string;
+          driver: string;
+          id: string;
+          label_height_mm: number;
+          label_width_mm: number;
+          last_seen_at: string | null;
+          location_id: string;
+          vendor_id: string;
+        };
+        Insert: {
+          catalog_id: string;
+          connector: string;
+          created_at?: string;
+          device_ref?: string | null;
+          display_name: string;
+          driver: string;
+          id?: string;
+          label_height_mm: number;
+          label_width_mm: number;
+          last_seen_at?: string | null;
+          location_id: string;
+          vendor_id: string;
+        };
+        Update: {
+          catalog_id?: string;
+          connector?: string;
+          created_at?: string;
+          device_ref?: string | null;
+          display_name?: string;
+          driver?: string;
+          id?: string;
+          label_height_mm?: number;
+          label_width_mm?: number;
+          last_seen_at?: string | null;
+          location_id?: string;
+          vendor_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "printers_location_id_fkey";
+            columns: ["location_id"];
+            isOneToOne: true;
+            referencedRelation: "print_locations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      device_credentials: {
+        Row: {
+          created_at: string;
+          kind: string;
+          printer_id: string;
+          rotated_at: string | null;
+          token_hash: string;
+        };
+        Insert: {
+          created_at?: string;
+          kind: string;
+          printer_id: string;
+          rotated_at?: string | null;
+          token_hash: string;
+        };
+        Update: {
+          created_at?: string;
+          kind?: string;
+          printer_id?: string;
+          rotated_at?: string | null;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "device_credentials_printer_id_fkey";
+            columns: ["printer_id"];
+            isOneToOne: true;
+            referencedRelation: "printers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      bridge_pairing_codes: {
+        Row: {
+          code_hash: string;
+          expires_at: string;
+          printer_id: string;
+          used_at: string | null;
+        };
+        Insert: {
+          code_hash: string;
+          expires_at: string;
+          printer_id: string;
+          used_at?: string | null;
+        };
+        Update: {
+          code_hash?: string;
+          expires_at?: string;
+          printer_id?: string;
+          used_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "bridge_pairing_codes_printer_id_fkey";
+            columns: ["printer_id"];
+            isOneToOne: false;
+            referencedRelation: "printers";
             referencedColumns: ["id"];
           },
         ];
@@ -176,6 +302,10 @@ export type Database = {
     };
     Functions: {
       is_admin: { Args: { p_uid: string }; Returns: boolean };
+      claim_job: {
+        Args: { p_location_id: string; p_job_id?: string | null };
+        Returns: Database["printkit"]["Tables"]["print_jobs"]["Row"][];
+      };
     };
     Enums: {
       [_ in never]: never;

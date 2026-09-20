@@ -84,11 +84,11 @@ everything else sits flat here.
   the one place that defensively narrows a string field out of a
   `print_jobs.payload` jsonb value, shared by the history table's display
   columns and the bridge's auto-print label extraction.
-- `print-job-renderers.ts` — `getJobRenderer(jobType)`: `job_type` → canvas
-  renderer lookup, one entry today (`'label'`, wrapping `label-render.ts`'s
-  `renderLabelCanvas`) — the seam a second job type plugs into, returns
-  `null` for an unrecognized type so the bridge can report a clear failure
-  instead of guessing.
+- `label-image.ts` — `fetchLabelCanvas(jobId)`/`fetchSampleLabelCanvas(locationId)`/
+  `pngToCanvas(blob)`: browser-side, the bridge's only image handling now
+  that no device draws its own label. It downloads the PNG the server
+  rendered and decodes it into the canvas `niimbluelib` encodes, so a
+  Bluetooth printer produces the same label as every other connector.
 - `kit-callback.ts` — `notifyKitPrintStatus(kitSlug, sourceRef, status)`:
   fire-and-forget outbound callback on job status change, kit-agnostic —
   looks the calling kit's `callback_url`/`callback_secret` up from
@@ -107,7 +107,7 @@ everything else sits flat here.
 - `merqo-vendor-profile.ts` — `getOrCreateVendorProfile`/`upsertVendorProfile`, the shared vendor display-name source used by `dashboard-nav.tsx`.
 - `merqo-vendor-feedback.ts` — `submitVendorFeedback`, backs `AccountMenu`'s required `onFeedbackSubmit`.
 - `merqo-support.ts` — `submitSupportMessage`, backs `AccountMenu`'s required `getHelp` (form mode).
-- `niimbot-print.ts` — `connectPrinter`/`printLabel`/`disconnectPrinter`, a thin wrapper around `@mmote/niimbluelib`'s `NiimbotBluetoothClient`/`ImageEncoder`. `printLabel`'s optional `model` param (defaults to `niimbot-model.ts`'s `DEFAULT_NIIMBOT_MODEL`) looks up that model's `printDirection` instead of hardcoding the B1's `"top"` inline (`printheadPixels: 384` for the B1 stays in `label-render.ts`, a separate concern from the print-task direction). `niimbot-print.test.ts` mocks the `NiimbotBluetoothClient` constructor with a `function` expression (not an arrow) so `vitest` 4 can call it with `new`.
+- `niimbot-print.ts` — `connectPrinter`/`printLabel`/`disconnectPrinter`, a thin wrapper around `@mmote/niimbluelib`'s `NiimbotBluetoothClient`/`ImageEncoder`. `printLabel`'s optional `model` param (defaults to `niimbot-model.ts`'s `DEFAULT_NIIMBOT_MODEL`) looks up that model's `printDirection` instead of hardcoding the B1's `"top"` inline (the label bitmap itself now arrives from the server, so nothing about label size lives on the device). `niimbot-print.test.ts` mocks the `NiimbotBluetoothClient` constructor with a `function` expression (not an arrow) so `vitest` 4 can call it with `new`.
 - `niimbot-model.ts` — `NIIMBOT_MODELS`/`DEFAULT_NIIMBOT_MODEL`: per-model print config, one entry (`B1`) today — `niimbluelib` itself already supports other NIIMBOT models, so adding a second one here is a config entry, not a code change in `niimbot-print.ts`.
 - `printer-catalog.ts` — `PRINTER_CATALOG`/`getCatalogEntry`/`listCatalog`/
   `worksWithIpadAlone`: the static list of supported printer models and what

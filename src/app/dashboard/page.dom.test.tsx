@@ -14,43 +14,62 @@ vi.mock("@/lib/print-jobs-list", () => ({
 vi.mock("@/lib/print-locations", () => ({
   listActiveLocations: vi.fn().mockResolvedValue([]),
 }));
-vi.mock("@/components/bridge-status", () => ({
-  BridgeStatus: ({
-    vendorId,
-    locationId,
-  }: {
-    vendorId: string;
-    locationId: string;
-  }) => (
-    <div>
-      bridge status for {vendorId} at {locationId}
-    </div>
-  ),
-}));
+vi.mock("@/lib/printers", async () => {
+  const actual =
+    await vi.importActual<typeof import("@/lib/printers")>("@/lib/printers");
+  return { ...actual, getPrinterByLocation: vi.fn() };
+});
 
 import { listActiveLocations } from "@/lib/print-locations";
 import { countUnroutedJobs } from "@/lib/print-jobs-list";
+import { getPrinterByLocation } from "@/lib/printers";
 import DashboardPage from "./page";
 
 describe("DashboardPage", () => {
   beforeEach(() => {
     vi.mocked(listActiveLocations).mockReset().mockResolvedValue([]);
     vi.mocked(countUnroutedJobs).mockReset().mockResolvedValue(0);
+    vi.mocked(getPrinterByLocation).mockReset().mockResolvedValue(null);
   });
 
-  it("renders a bridge status per active location and a qkit-connected info card", async () => {
+  it("reports each booth's printer and its live state", async () => {
     vi.mocked(listActiveLocations).mockResolvedValue([
       { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
       { id: "loc-2", label: "Ice Cream Cart", source_ref: "booth-2" },
     ]);
+    vi.mocked(getPrinterByLocation).mockImplementation(async (locationId) =>
+      locationId === "loc-1"
+        ? ({
+            id: "printer-1",
+            display_name: "Feie FP-N20H",
+            last_seen_at: new Date().toISOString(),
+          } as Awaited<ReturnType<typeof getPrinterByLocation>>)
+        : null,
+    );
+
     render(await DashboardPage());
-    expect(
-      screen.getByText("bridge status for vendor-1 at loc-1"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("bridge status for vendor-1 at loc-2"),
-    ).toBeInTheDocument();
+
+    expect(screen.getByText("Kopitiam Cart")).toBeInTheDocument();
+    expect(screen.getByText("Feie FP-N20H")).toBeInTheDocument();
+    expect(screen.getByText(/printer connected/i)).toBeInTheDocument();
+    expect(screen.getByText("Ice Cream Cart")).toBeInTheDocument();
+    expect(screen.getByText(/no printer yet/i)).toBeInTheDocument();
     expect(screen.getByText(/connected to qkit/i)).toBeInTheDocument();
+  });
+
+  it("reports a printer that has gone quiet as offline", async () => {
+    vi.mocked(listActiveLocations).mockResolvedValue([
+      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+    ]);
+    vi.mocked(getPrinterByLocation).mockResolvedValue({
+      id: "printer-1",
+      display_name: "Star mC-Label2",
+      last_seen_at: new Date(Date.now() - 5 * 60_000).toISOString(),
+    } as Awaited<ReturnType<typeof getPrinterByLocation>>);
+
+    render(await DashboardPage());
+
+    expect(screen.getByText(/offline since/i)).toBeInTheDocument();
   });
 
   it("shows an empty-state message when there are no active locations", async () => {

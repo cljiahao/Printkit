@@ -47,6 +47,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   that callback is lost. New server-only env vars: `FEIE_USER`, `FEIE_UKEY`,
   `FEIE_API_BASE`, `FEIE_CALLBACK_PUBLIC_KEY`. A vendor's printer KEY is
   used once at registration and never stored.
+- `GET /api/bridge/jobs/[id]/label` and `GET /api/bridge/sample-label`, the
+  rendered label and the setup test print for bridge devices.
 - A dev-only and preview-only virtual printer at
   `/dashboard/dev/virtual-printer`: a printer made of HTML that speaks the
   same exchange against the same endpoint, so the whole print path can be
@@ -54,6 +56,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- The Bluetooth bridge now works like every other connector (phase 4, part
+  A). It no longer draws labels: it downloads the same server-rendered PNG,
+  so a Bluetooth printer produces the same label as a cloud printer. Every
+  print is preceded by a claim, so a realtime event alone can no longer make
+  two bridges print one label, and pairing picks up a job that arrived while
+  the bridge was off. Health moved from a realtime presence channel to the
+  shared `last_seen_at` heartbeat, which is why the dashboard now shows each
+  booth's printer and its state rather than a bridge-only pill. Pairing also
+  creates the booth's printer row. The screen wake lock is unchanged in
+  behaviour and now lives in its own hook.
 - `updatePrintJobStatus` now takes an optional failure reason (`expired`,
   `printer_offline`, `driver_error`, `device_reported_error`) and, when a
   job returns to `queued`, stamps `requeued_at` and clears `sent_at` so its

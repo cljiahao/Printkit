@@ -10,21 +10,27 @@ import {
   printLabel,
   disconnectPrinter,
 } from "@/lib/niimbot-print";
-import { getJobRenderer } from "@/lib/print-job-renderers";
+import { fetchLabelCanvas, fetchSampleLabelCanvas } from "@/lib/label-image";
 import { useJobDelivery } from "./use-job-delivery";
-import { useBridgePresence } from "./use-bridge-presence";
-import { reportPrintResult, logBridgeEvent } from "./actions";
+import { useWakeLock } from "./use-wake-lock";
+import {
+  reportPrintResult,
+  logBridgeEvent,
+  claimBridgeJob,
+  bridgeHeartbeat,
+  ensureBridgePrinter,
+} from "./actions";
 import type { NiimbotBluetoothClient } from "@mmote/niimbluelib";
-import type { Json } from "@/lib/types";
 
 type PairState = "unpaired" | "connecting" | "connected" | "error";
 
+const HEARTBEAT_MS = 20_000;
+
 /**
  * The Bridge-mode state machine: local toggle -> pair (Web Bluetooth user
- * gesture) -> auto-print any job the Realtime feed delivers -> report the
- * outcome. See Plan 4's Global Constraints for the channel/status
- * contracts this composes (useJobDelivery, useBridgePresence,
- * reportPrintResult, updatePrintJobStatus indirectly via the action).
+ * gesture) -> claim a delivered job -> print the label printkit rendered ->
+ * report the outcome. The bridge draws nothing itself, and a realtime event
+ * is only a hint: the claim is what decides this device may print.
  */
 export function BridgePanel({
   vendorId,
@@ -49,42 +55,51 @@ export function BridgePanel({
     setEnabled(isBridgeModeEnabled());
   }, []);
 
-  useBridgePresence(vendorId, locationId, enabled);
+  useWakeLock(enabled);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const beat = () => {
+      bridgeHeartbeat(locationId).catch((err: unknown) => {
+        console.error("Heartbeat failed", err);
+      });
+    };
+    beat();
+    const timer = setInterval(beat, HEARTBEAT_MS);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [enabled, locationId]);
 
   const doPrintJob = useCallback(
-    async (jobId: string, payload: Json, jobType: string) => {
+    async (jobId?: string) => {
       const client = clientRef.current;
       if (!client) return;
 
-      const render = getJobRenderer(jobType);
-      if (!render) {
-        console.error(`No renderer for job_type "${jobType}"`);
-        toast.error("Can't print this job type — contact support.");
-        await reportPrintResult(jobId, "failed");
-        return;
-      }
+      const claim = await claimBridgeJob(locationId, jobId);
+      if (!claim.ok) return;
 
       try {
-        const canvas = render(payload);
+        const canvas = await fetchLabelCanvas(claim.jobId);
         await printLabel(client, canvas);
-        await reportPrintResult(jobId, "printed");
+        await reportPrintResult(claim.jobId, "printed");
       } catch (err) {
         console.error("Print failed", err);
-        toast.error("Print failed — check the printer and try again.");
-        await reportPrintResult(jobId, "failed");
+        toast.error("Print failed. Check the printer and try again.");
+        await reportPrintResult(claim.jobId, "failed");
       }
     },
-    [],
+    [locationId],
   );
 
   const printJob = useCallback(
-    (jobId: string, payload: Json, jobType: string) => {
+    (jobId?: string) => {
       // .catch() resets the chain to resolved after each job — doPrintJob
       // already swallows print/report failures internally, but this is a
       // backstop so an unexpected throw can't leave every future job
       // permanently chained onto a rejected promise.
       queueRef.current = queueRef.current
-        .then(() => doPrintJob(jobId, payload, jobType))
+        .then(() => doPrintJob(jobId))
         .catch((err: unknown) => {
           console.error("Unexpected error in print queue", err);
         });
@@ -113,6 +128,11 @@ export function BridgePanel({
       clientRef.current = client;
       setPairState("connected");
       logBridgeEvent("printer_paired").catch(() => {});
+      await ensureBridgePrinter(locationId);
+      // A job queued while this bridge was off is still printable, so long
+      // as it has not expired: claim whatever is waiting rather than making
+      // the vendor reprint it by hand.
+      printJob();
     } catch (err) {
       console.error("Pairing failed", err);
       toast.error("Could not pair with the printer.");
@@ -123,12 +143,10 @@ export function BridgePanel({
   const handleTestPrint = async () => {
     const client = clientRef.current;
     if (!client) return;
-    // Always tests the 'label' renderer specifically — this button verifies
-    // the paired printer works, not any real queued job.
-    const render = getJobRenderer("label");
-    if (!render) return;
+    // Verifies the paired printer works, not any real queued job, so it
+    // asks the server for a sample label rather than claiming one.
     try {
-      const canvas = render({ customer_name: "Test", order_number: "0000" });
+      const canvas = await fetchSampleLabelCanvas(locationId);
       await printLabel(client, canvas);
       toast.success("Test label sent.");
     } catch (err) {

@@ -18,6 +18,9 @@ that a vendor can later pair a physical bridge/printer device to.
   or the lib function's own error status/message on failure.
 - `route.test.ts` — auth rejection, body validation, success, and the
   pass-through error-status case.
+- `status/` — `GET /api/v1/print-locations/status?source_ref=<ref>`, the
+  read a calling kit uses to show whether a location's printer is set up
+  and reachable. See its own README.
 
 ## Connectivity
 

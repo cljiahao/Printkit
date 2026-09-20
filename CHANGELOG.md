@@ -6,8 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Printer-connectors core (phase 1 of
+  `docs/superpowers/specs/2026-09-20-printer-connectors-design.md`), which
+  opens printkit up to printers that reach it over the internet by
+  themselves, for vendors who cannot keep an Android bridge device next to
+  the printer:
+  - `printers`, `device_credentials` and `bridge_pairing_codes` tables, four
+    new `print_jobs` columns (`driver_ref`, `failure_reason`, `sent_at`,
+    `requeued_at`), and the `claim_job` SQL function (migration `0008`).
+  - `src/lib/printer-catalog.ts`, the static list of supported printer
+    models, what each needs to work, and whether Merqo has tested it on real
+    hardware yet.
+  - `src/lib/label-layout.ts` and `src/lib/label-raster.ts`: labels are now
+    built as a device-independent layout and rasterized to a monochrome PNG
+    on the server, with bundled Latin and CJK fonts, so every connector
+    prints the same label.
+  - `src/lib/connectors/`, the three driver interfaces and their registry.
+  - `src/lib/printers.ts` (printer reads plus the shared `last_seen_at`
+    health signal) and `src/lib/job-dispatch.ts` (`claimJob`,
+    `sweepLocation`, `dispatchJob`).
+  - `GET /api/v1/print-locations/status`, so a calling kit can show printer
+    status over HTTP instead of subscribing to printkit's realtime channel.
+
 ### Changed
 
+- `updatePrintJobStatus` now takes an optional failure reason (`expired`,
+  `printer_offline`, `driver_error`, `device_reported_error`) and, when a
+  job returns to `queued`, stamps `requeued_at` and clears `sent_at` so its
+  expiry window restarts. Requeueing also re-runs dispatch.
+- A job that has sat `queued` for more than 30 minutes is failed as
+  `expired` instead of printing whenever a printer next comes online, so a
+  printer switched on the next morning does not print the previous day's
+  labels.
 - `reprintJob` now also accepts an already-`printed` job, not just a
   `failed` one — a vendor who lost or peeled off a good label had no way to
   print another copy.

@@ -1,8 +1,6 @@
 import { hashDeviceToken } from "@/lib/device-credentials";
 import { getPrinterByTokenHash, type PrinterRow } from "@/lib/printers";
-import { buildLabelLayout } from "@/lib/label-layout";
-import { rasterizeLayout } from "@/lib/label-raster";
-import { getCatalogEntry } from "@/lib/printer-catalog";
+import { renderJobForPrinter } from "@/lib/render-job";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/types";
 
@@ -26,12 +24,7 @@ export async function renderJobPng(
   job: { payload: Json },
   printer: PrinterRow,
 ): Promise<Buffer> {
-  const layout = buildLabelLayout(job.payload, {
-    widthMm: Number(printer.label_width_mm),
-    heightMm: Number(printer.label_height_mm),
-  });
-  const dpi = getCatalogEntry(printer.catalog_id)?.dpi ?? 203;
-  return rasterizeLayout(layout, dpi);
+  return renderJobForPrinter(job.payload, printer);
 }
 
 /**

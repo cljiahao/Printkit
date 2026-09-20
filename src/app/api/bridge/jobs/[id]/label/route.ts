@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { getPrinterByLocation } from "@/lib/printers";
-import { buildLabelLayout } from "@/lib/label-layout";
-import { rasterizeLayout } from "@/lib/label-raster";
-import { getCatalogEntry } from "@/lib/printer-catalog";
+import { renderJobForPrinter } from "@/lib/render-job";
 import type { Json } from "@/lib/types";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -43,12 +41,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const printer = await getPrinterByLocation(job.location_id);
   if (!printer) return notFound();
 
-  const layout = buildLabelLayout(job.payload as Json, {
-    widthMm: Number(printer.label_width_mm),
-    heightMm: Number(printer.label_height_mm),
-  });
-  const dpi = getCatalogEntry(printer.catalog_id)?.dpi ?? 203;
-  const png = await rasterizeLayout(layout, dpi);
+  const png = await renderJobForPrinter(job.payload as Json, printer);
 
   return new Response(new Uint8Array(png), {
     status: 200,

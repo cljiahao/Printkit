@@ -18,7 +18,11 @@ export default defineConfig({
     },
     passWithNoTests: true,
     setupFiles: ["./test/setup.ts"],
-    include: ["test/**/*.{test,spec}.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+    include: [
+      "test/**/*.{test,spec}.{ts,tsx}",
+      "src/**/*.test.{ts,tsx}",
+      "bridge-agent/src/**/*.test.ts",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "cobertura"],

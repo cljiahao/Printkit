@@ -49,6 +49,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   used once at registration and never stored.
 - `GET /api/bridge/jobs/[id]/label` and `GET /api/bridge/sample-label`, the
   rendered label and the setup test print for bridge devices.
+- A Raspberry Pi bridge agent (phase 4, part B), for a vendor who owns a
+  Bluetooth printer but cannot leave a phone beside it: `bridge-agent/` (a
+  small Node program with an installer and a systemd unit) plus its
+  endpoints under `/api/v1/bridge-agent/`. The Pi pairs with a single-use
+  code that expires in ten minutes, then authenticates with its own device
+  token, which reaches exactly one printer. It prints one job at a time,
+  reports failures rather than retrying silently, backs off when printkit is
+  unreachable, and stops for good once unpaired. No real label has been
+  printed from a Pi yet: the upstream Bluetooth library documents Windows
+  and macOS, not Linux, so this waits on the hardware gate.
 - A dev-only and preview-only virtual printer at
   `/dashboard/dev/virtual-printer`: a printer made of HTML that speaks the
   same exchange against the same endpoint, so the whole print path can be

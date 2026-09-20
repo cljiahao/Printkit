@@ -1,0 +1,25 @@
+[Unit]
+Description=printkit bridge (prints label jobs on a Bluetooth printer)
+After=network-online.target bluetooth.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/printkit-bridge
+ExecStart=/usr/bin/node /opt/printkit-bridge/dist/cli.js run
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# The agent only needs its own config file and Bluetooth; nothing else on
+# the Pi is its business.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/%i/.printkit-bridge
+
+[Install]
+WantedBy=multi-user.target

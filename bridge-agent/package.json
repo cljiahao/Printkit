@@ -1,0 +1,23 @@
+{
+  "name": "@merqo/printkit-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Raspberry Pi agent that prints printkit jobs on a Bluetooth label printer",
+  "bin": {
+    "printkit-bridge": "./dist/cli.js"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js run"
+  },
+  "dependencies": {
+    "@mmote/niimblue-node": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

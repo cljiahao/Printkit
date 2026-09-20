@@ -29,6 +29,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     `sweepLocation`, `dispatchJob`).
   - `GET /api/v1/print-locations/status`, so a calling kit can show printer
     status over HTTP instead of subscribing to printkit's realtime channel.
+- The `cloud_poll` connector and its first driver, Star CloudPRNT (phase 2):
+  `/api/cloudprnt/[token]` serves one URL per printer, handling the
+  printer's poll, its job download and its result confirmation. The URL
+  token is the whole credential: it is stored only as a hash, the first
+  device to present it is bound to the printer, a job is handed out only
+  through `claim_job` (so a second fetch of the same job is a 404), and a
+  device cannot confirm a job belonging to another printer.
+- `src/lib/device-credentials.ts`, which mints, rotates and revokes the
+  secret a device presents.
+- A dev-only and preview-only virtual printer at
+  `/dashboard/dev/virtual-printer`: a printer made of HTML that speaks the
+  same exchange against the same endpoint, so the whole print path can be
+  proven before buying hardware.
 
 ### Changed
 

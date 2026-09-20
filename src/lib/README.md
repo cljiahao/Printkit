@@ -109,6 +109,42 @@ everything else sits flat here.
 - `merqo-support.ts` — `submitSupportMessage`, backs `AccountMenu`'s required `getHelp` (form mode).
 - `niimbot-print.ts` — `connectPrinter`/`printLabel`/`disconnectPrinter`, a thin wrapper around `@mmote/niimbluelib`'s `NiimbotBluetoothClient`/`ImageEncoder`. `printLabel`'s optional `model` param (defaults to `niimbot-model.ts`'s `DEFAULT_NIIMBOT_MODEL`) looks up that model's `printDirection` instead of hardcoding the B1's `"top"` inline (`printheadPixels: 384` for the B1 stays in `label-render.ts`, a separate concern from the print-task direction). `niimbot-print.test.ts` mocks the `NiimbotBluetoothClient` constructor with a `function` expression (not an arrow) so `vitest` 4 can call it with `new`.
 - `niimbot-model.ts` — `NIIMBOT_MODELS`/`DEFAULT_NIIMBOT_MODEL`: per-model print config, one entry (`B1`) today — `niimbluelib` itself already supports other NIIMBOT models, so adding a second one here is a config entry, not a code change in `niimbot-print.ts`.
+- `printer-catalog.ts` — `PRINTER_CATALOG`/`getCatalogEntry`/`listCatalog`/
+  `worksWithIpadAlone`: the static list of supported printer models and what
+  each needs (connector, driver, connectivity, whether a helper device is
+  required, label width range, setup effort, price band, and a
+  `hardwareVerified` flag that stays `false` until a real unit passes the
+  hardware gate). Code, not a table: a model is only selectable once its
+  driver exists. `devOnly` hides the `virtual` test printer outside
+  development. `worksWithIpadAlone` is the single rule behind that badge and
+  its filter, so the two can never disagree.
+- `label-layout.ts` — `buildLabelLayout(payload, size)`: the
+  device-independent description of one label (size in mm plus positioned
+  text and QR elements, `MAX_LABEL_CHARS` truncation on the customer name).
+  Pure, so it is unit-testable without a canvas, and it is the one place
+  label content changes: raster drivers render it through `label-raster.ts`,
+  markup drivers translate it into their own tags.
+- `label-raster.ts` — `rasterizeLayout(layout, dpi)`/`mmToPx(mm, dpi)`:
+  draws a layout to a monochrome PNG with `@napi-rs/canvas`, thresholding
+  every pixel to pure black or white because a thermal head has no grey.
+  Registers the bundled fonts in `src/assets/fonts/` explicitly (Vercel has
+  no usable system fonts), listing the CJK face after the Latin one so a
+  Chinese customer name still prints.
+- `connectors/` — the driver layer: `types.ts` holds the three driver
+  interfaces (one per connector), `registry.ts` maps a driver id to its
+  metadata. See its own README.
+- `printers.ts` — `getPrinterByLocation`/`getPrinterByTokenHash`/
+  `touchPrinterSeen`/`printerState`: reads of the `printers` table plus the
+  one health signal every connector shares (`last_seen_at`, online inside
+  60s, written at most once per 20s so a printer polling every few seconds
+  does not write a row per request).
+- `job-dispatch.ts` — `claimJob`/`sweepLocation`/`dispatchJob`: the job
+  lifecycle beyond creation. `claimJob` wraps the `claim_job` SQL function,
+  the only path from `queued` to `sent`. `sweepLocation` is the lazy,
+  idempotent timeout pass (expiry and unconfirmed sends) run at the start of
+  every pull and status read instead of a cron. `dispatchJob` pushes to the
+  maker's cloud for `vendor_cloud` printers and is a no-op for the pull
+  connectors, which wait for the device to ask.
 - `brand-icon.tsx` — `brandIcon(size)` + `BRAND_MINT`/`BRAND_INK`: the
   printkit "P" mark as a `ReactElement` for `ImageResponse`-generated icons
   (favicon, apple-touch) — hex literals, not theme tokens, since

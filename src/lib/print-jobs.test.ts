@@ -12,6 +12,11 @@ vi.mock("@/lib/supabase/server", () => ({
     }),
 }));
 
+const dispatchJobMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/job-dispatch", () => ({
+  dispatchJob: (...args: unknown[]) => dispatchJobMock(...args),
+}));
+
 const notifyKitPrintStatusMock = vi.fn().mockResolvedValue(undefined);
 vi.mock("@/lib/kit-callback", () => ({
   notifyKitPrintStatus: (...args: unknown[]) =>
@@ -511,7 +516,54 @@ describe("updatePrintJobStatus", () => {
 
     await updatePrintJobStatus("job-1", "failed");
 
-    expect(updateMock).toHaveBeenCalledWith({ status: "failed" });
+    expect(updateMock).toHaveBeenCalledWith({
+      status: "failed",
+      failure_reason: null,
+    });
+  });
+
+  it("restarts the expiry window and clears sent_at when a job is requeued", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "qkit", source_ref: "order-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    await updatePrintJobStatus("job-1", "queued");
+
+    expect(updateMock).toHaveBeenCalledWith({
+      status: "queued",
+      failure_reason: null,
+      requeued_at: expect.any(String),
+      sent_at: null,
+    });
+  });
+
+  it("records a failure reason when one is given", async () => {
+    updateMock.mockReturnValue({
+      eq: () => ({
+        select: () => ({
+          single: () =>
+            Promise.resolve({
+              data: { source_kit: "qkit", source_ref: "order-1" },
+              error: null,
+            }),
+        }),
+      }),
+    });
+
+    await updatePrintJobStatus("job-1", "failed", "expired");
+
+    expect(updateMock).toHaveBeenCalledWith({
+      status: "failed",
+      failure_reason: "expired",
+    });
   });
 
   it("sets printed_at on a printed status", async () => {
@@ -531,6 +583,7 @@ describe("updatePrintJobStatus", () => {
 
     expect(updateMock).toHaveBeenCalledWith({
       status: "printed",
+      failure_reason: null,
       printed_at: expect.any(String),
     });
   });

@@ -16,6 +16,11 @@ vi.mock("@/lib/print-jobs", () => ({
     updatePrintJobStatusMock(...args),
 }));
 
+const dispatchJobMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/job-dispatch", () => ({
+  dispatchJob: (...args: unknown[]) => dispatchJobMock(...args),
+}));
+
 const maybeSingleMock = vi.fn();
 const sessionFromMock = vi.fn((table: string) => {
   if (table === "print_jobs") {
@@ -178,7 +183,10 @@ describe("assignPrintLocation", () => {
 
     const result = await assignPrintLocation("job-1", "loc-1");
 
-    expect(jobUpdateMock).toHaveBeenCalledWith({ location_id: "loc-1" });
+    expect(jobUpdateMock).toHaveBeenCalledWith({
+      location_id: "loc-1",
+      requeued_at: expect.any(String),
+    });
     expect(jobUpdateMock).not.toHaveBeenCalledWith(
       expect.objectContaining({ status: expect.anything() }),
     );

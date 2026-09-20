@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { notifyKitPrintStatus } from "@/lib/kit-callback";
+import { dispatchJob } from "@/lib/job-dispatch";
 import {
   resolveActiveLocation,
   listActiveLocations,
@@ -113,10 +114,21 @@ export async function createPrintJob(
     return { ok: false, status: 500, error: "Could not create print job." };
   }
 
+  dispatchJob(data.id).catch((err: unknown) => {
+    console.error("dispatchJob failed", err);
+  });
+
   return { ok: true, id: data.id };
 }
 
 export type PrintJobStatus = "queued" | "sent" | "printed" | "failed";
+
+/**
+ * Why a job failed, in a form the dashboard and qkit can both branch on.
+ * `expired` means it waited too long for a printer that never asked for it.
+ */
+export type PrintJobFailureReason =
+  "expired" | "printer_offline" | "driver_error" | "device_reported_error";
 
 export type UpdatePrintJobStatusResult =
   { ok: true } | { ok: false; error: string };
@@ -130,13 +142,18 @@ export type UpdatePrintJobStatusResult =
 export async function updatePrintJobStatus(
   jobId: string,
   status: PrintJobStatus,
+  failureReason?: PrintJobFailureReason,
 ): Promise<UpdatePrintJobStatusResult> {
   const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from("print_jobs")
     .update({
       status,
+      failure_reason: failureReason ?? null,
       ...(status === "printed" ? { printed_at: new Date().toISOString() } : {}),
+      ...(status === "queued"
+        ? { requeued_at: new Date().toISOString(), sent_at: null }
+        : {}),
     })
     .eq("id", jobId)
     .select("source_kit, source_ref")

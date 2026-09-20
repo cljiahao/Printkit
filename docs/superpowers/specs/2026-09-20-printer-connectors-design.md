@@ -747,8 +747,9 @@ others as they are bought.
 1. **Core:** schema (`printers`, `device_credentials`,
    `bridge_pairing_codes`, `print_jobs` columns), catalog, layout builder,
    rasterizer, driver interfaces, `dispatchJob`, `claim_job`,
-   `sweepLocation`, health, status API, virtual printer.
-2. **`cloud_poll` + `star-cloudprnt` driver.**
+   `sweepLocation`, health, status API.
+2. **`cloud_poll` + `star-cloudprnt` driver**, and the virtual printer,
+   which needs that connector's endpoint to exist.
 3. **`vendor_cloud` + `feie` driver.**
 4. **`bridge`:** Android transport changes, then the Pi agent.
 5. **Vendor UI:** printers page, picker, setup wizards, Bluetooth guide.

@@ -47,6 +47,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   that callback is lost. New server-only env vars: `FEIE_USER`, `FEIE_UKEY`,
   `FEIE_API_BASE`, `FEIE_CALLBACK_PUBLIC_KEY`. A vendor's printer KEY is
   used once at registration and never stored.
+- The vendor-facing printer UI (phase 5): a Printers page (one row per booth,
+  with its printer and whether it is online), a printer picker with filters
+  (works with iPad alone, connection, label width), sorting, and an "i"
+  explanation on every badge that opens on tap for iPad users, a setup wizard
+  per kind of printer that ends in a live "Connected", and a public Bluetooth
+  guide at `/guides/bluetooth-printers` that opens by saying we do not
+  recommend that path and then explains it properly anyway. The dashboard nav
+  now points at Printers instead of Bridge.
 - `GET /api/bridge/jobs/[id]/label` and `GET /api/bridge/sample-label`, the
   rendered label and the setup test print for bridge devices.
 - A Raspberry Pi bridge agent (phase 4, part B), for a vendor who owns a

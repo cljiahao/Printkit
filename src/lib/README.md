@@ -89,6 +89,11 @@ everything else sits flat here.
   that no device draws its own label. It downloads the PNG the server
   rendered and decodes it into the canvas `niimbluelib` encodes, so a
   Bluetooth printer produces the same label as every other connector.
+- `printer-info-copy.ts` — `INFO_COPY`/`BLUETOOTH_WARNING`: the
+  plain-language explanation behind every badge, icon and filter a vendor
+  meets while choosing a printer. One module because the same fact has to
+  appear on the picker, in a setup wizard and in the Bluetooth guide, and a
+  vendor deciding what to buy should not meet three wordings of it.
 - `kit-callback.ts` — `notifyKitPrintStatus(kitSlug, sourceRef, status)`:
   fire-and-forget outbound callback on job status change, kit-agnostic —
   looks the calling kit's `callback_url`/`callback_secret` up from

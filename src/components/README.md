@@ -19,6 +19,11 @@ lastSeenAt })`: one booth's printer and whether it is reachable. It renders
   cloud printer, a 4G printer and a Bluetooth bridge all report the same
   way. It replaced a presence-channel component that only a Bluetooth
   bridge could ever feed.
+- `info-button.tsx` — `InfoButton({ topic })`: the small "i" next to a badge
+  or filter, opening that topic's plain-language explanation from
+  `@/lib/printer-info-copy`. It opens on tap rather than hover, because
+  vendors read these on an iPad where a hover tooltip never appears, and the
+  trigger is a real button so it is reachable by keyboard.
 - `elevated-card.tsx` — `ElevatedCard({ as, className, children })`: the
   shared raised-card container (rounded, bordered, soft shadow) used by the
   login page and the root error boundary, matching every other kit's

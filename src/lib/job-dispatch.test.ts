@@ -22,6 +22,14 @@ vi.mock("@/lib/printers", () => ({
     getPrinterByLocationMock(...args),
 }));
 
+const sendVendorCloudJobMock = vi.fn().mockResolvedValue(undefined);
+const reconcileVendorCloudJobMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/connectors/vendor-cloud/service", () => ({
+  sendVendorCloudJob: (...args: unknown[]) => sendVendorCloudJobMock(...args),
+  reconcileVendorCloudJob: (...args: unknown[]) =>
+    reconcileVendorCloudJobMock(...args),
+}));
+
 import { claimJob, sweepLocation, dispatchJob } from "./job-dispatch";
 
 const job = {
@@ -37,10 +45,11 @@ function sweepReturns(rows: unknown[]) {
   });
 }
 
-function jobRowReturns(row: unknown) {
+function jobRowReturns(row: unknown, sweepRows: unknown[] = []) {
   selectMock.mockReturnValue({
     eq: () => ({
       maybeSingle: () => Promise.resolve({ data: row, error: null }),
+      in: () => Promise.resolve({ data: sweepRows, error: null }),
     }),
   });
 }
@@ -49,7 +58,9 @@ beforeEach(() => {
   rpcMock.mockReset();
   selectMock.mockReset();
   updatePrintJobStatusMock.mockClear();
-  getPrinterByLocationMock.mockReset();
+  getPrinterByLocationMock.mockReset().mockResolvedValue(null);
+  sendVendorCloudJobMock.mockClear();
+  reconcileVendorCloudJobMock.mockClear();
 });
 
 describe("claimJob", () => {
@@ -200,5 +211,116 @@ describe("dispatchJob", () => {
   it("does not throw when the job row is missing", async () => {
     jobRowReturns(null);
     await expect(dispatchJob("job-1")).resolves.toBeUndefined();
+  });
+
+  it("claims a push-connector job before sending it", async () => {
+    jobRowReturns({ ...job, status: "queued" });
+    getPrinterByLocationMock.mockResolvedValue({
+      connector: "vendor_cloud",
+      driver: "feie",
+      device_ref: "SN1",
+    });
+    rpcMock.mockResolvedValue({
+      data: [{ id: "job-1", payload: { order_number: "7" } }],
+      error: null,
+    });
+
+    await dispatchJob("job-1");
+
+    expect(rpcMock).toHaveBeenCalledWith("claim_job", {
+      p_location_id: "loc-1",
+      p_job_id: "job-1",
+    });
+    expect(sendVendorCloudJobMock).toHaveBeenCalledWith(
+      { id: "job-1", payload: { order_number: "7" } },
+      expect.objectContaining({ driver: "feie" }),
+    );
+  });
+
+  it("sends nothing when the job was already claimed", async () => {
+    jobRowReturns({ ...job, status: "queued" });
+    getPrinterByLocationMock.mockResolvedValue({
+      connector: "vendor_cloud",
+      driver: "feie",
+      device_ref: "SN1",
+    });
+    rpcMock.mockResolvedValue({ data: [], error: null });
+
+    await dispatchJob("job-1");
+
+    expect(sendVendorCloudJobMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("sweepLocation: push connectors", () => {
+  const vendorCloudPrinter = {
+    connector: "vendor_cloud",
+    driver: "feie",
+    device_ref: "SN1",
+  };
+
+  it("asks the maker about a sent job before giving up on it", async () => {
+    const sent = new Date(Date.now() - 90_000).toISOString();
+    sweepReturns([
+      {
+        id: "job-sent",
+        status: "sent",
+        created_at: sent,
+        requeued_at: null,
+        sent_at: sent,
+        driver_ref: "order-9",
+      },
+    ]);
+    getPrinterByLocationMock.mockResolvedValue(vendorCloudPrinter);
+
+    await sweepLocation("loc-1");
+
+    expect(reconcileVendorCloudJobMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "job-sent", driver_ref: "order-9" }),
+      vendorCloudPrinter,
+    );
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("gives a pushed job five minutes, not two, before failing it", async () => {
+    const threeMinutes = new Date(Date.now() - 3 * 60_000).toISOString();
+    sweepReturns([
+      {
+        id: "job-sent",
+        status: "sent",
+        created_at: threeMinutes,
+        requeued_at: null,
+        sent_at: threeMinutes,
+        driver_ref: null,
+      },
+    ]);
+    getPrinterByLocationMock.mockResolvedValue(vendorCloudPrinter);
+
+    await sweepLocation("loc-1");
+
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("fails a pushed job the maker never resolved", async () => {
+    const old = new Date(Date.now() - 6 * 60_000).toISOString();
+    sweepReturns([
+      {
+        id: "job-sent",
+        status: "sent",
+        created_at: old,
+        requeued_at: null,
+        sent_at: old,
+        driver_ref: null,
+      },
+    ]);
+    getPrinterByLocationMock.mockResolvedValue(vendorCloudPrinter);
+
+    await sweepLocation("loc-1");
+
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-sent",
+      "failed",
+      "driver_error",
+    );
   });
 });

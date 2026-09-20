@@ -12,3 +12,10 @@ export const JOB_EXPIRY_MS = 1_800_000;
  * treated as failed.
  */
 export const CONFIRM_TIMEOUT_MS = 120_000;
+
+/**
+ * The same limit for a job pushed to a printer maker's cloud. It is longer
+ * because two services have to agree, and the sweep asks the maker what
+ * happened before giving up.
+ */
+export const VENDOR_CLOUD_CONFIRM_TIMEOUT_MS = 300_000;

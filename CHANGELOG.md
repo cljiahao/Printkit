@@ -38,6 +38,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device cannot confirm a job belonging to another printer.
 - `src/lib/device-credentials.ts`, which mints, rotates and revokes the
   secret a device presents.
+- The `vendor_cloud` connector and its first driver, Feie (phase 3): a 4G
+  printer with no WiFi and no helper device now prints by way of the maker's
+  own cloud. printkit claims the job first (so nothing is ever sent twice),
+  sends the label as Feie tag markup (Feie cannot accept a full-label
+  image), and records the maker's job id. Results arrive through the signed
+  `POST /api/feie/callback`, or through a status query during the sweep if
+  that callback is lost. New server-only env vars: `FEIE_USER`, `FEIE_UKEY`,
+  `FEIE_API_BASE`, `FEIE_CALLBACK_PUBLIC_KEY`. A vendor's printer KEY is
+  used once at registration and never stored.
 - A dev-only and preview-only virtual printer at
   `/dashboard/dev/virtual-printer`: a printer made of HTML that speaks the
   same exchange against the same endpoint, so the whole print path can be

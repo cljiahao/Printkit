@@ -1,4 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { getCatalogEntry } from "@/lib/printer-catalog";
+import { JOB_EXPIRY_MS } from "@/lib/job-expiry";
 import type { Database } from "@/lib/types";
 
 export type PrinterRow = Database["printkit"]["Tables"]["printers"]["Row"];
@@ -65,6 +67,99 @@ export async function getPrinterByTokenHash(
   if (!data) return null;
   const joined = (data as unknown as { printers: PrinterRow | null }).printers;
   return joined ?? null;
+}
+
+/**
+ * Creates the printer a vendor has chosen for a location. Connector, driver
+ * and the default label size come from the catalog rather than the caller,
+ * so a device-facing route can never be pointed at a different driver by
+ * whoever created the row.
+ */
+export async function createPrinter(input: {
+  vendorId: string;
+  locationId: string;
+  catalogId: string;
+  displayName?: string;
+}): Promise<PrinterRow | null> {
+  const entry = getCatalogEntry(input.catalogId);
+  if (!entry) {
+    console.error("createPrinter: unknown catalog id", input.catalogId);
+    return null;
+  }
+
+  const supabase = await createServiceClient();
+  const { data, error } = await supabase
+    .from("printers")
+    .insert({
+      vendor_id: input.vendorId,
+      location_id: input.locationId,
+      catalog_id: entry.id,
+      connector: entry.connector,
+      driver: entry.driver,
+      display_name: input.displayName ?? `${entry.brand} ${entry.model}`,
+      label_width_mm: entry.defaultLabelMm.width,
+      label_height_mm: entry.defaultLabelMm.height,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    console.error("createPrinter failed", error.message);
+    return null;
+  }
+  return data;
+}
+
+/**
+ * Binds a printer row to the physical device that first presented its
+ * credential. Only ever set once: a later device reporting a different id
+ * is rejected by the caller rather than silently taking the printer over.
+ */
+export async function bindDeviceRef(
+  printerId: string,
+  deviceRef: string,
+): Promise<void> {
+  const supabase = await createServiceClient();
+  const { error } = await supabase
+    .from("printers")
+    .update({ device_ref: deviceRef })
+    .eq("id", printerId)
+    .is("device_ref", null);
+
+  if (error) console.error("bindDeviceRef failed", error.message);
+}
+
+/**
+ * The oldest job a device could claim at this location, without claiming
+ * it. A poll only answers "is there work", so claiming there would burn the
+ * job if the device never came back for it.
+ */
+export async function peekClaimableJob(
+  locationId: string,
+): Promise<{ id: string } | null> {
+  const supabase = await createServiceClient();
+  const cutoff = new Date(Date.now() - JOB_EXPIRY_MS).toISOString();
+  const { data, error } = await supabase
+    .from("print_jobs")
+    .select("id, created_at, requeued_at")
+    .eq("location_id", locationId)
+    .eq("status", "queued")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("peekClaimableJob failed", error.message);
+    return null;
+  }
+
+  const claimable = (data ?? [])
+    .filter((row) => (row.requeued_at ?? row.created_at) > cutoff)
+    .sort((a, b) =>
+      (a.requeued_at ?? a.created_at).localeCompare(
+        b.requeued_at ?? b.created_at,
+      ),
+    );
+
+  return claimable[0] ? { id: claimable[0].id } : null;
 }
 
 /**

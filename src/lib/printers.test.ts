@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const updateMock = vi.fn();
 const selectMock = vi.fn();
+const insertMock = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createServiceClient: () =>
     Promise.resolve({
       from: () => ({
         select: selectMock,
         update: updateMock,
+        insert: insertMock,
       }),
     }),
 }));
@@ -17,6 +19,9 @@ import {
   touchPrinterSeen,
   getPrinterByLocation,
   getPrinterByTokenHash,
+  createPrinter,
+  bindDeviceRef,
+  peekClaimableJob,
   type PrinterRow,
 } from "./printers";
 
@@ -37,8 +42,15 @@ const printer: PrinterRow = {
 
 beforeEach(() => {
   updateMock.mockReset();
-  updateMock.mockReturnValue({ eq: () => Promise.resolve({ error: null }) });
+  updateMock.mockReturnValue({
+    eq: () => ({
+      is: () => Promise.resolve({ error: null }),
+      then: (resolve: (value: { error: null }) => void) =>
+        resolve({ error: null }),
+    }),
+  });
   selectMock.mockReset();
+  insertMock.mockReset();
 });
 
 describe("printerState", () => {
@@ -107,6 +119,132 @@ describe("getPrinterByLocation", () => {
       }),
     });
     expect(await getPrinterByLocation("loc-1")).toEqual(printer);
+  });
+});
+
+describe("createPrinter", () => {
+  it("copies connector, driver and label size from the catalog", async () => {
+    insertMock.mockReturnValue({
+      select: () => ({
+        single: () => Promise.resolve({ data: printer, error: null }),
+      }),
+    });
+
+    await createPrinter({
+      vendorId: "vendor-1",
+      locationId: "loc-1",
+      catalogId: "feie-fp-n20h",
+    });
+
+    expect(insertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        vendor_id: "vendor-1",
+        location_id: "loc-1",
+        catalog_id: "feie-fp-n20h",
+        connector: "vendor_cloud",
+        driver: "feie",
+        display_name: "Feie FP-N20H",
+        label_width_mm: 50,
+        label_height_mm: 30,
+      }),
+    );
+  });
+
+  it("refuses an unknown catalog id without touching the database", async () => {
+    expect(
+      await createPrinter({
+        vendorId: "vendor-1",
+        locationId: "loc-1",
+        catalogId: "not-a-printer",
+      }),
+    ).toBeNull();
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("returns null on an insert error", async () => {
+    insertMock.mockReturnValue({
+      select: () => ({
+        single: () =>
+          Promise.resolve({ data: null, error: { message: "boom" } }),
+      }),
+    });
+
+    expect(
+      await createPrinter({
+        vendorId: "vendor-1",
+        locationId: "loc-1",
+        catalogId: "feie-fp-n20h",
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("bindDeviceRef", () => {
+  it("writes the device ref only while none is set", async () => {
+    await bindDeviceRef("printer-1", "00:11:22:33:44:55");
+    expect(updateMock).toHaveBeenCalledWith({
+      device_ref: "00:11:22:33:44:55",
+    });
+  });
+});
+
+describe("peekClaimableJob", () => {
+  function jobsReturn(rows: unknown[]) {
+    selectMock.mockReturnValue({
+      eq: () => ({
+        eq: () => ({
+          order: () => Promise.resolve({ data: rows, error: null }),
+        }),
+      }),
+    });
+  }
+
+  it("returns the oldest job inside the expiry window", async () => {
+    const older = new Date(Date.now() - 10 * 60_000).toISOString();
+    const newer = new Date(Date.now() - 60_000).toISOString();
+    jobsReturn([
+      { id: "job-new", created_at: newer, requeued_at: null },
+      { id: "job-old", created_at: older, requeued_at: null },
+    ]);
+
+    expect(await peekClaimableJob("loc-1")).toEqual({ id: "job-old" });
+  });
+
+  it("ignores an expired job", async () => {
+    jobsReturn([
+      {
+        id: "job-expired",
+        created_at: new Date(Date.now() - 31 * 60_000).toISOString(),
+        requeued_at: null,
+      },
+    ]);
+
+    expect(await peekClaimableJob("loc-1")).toBeNull();
+  });
+
+  it("uses requeued_at when a job was reprinted", async () => {
+    jobsReturn([
+      {
+        id: "job-reprinted",
+        created_at: new Date(Date.now() - 31 * 60_000).toISOString(),
+        requeued_at: new Date().toISOString(),
+      },
+    ]);
+
+    expect(await peekClaimableJob("loc-1")).toEqual({ id: "job-reprinted" });
+  });
+
+  it("returns null when the query fails", async () => {
+    selectMock.mockReturnValue({
+      eq: () => ({
+        eq: () => ({
+          order: () =>
+            Promise.resolve({ data: null, error: { message: "boom" } }),
+        }),
+      }),
+    });
+
+    expect(await peekClaimableJob("loc-1")).toBeNull();
   });
 });
 

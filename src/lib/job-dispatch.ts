@@ -1,12 +1,12 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
 import { getPrinterByLocation } from "@/lib/printers";
+import { JOB_EXPIRY_MS, CONFIRM_TIMEOUT_MS } from "@/lib/job-expiry";
 import type { Database } from "@/lib/types";
 
 export type ClaimedJob = Database["printkit"]["Tables"]["print_jobs"]["Row"];
 
-export const JOB_EXPIRY_MS = 1_800_000;
-export const CONFIRM_TIMEOUT_MS = 120_000;
+export { JOB_EXPIRY_MS, CONFIRM_TIMEOUT_MS };
 
 /**
  * The only path from 'queued' to 'sent'. The SQL function holds the row

@@ -27,8 +27,8 @@ Decoding Error` and treats anything not starting with `2` as not printed;
   crash.
 - `service.ts` — `resolveDevice` (URL token to printer, by hash, refusing a
   printer on another connector), `renderJobPng` (label at the printer's own
-  size and dpi), `jobBelongsToLocation` (so a device cannot confirm another
-  printer's job), `latestSentJobId` (what a token-less confirmation from
+  size and dpi), `awaitsConfirmation` (so a device can only confirm its own
+  location's job, and only while it is still `sent`), `latestSentJobId` (what a token-less confirmation from
   older Star firmware refers to) and `logDeviceEvent` (audit trail for a token presented by
   unexpected hardware).
 

@@ -37,6 +37,9 @@ export async function POST(request: Request, context: RouteContext) {
     .select("id")
     .eq("id", id)
     .eq("location_id", printer.location_id)
+    // Only a job this agent claimed and has not settled yet: a late report
+    // must not overwrite a job the vendor has since requeued or reprinted.
+    .eq("status", "sent")
     .maybeSingle();
 
   if (!job) {

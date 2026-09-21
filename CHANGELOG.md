@@ -37,6 +37,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     `CAP_NET_RAW`/`CAP_NET_ADMIN` a raw Bluetooth socket needs.
 - The printer catalog tells vendors to buy the mC-Label2 X4 model; the CI
   model has no WiFi without a dongle.
+- `next build` failed: Turbopack cannot bundle `@napi-rs/canvas`'s native
+  binding. It is now a `serverExternalPackages` entry, and the label fonts
+  in `src/assets/fonts/` are added to every API route's file trace, since
+  they are read from disk at run time.
+- A late or repeated result report (Star `DELETE`, the Pi agent's
+  `result`) could overwrite a job the vendor had since requeued. Both now
+  settle only a job that is still `sent`.
+- The Bluetooth guide's Raspberry Pi steps pointed at a release download
+  that was never published. The guide now installs Node 24 and git, then
+  `git clone`s the public repo and runs `bridge-agent/install.sh`.
 
 ### Added
 

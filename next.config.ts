@@ -5,6 +5,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   devIndicators: false,
 
+  // The label rasterizer (src/lib/label-raster.ts) uses a native module,
+  // which Turbopack cannot bundle, and reads its fonts from disk at run
+  // time, which file tracing cannot see. Both are declared here so every
+  // route that renders a label ships with them.
+  serverExternalPackages: ["@napi-rs/canvas"],
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./src/assets/fonts/**"],
+  },
+
   images: {
     remotePatterns: [
       { protocol: "http", hostname: "127.0.0.1", port: "54321" },

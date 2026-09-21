@@ -24,14 +24,15 @@ vendor session or a kit secret.
     echo of the poll's `jobToken`, not the URL token) through `claim_job`,
     so a second fetch of the same job gets 404. That is the double-print
     guard.
-  - `DELETE` verifies the job belongs to this printer's location before
-    recording `printed` or `failed`.
+  - `DELETE` verifies the job is at this printer's location and still
+    `sent` before recording `printed` or `failed`, so a late confirmation
+    cannot overwrite a requeued job.
 
 ## Connectivity
 
 Delegates wire format to `@/lib/connectors/cloud-poll/*` and job state to
 `@/lib/job-dispatch.ts` and `@/lib/print-jobs.ts`. The vendor-facing setup
-screen that hands a vendor this URL arrives with the printer UI phase.
+screen that hands a vendor this URL is `dashboard/printers/setup`.
 
 ## Parent
 

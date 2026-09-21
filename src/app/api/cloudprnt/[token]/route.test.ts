@@ -3,14 +3,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const resolveDeviceMock = vi.fn();
 const renderJobPngMock = vi.fn();
 const logDeviceEventMock = vi.fn().mockResolvedValue(undefined);
-const jobBelongsToLocationMock = vi.fn();
+const awaitsConfirmationMock = vi.fn();
 const latestSentJobIdMock = vi.fn();
 vi.mock("@/lib/connectors/cloud-poll/service", () => ({
   resolveDevice: (...args: unknown[]) => resolveDeviceMock(...args),
   renderJobPng: (...args: unknown[]) => renderJobPngMock(...args),
   logDeviceEvent: (...args: unknown[]) => logDeviceEventMock(...args),
-  jobBelongsToLocation: (...args: unknown[]) =>
-    jobBelongsToLocationMock(...args),
+  awaitsConfirmation: (...args: unknown[]) => awaitsConfirmationMock(...args),
   latestSentJobId: (...args: unknown[]) => latestSentJobIdMock(...args),
 }));
 
@@ -67,7 +66,7 @@ beforeEach(() => {
   resolveDeviceMock.mockReset().mockResolvedValue(printer);
   renderJobPngMock.mockReset().mockResolvedValue(Buffer.from([1, 2, 3]));
   logDeviceEventMock.mockClear();
-  jobBelongsToLocationMock.mockReset().mockResolvedValue(true);
+  awaitsConfirmationMock.mockReset().mockResolvedValue(true);
   peekClaimableJobMock.mockReset().mockResolvedValue(null);
   touchPrinterSeenMock.mockClear();
   bindDeviceRefMock.mockClear();
@@ -238,7 +237,7 @@ describe("cloudprnt route: confirmation", () => {
   });
 
   it("refuses to confirm a job belonging to another printer", async () => {
-    jobBelongsToLocationMock.mockResolvedValue(false);
+    awaitsConfirmationMock.mockResolvedValue(false);
 
     const res = await DELETE(deleteRequest("token=job-9&code=200"), context);
 

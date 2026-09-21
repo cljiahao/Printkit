@@ -28,11 +28,12 @@ export async function renderJobPng(
 }
 
 /**
- * Confirms a job id actually belongs to this device's location before the
- * device is allowed to report an outcome for it. Without this, a device
- * holding one printer's token could mark another printer's jobs printed.
+ * Whether this device may report an outcome for a job: it must be at the
+ * device's own location, or a printer holding one token could mark another
+ * printer's jobs printed, and still `sent`, so a late or repeated
+ * confirmation cannot overwrite a job the vendor has since requeued.
  */
-export async function jobBelongsToLocation(
+export async function awaitsConfirmation(
   jobId: string,
   locationId: string,
 ): Promise<boolean> {
@@ -42,10 +43,11 @@ export async function jobBelongsToLocation(
     .select("id")
     .eq("id", jobId)
     .eq("location_id", locationId)
+    .eq("status", "sent")
     .maybeSingle();
 
   if (error) {
-    console.error("jobBelongsToLocation failed", error.message);
+    console.error("awaitsConfirmation failed", error.message);
     return false;
   }
   return data !== null;

@@ -11,7 +11,7 @@ and `src/app/`; nothing here is printkit-specific.
 ## Contents
 
 `avatar`, `badge`, `button`, `dialog`, `dropdown-menu`, `input`, `label`,
-`radio-group`, `select`, `sheet`, `skeleton`, `switch`, `table`, `textarea`,
+`popover`, `radio-group`, `select`, `sheet`, `skeleton`, `switch`, `table`, `textarea`,
 `toggle`, `toggle-group`, `tooltip` — one file per primitive, named to
 match. `sheet` backs the Feedback/Get-help drawers off the account menu;
 `radio-group` backs the payment-config kind picker; `select` backs the
@@ -20,6 +20,8 @@ History page's multi-location assign control
 support-form category picker; `dropdown-menu` backs the account menu
 itself; `skeleton` backs the dashboard's `loading.tsx` fallback; `switch`
 backs the Bridge mode toggle in `dashboard/bridge/bridge-panel.tsx`.
+`popover` backs `InfoButton` (`src/components/info-button.tsx`), the tap-to-open
+"i" explanations on the printer picker and setup screens.
 
 ## Connectivity
 

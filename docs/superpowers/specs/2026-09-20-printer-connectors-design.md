@@ -796,10 +796,10 @@ status API.
    `@stoprocent/noble`'s HCI binding (needs BlueZ packages and
    `CAP_NET_RAW`, both handled by the installer). Still open: a print from
    a real Pi.
-7. **Pi agent distribution channel.** The repo is public. The guide links a
-   `printkit-bridge.tar.gz` release asset, but no release publishes it
-   yet: publishing is a decision for a human (a release workflow, or a
-   manual `gh release upload`). Until then the guide's download link 404s.
+7. **Pi agent distribution channel.** _Resolved 2026-09-22:_ the repo is
+   public, so the guide has the vendor `git clone --depth 1` it and run
+   `bridge-agent/install.sh`, which builds on the Pi. No release artefact
+   to publish or keep in step. Works once this branch is on `main`.
 8. **Bundled font** choice for the rasterizer. _Resolved:_ Noto Sans
    (Latin) with Noto Sans SC (CJK) fallback, both under the OFL.
 

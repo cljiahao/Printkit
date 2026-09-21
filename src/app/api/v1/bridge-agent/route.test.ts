@@ -74,12 +74,18 @@ function agentRequest(init?: RequestInit) {
   });
 }
 
+const eqFilters: Array<[string, unknown]> = [];
+
 function jobReturns(job: unknown, error: unknown = null) {
-  selectMock.mockReturnValue({
-    eq: () => ({
-      eq: () => ({ maybeSingle: () => Promise.resolve({ data: job, error }) }),
-    }),
-  });
+  eqFilters.length = 0;
+  const query = {
+    eq: (column: string, value: unknown) => {
+      eqFilters.push([column, value]);
+      return query;
+    },
+    maybeSingle: () => Promise.resolve({ data: job, error }),
+  };
+  selectMock.mockReturnValue(query);
 }
 
 beforeEach(() => {
@@ -226,6 +232,15 @@ describe("POST /api/v1/bridge-agent/jobs/[id]/result", () => {
       "failed",
       "device_reported_error",
     );
+  });
+
+  it("only settles a job that is still waiting for its result", async () => {
+    jobReturns({ id: "job-1" });
+
+    await result(resultRequest({ result: "printed" }), context);
+
+    expect(eqFilters).toContainEqual(["status", "sent"]);
+    expect(eqFilters).toContainEqual(["location_id", printer.location_id]);
   });
 
   it("refuses to report on another booth's job", async () => {

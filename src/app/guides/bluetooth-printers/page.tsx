@@ -147,14 +147,18 @@ export default function BluetoothPrintersGuide() {
               Start the Pi next to the printer and connect to it over SSH.
             </p>,
             <div key="3" className="space-y-2">
-              <p className="text-sm">Install the printkit bridge:</p>
+              <p className="text-sm">
+                Install Node 24 and git, then download the printkit bridge:
+              </p>
               <Command>
-                curl -fsSLO
-                https://github.com/cljiahao/Printkit/releases/latest/download/printkit-bridge.tar.gz
+                curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash
+                -
               </Command>
+              <Command>sudo apt-get install -y nodejs git</Command>
               <Command>
-                tar -xzf printkit-bridge.tar.gz &amp;&amp; cd printkit-bridge
+                git clone --depth 1 https://github.com/cljiahao/Printkit.git
               </Command>
+              <Command>cd Printkit/bridge-agent</Command>
               <p className="text-muted-foreground text-sm">
                 Read <code className="font-mono text-xs">install.sh</code>{" "}
                 before you run it, then:

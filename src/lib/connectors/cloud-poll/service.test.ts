@@ -23,7 +23,7 @@ vi.mock("@/lib/supabase/server", () => ({
 import {
   resolveDevice,
   renderJobPng,
-  jobBelongsToLocation,
+  awaitsConfirmation,
   logDeviceEvent,
 } from "./service";
 import { hashDeviceToken } from "@/lib/device-credentials";
@@ -93,40 +93,44 @@ describe("renderJobPng", () => {
   });
 });
 
-describe("jobBelongsToLocation", () => {
+describe("awaitsConfirmation", () => {
   it("is true when the job is at this location", async () => {
-    selectMock.mockReturnValue({
-      eq: () => ({
-        eq: () => ({
-          maybeSingle: () =>
-            Promise.resolve({ data: { id: "job-1" }, error: null }),
-        }),
-      }),
-    });
-    expect(await jobBelongsToLocation("job-1", "loc-1")).toBe(true);
+    const filters: Array<[string, unknown]> = [];
+    const query = {
+      eq: (column: string, value: unknown) => {
+        filters.push([column, value]);
+        return query;
+      },
+      maybeSingle: () =>
+        Promise.resolve({ data: { id: "job-1" }, error: null }),
+    };
+    selectMock.mockReturnValue(query);
+
+    expect(await awaitsConfirmation("job-1", "loc-1")).toBe(true);
+    expect(filters).toEqual([
+      ["id", "job-1"],
+      ["location_id", "loc-1"],
+      ["status", "sent"],
+    ]);
   });
 
   it("is false when it is not", async () => {
-    selectMock.mockReturnValue({
-      eq: () => ({
-        eq: () => ({
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
-    });
-    expect(await jobBelongsToLocation("job-9", "loc-1")).toBe(false);
+    const query = {
+      eq: () => query,
+      maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    };
+    selectMock.mockReturnValue(query);
+    expect(await awaitsConfirmation("job-9", "loc-1")).toBe(false);
   });
 
   it("is false when the query fails", async () => {
-    selectMock.mockReturnValue({
-      eq: () => ({
-        eq: () => ({
-          maybeSingle: () =>
-            Promise.resolve({ data: null, error: { message: "boom" } }),
-        }),
-      }),
-    });
-    expect(await jobBelongsToLocation("job-1", "loc-1")).toBe(false);
+    const query = {
+      eq: () => query,
+      maybeSingle: () =>
+        Promise.resolve({ data: null, error: { message: "boom" } }),
+    };
+    selectMock.mockReturnValue(query);
+    expect(await awaitsConfirmation("job-1", "loc-1")).toBe(false);
   });
 });
 

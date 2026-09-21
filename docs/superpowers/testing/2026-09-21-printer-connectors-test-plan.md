@@ -103,7 +103,8 @@ Bridge mode in Chrome, or a Raspberry Pi running `bridge-agent/`.
 **Raspberry Pi (Pi 4+, Raspberry Pi OS 64-bit, Node 24):**
 
 1. printkit: Printers, add, NIIMBOT B1, Raspberry Pi. Note the pairing code.
-2. Copy `bridge-agent/` onto the Pi. `sudo ./install.sh`. Pass: the install
+2. Follow the guide: install Node 24 and git, `git clone` the repo,
+   `cd Printkit/bridge-agent`, `sudo ./install.sh`. Pass: the install
    finishes, including building the Bluetooth library.
 3. `printkit-bridge pair <code>`, then `printkit-bridge use "B1-XXXX" B1`,
    then `sudo systemctl start printkit-bridge@$USER`.

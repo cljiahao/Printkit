@@ -1,20 +1,24 @@
 # printkit
 
-Hardware print connector for Merqo vendors. v0.1 ships label printing via
-the NIIMBOT B1; architecture is job-type-agnostic for later job types
-(receipt, kitchen-ticket, shelf-label, invoice). Internal-only — reached
-through a vendor's existing sibling-kit relationship (qkit today), no
-public marketing site or pricing; `/` redirects straight to `/dashboard`.
-`POST /api/v1/print-jobs` accepts an optional `job_type` field (the DB
-still only allows `'label'` for now) so the API shape isn't hardcoded to
-today's one job type ahead of that widening. The outbound print-status
-callback is kit-agnostic too — configured per calling kit in
+Hardware print connector for Merqo vendors. Prints a label for every
+order, through one of three connectors (`src/lib/connectors/`):
+`cloud_poll` for printers that fetch their own jobs (Star CloudPRNT),
+`vendor_cloud` for printers reached through their maker's cloud (Feie 4G),
+and `bridge` for Bluetooth printers (NIIMBOT B1) through an Android phone in
+Bridge mode or the Raspberry Pi agent in `bridge-agent/`. Supported models
+live in a static catalog (`src/lib/printer-catalog.ts`); labels are laid out
+once (`src/lib/label-layout.ts`) and rendered per driver, a PNG for most,
+Feie's own markup for Feie. Architecture is job-type-agnostic for later job
+types (receipt, kitchen-ticket, shelf-label, invoice). Internal-only —
+reached through a vendor's existing sibling-kit relationship (qkit today),
+no public marketing site or pricing; `/` redirects straight to
+`/dashboard`. `POST /api/v1/print-jobs` accepts an optional `job_type`
+field (the DB still only allows `'label'` for now). The outbound
+print-status callback is kit-agnostic too — configured per calling kit in
 `kit_api_keys` (`callback_url`/`callback_secret`), not hardcoded to qkit.
-The bridge's own print dispatch is job-type-keyed too
-(`src/lib/print-job-renderers.ts`), one renderer today. Printer-model
-config (`src/lib/niimbot-model.ts`) is likewise a lookup, not a hardcode —
-`niimbluelib` already supports other NIIMBOT models, one is configured
-today.
+`next.config.ts` keeps `@napi-rs/canvas` (the label rasterizer's native
+module) out of the bundle and traces `src/assets/fonts/` into every API
+route.
 
 See `AGENTS.md` for the full stack, commands, and data model. A vendor can
 pair a separate physical bridge/printer to each of their booths, not just
@@ -25,7 +29,8 @@ settings today — can send a vendor straight to one booth's pairing panel;
 see `src/app/dashboard/bridge/README.md`.
 
 Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
-`docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`
+`docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`,
+`docs/superpowers/specs/2026-09-20-printer-connectors-design.md`
 
 `next` is pinned to `16.3.4` and `vitest` to `4.1.11` (see `CHANGELOG.md`
 for the security context). The Vercel build does not use

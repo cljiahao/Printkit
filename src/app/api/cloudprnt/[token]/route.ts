@@ -3,7 +3,7 @@ import {
   resolveDevice,
   renderJobPng,
   logDeviceEvent,
-  jobBelongsToLocation,
+  awaitsConfirmation,
   latestSentJobId,
 } from "@/lib/connectors/cloud-poll/service";
 import { getCloudPollDriver } from "@/lib/connectors/cloud-poll/drivers";
@@ -108,7 +108,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
   }
 
-  const owned = await jobBelongsToLocation(jobId, device.printer.location_id);
+  const owned = await awaitsConfirmation(jobId, device.printer.location_id);
   if (!owned) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
   }

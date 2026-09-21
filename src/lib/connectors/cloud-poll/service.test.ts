@@ -24,6 +24,7 @@ import {
   resolveDevice,
   renderJobPng,
   awaitsConfirmation,
+  latestSentJobId,
   logDeviceEvent,
 } from "./service";
 import { hashDeviceToken } from "@/lib/device-credentials";
@@ -151,5 +152,41 @@ describe("logDeviceEvent", () => {
     await expect(
       logDeviceEvent(printer, "cloudprnt_mac_mismatch", {}),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("latestSentJobId", () => {
+  function sentJobs(data: unknown, error: unknown = null) {
+    const query = {
+      eq: () => query,
+      order: () => query,
+      limit: () => query,
+      maybeSingle: () => Promise.resolve({ data, error }),
+    };
+    selectMock.mockReturnValue(query);
+  }
+
+  it("names the location's most recently sent job", async () => {
+    sentJobs({ id: "job-7" });
+    expect(await latestSentJobId("loc-1")).toBe("job-7");
+  });
+
+  it("is null when nothing is waiting for confirmation", async () => {
+    sentJobs(null);
+    expect(await latestSentJobId("loc-1")).toBeNull();
+  });
+
+  it("is null when the query fails", async () => {
+    sentJobs(null, { message: "boom" });
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect(await latestSentJobId("loc-1")).toBeNull();
+  });
+});
+
+describe("logDeviceEvent when the client itself fails", () => {
+  it("swallows the error", async () => {
+    insertMock.mockRejectedValueOnce(new Error("network"));
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await expect(logDeviceEvent(printer, "x", {})).resolves.toBeUndefined();
   });
 });

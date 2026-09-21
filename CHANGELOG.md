@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Printer connectors, checked against each maker's published protocol:
+  - Feie: a printer Feie refused at setup (wrong KEY, already bound to 3
+    accounts) was reported as connected, because Feie answers `ret: 0` and
+    lists refusals in `data.no`. Now surfaced with a plain reason.
+  - Feie: an offline printer on the Asia-Pacific station was reported
+    online, because that station answers in Chinese (`离线。`).
+  - Feie: print jobs never asked Feie to call back (no `backurl`), and the
+    callback route verified the wrong signing string and answered JSON
+    instead of the literal `SUCCESS`. Callbacks now follow Feie's documented
+    format; the sweep's status query remains the fallback.
+  - Feie: centred Chinese text was offset, since a Chinese character is
+    twice a Latin one's width in font 12.
+  - Star CloudPRNT: firmware without job-token support could fetch no job
+    at all. A token-less fetch now claims the oldest waiting job and a
+    token-less confirmation settles the last sent one.
+  - Printer setup could hand a CloudPRNT printer a relative URL when
+    `NEXT_PUBLIC_SITE_URL` was unset. `src/lib/site-url.ts` now resolves an
+    absolute origin (`PRINTKIT_PUBLIC_URL`, else Vercel's host) and setup
+    refuses rather than minting a credential for an unusable address.
+  - Raspberry Pi agent: `src/printer.ts` called functions
+    `@mmote/niimblue-node` does not export, and the dependency range
+    (`^0.1.0`) could not resolve the current 1.x. Rewritten against the
+    library's real API (`initClient`, `ImageEncoder`, `printImages`), pinned
+    to 1.3.0, with a `tsconfig.json` so `npm run build` works. The installer
+    now installs BlueZ and build tools, links the `printkit-bridge` command
+    and creates the config directory; the systemd unit grants the
+    `CAP_NET_RAW`/`CAP_NET_ADMIN` a raw Bluetooth socket needs.
+- The printer catalog tells vendors to buy the mC-Label2 X4 model; the CI
+  model has no WiFi without a dongle.
+
 ### Added
 
 - Printer-connectors core (phase 1 of

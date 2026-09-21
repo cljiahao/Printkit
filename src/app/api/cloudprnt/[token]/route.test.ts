@@ -4,12 +4,14 @@ const resolveDeviceMock = vi.fn();
 const renderJobPngMock = vi.fn();
 const logDeviceEventMock = vi.fn().mockResolvedValue(undefined);
 const jobBelongsToLocationMock = vi.fn();
+const latestSentJobIdMock = vi.fn();
 vi.mock("@/lib/connectors/cloud-poll/service", () => ({
   resolveDevice: (...args: unknown[]) => resolveDeviceMock(...args),
   renderJobPng: (...args: unknown[]) => renderJobPngMock(...args),
   logDeviceEvent: (...args: unknown[]) => logDeviceEventMock(...args),
   jobBelongsToLocation: (...args: unknown[]) =>
     jobBelongsToLocationMock(...args),
+  latestSentJobId: (...args: unknown[]) => latestSentJobIdMock(...args),
 }));
 
 const peekClaimableJobMock = vi.fn();
@@ -178,9 +180,13 @@ describe("cloudprnt route: job fetch", () => {
     expect((await GET(getRequest(), context)).status).toBe(404);
   });
 
-  it("returns 404 when no job token is given", async () => {
-    expect((await GET(getRequest(""), context)).status).toBe(404);
-    expect(claimJobMock).not.toHaveBeenCalled();
+  it("claims the oldest waiting job for firmware that sends no token", async () => {
+    claimJobMock.mockResolvedValue({ id: "job-1", payload: {} });
+
+    const res = await GET(getRequest(""), context);
+
+    expect(claimJobMock).toHaveBeenCalledWith("loc-1", undefined);
+    expect(res.status).toBe(200);
   });
 });
 
@@ -207,6 +213,28 @@ describe("cloudprnt route: confirmation", () => {
       "failed",
       "device_reported_error",
     );
+  });
+
+  it("confirms the last sent job for firmware that sends no token", async () => {
+    latestSentJobIdMock.mockResolvedValue("job-7");
+
+    await DELETE(deleteRequest("code=200%20OK"), context);
+
+    expect(latestSentJobIdMock).toHaveBeenCalledWith("loc-1");
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-7",
+      "printed",
+      undefined,
+    );
+  });
+
+  it("answers 404 when a token-less confirmation has nothing to confirm", async () => {
+    latestSentJobIdMock.mockResolvedValue(null);
+
+    const res = await DELETE(deleteRequest("code=200%20OK"), context);
+
+    expect(res.status).toBe(404);
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
   });
 
   it("refuses to confirm a job belonging to another printer", async () => {

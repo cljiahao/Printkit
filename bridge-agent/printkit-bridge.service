@@ -7,11 +7,17 @@ Wants=network-online.target
 Type=simple
 User=%i
 WorkingDirectory=/opt/printkit-bridge
-ExecStart=/usr/bin/node /opt/printkit-bridge/dist/cli.js run
+ExecStart=/usr/bin/env node /opt/printkit-bridge/dist/cli.js run
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
+
+# The Bluetooth library talks to the adapter over a raw HCI socket, which
+# Linux only allows with these two capabilities. Granted here rather than
+# with setcap on the node binary, so no other program on the Pi gets them.
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
 
 # The agent only needs its own config file and Bluetooth; nothing else on
 # the Pi is its business.

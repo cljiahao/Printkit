@@ -173,16 +173,21 @@ export default function BluetoothPrintersGuide() {
             </div>,
             <div key="5" className="space-y-2">
               <p className="text-sm">Tell it which printer to use:</p>
-              <Command>printkit-bridge use &quot;B1-XXXXXXXX&quot;</Command>
+              <Command>printkit-bridge use &quot;B1-XXXXXXXX&quot; B1</Command>
               <p className="text-muted-foreground text-sm">
-                That name is the printer&apos;s Bluetooth name, printed on the
-                device or shown in your phone&apos;s Bluetooth list.
+                The first part is the printer&apos;s Bluetooth name, printed on
+                the device or shown in your phone&apos;s Bluetooth list. The
+                second is the model. Leave it off and the printer is asked.
               </p>
             </div>,
             <div key="6" className="space-y-2">
               <p className="text-sm">Start it, and check it is running:</p>
               <Command>sudo systemctl start printkit-bridge@$USER</Command>
               <Command>systemctl status printkit-bridge@$USER</Command>
+              <p className="text-muted-foreground text-sm">
+                The installer can take several minutes: it installs Bluetooth
+                packages and builds the printer library on the Pi.
+              </p>
             </div>,
           ]}
         />

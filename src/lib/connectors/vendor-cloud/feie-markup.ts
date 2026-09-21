@@ -11,7 +11,8 @@ const MAGNIFICATION: Record<"sm" | "md" | "lg" | "xl", number> = {
 };
 
 /**
- * Feie's built-in font. The printer renders text itself, which is why this
+ * Feie's built-in font 12, its Simplified Chinese 24x24 font, which also
+ * covers Latin text. The printer renders text itself, which is why this
  * driver sends markup rather than the PNG the raster drivers use: its
  * <IMG> tag only accepts a square image of at most 224 px, far too small
  * for a whole label.
@@ -19,11 +20,21 @@ const MAGNIFICATION: Record<"sm" | "md" | "lg" | "xl", number> = {
 const FONT = "12";
 
 /**
- * One character's width in dots at magnification 1, used only to
- * approximate centred and right-aligned text: Feie has no alignment
- * attribute, so alignment becomes an x offset.
+ * A Latin character's width in dots at magnification 1 (half of the 24 dot
+ * cell a Chinese character fills), used only to approximate centred and
+ * right-aligned text: Feie has no alignment attribute, so alignment
+ * becomes an x offset.
  */
 const CHAR_WIDTH_DOTS = 12;
+
+const WIDE_CHAR = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/u;
+
+/** Text width in half-width cells: a CJK character fills two. */
+function cellCount(text: string): number {
+  let cells = 0;
+  for (const char of text) cells += WIDE_CHAR.test(char) ? 2 : 1;
+  return cells;
+}
 
 function dots(mm: number): number {
   return Math.round(mm * FEIE_DOTS_PER_MM);
@@ -39,7 +50,7 @@ function escapeMarkup(text: string): string {
 
 function alignedX(element: Extract<LabelElement, { kind: "text" }>): number {
   const widthDots =
-    element.text.length * CHAR_WIDTH_DOTS * MAGNIFICATION[element.size];
+    cellCount(element.text) * CHAR_WIDTH_DOTS * MAGNIFICATION[element.size];
   const x = dots(element.xMm);
 
   if (element.align === "center") return Math.max(0, x - widthDots / 2);

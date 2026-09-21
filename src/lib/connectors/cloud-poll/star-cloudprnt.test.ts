@@ -73,6 +73,22 @@ describe("star-cloudprnt: parseConfirmation", () => {
     ).toEqual({ jobId: "job-1", outcome: "printed" });
   });
 
+  it("reads Star's documented URL-encoded form", () => {
+    expect(
+      starCloudPrntDriver.parseConfirmation(
+        confirm("token=job-1&code=200%20OK"),
+      ),
+    ).toEqual({ jobId: "job-1", outcome: "printed" });
+  });
+
+  it("treats Star's media decoding error as a failure", () => {
+    expect(
+      starCloudPrntDriver.parseConfirmation(
+        confirm("token=job-1&code=511%20Media%20Decoding%20Error"),
+      ),
+    ).toEqual({ jobId: "job-1", outcome: "failed" });
+  });
+
   it("treats OK as printed", () => {
     expect(
       starCloudPrntDriver.parseConfirmation(confirm("token=job-1&code=OK")),

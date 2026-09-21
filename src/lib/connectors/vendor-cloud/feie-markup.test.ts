@@ -38,6 +38,29 @@ describe("toFeieMarkup", () => {
     expect(markup).toContain(`y="${5 * FEIE_DOTS_PER_MM}"`);
   });
 
+  it("centres Chinese text on twice the width of Latin text", () => {
+    const centred = (text: string) =>
+      toFeieMarkup({
+        widthMm: 50,
+        heightMm: 30,
+        elements: [
+          {
+            kind: "text",
+            text,
+            xMm: 25,
+            yMm: 5,
+            size: "sm",
+            bold: false,
+            align: "center",
+          },
+        ],
+      }).match(/<TEXT x="(\d+)"/)?.[1];
+
+    // x = 200 dots, minus half the width: 2 cells of 12 dots, or 4.
+    expect(centred("AB")).toBe("188");
+    expect(centred("陈明")).toBe("176");
+  });
+
   it("magnifies the order number more than the name", () => {
     const markup = toFeieMarkup(layout);
     const order = markup.match(/<TEXT[^>]*>#67<\/TEXT>/)?.[0] ?? "";

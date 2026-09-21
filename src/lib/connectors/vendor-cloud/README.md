@@ -13,15 +13,22 @@ stall, which is what suits an outdoor cart.
   `sha1(user + ukey + stime)`, times out after 5 seconds, and turns a
   network failure, malformed JSON or a non-zero `ret` into a failure result
   rather than an exception. `registerPrinter` sends the printer's SN and
-  KEY once and keeps only the SN; `send` posts the label markup and stores
-  the maker's own job id; `queryJob` and `queryPrinter` back the sweep and
-  the health read. An unreachable maker leaves a job `pending`, never
+  KEY once and keeps only the SN, and reads Feie's `data.no` list, since
+  Feie answers `ret: 0` even when it refused the printer (a wrong KEY, or
+  a printer bound to 3 accounts already; "already added" counts as success); `send` posts the label markup with a `backurl` pointing at
+  printkit's callback route (when `PRINTKIT_PUBLIC_URL` or Vercel supplies
+  an origin) and stores the maker's own job id; `queryJob` and `queryPrinter` back the sweep and
+  the health read. The Asia-Pacific station answers status in Chinese
+  (`离线。` is offline); an "abnormal" printer, usually out of labels, is
+  still reachable. An unreachable maker leaves a job `pending`, never
   `failed`, so a network blip cannot invent a print failure.
 - `feie-markup.ts` — `toFeieMarkup(layout)`. Feie prints text itself, so a
   label is sent as tags rather than a PNG: its `<IMG>` tag only accepts a
   square image of at most 224 px, far too small for a whole label.
   Coordinates are dots at 8 per millimetre; label size stays in
-  millimetres. Layout sizes map to Feie magnification 1 to 4, alignment
+  millimetres. Text uses font `12`, Feie's Simplified Chinese 24x24 font,
+  which also covers Latin; a Chinese character counts as two Latin widths
+  when centring. Layout sizes map to Feie magnification 1 to 4, alignment
   becomes an x offset (Feie has no alignment attribute), markup-breaking
   characters are escaped, and elements are dropped whole rather than
   letting the content exceed Feie's 5000 byte limit.
@@ -37,11 +44,20 @@ Server-only, read at request time: `FEIE_USER`, `FEIE_UKEY`, optional
 `FEIE_CALLBACK_PUBLIC_KEY` for verifying Feie's own result callbacks. A
 vendor's printer KEY is never stored.
 
+## Callbacks
+
+Feie posts `orderId`, `status` and `stime`, signed SHA256withRSA over every
+non-empty field except `sign`, sorted by name and joined as
+`name=value&name=value`. The route verifies that with
+`FEIE_CALLBACK_PUBLIC_KEY` and answers the literal `SUCCESS` Feie waits for.
+The callback URL must also be whitelisted in Feie's developer console.
+
 ## Unverified until the hardware gate
 
-Feie's built-in font value for Chinese text, its undocumented rate limits,
-and whether the Asia-Pacific station signs callbacks exactly as the main
-station documents. Each is handled defensively rather than guessed at.
+Feie's undocumented rate limits, the `expired` print parameter (not sent:
+its unit is not documented clearly enough to trust), and a real callback
+from the Asia-Pacific station. Each is handled defensively rather than
+guessed at: a lost callback is caught by the sweep's status query.
 
 ## Connectivity
 

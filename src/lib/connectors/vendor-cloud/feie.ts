@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { toFeieMarkup } from "@/lib/connectors/vendor-cloud/feie-markup";
+import { publicSiteUrl } from "@/lib/site-url";
 import type {
   RegisterResult,
   RenderedJob,
@@ -89,6 +90,28 @@ async function call(
   }
 }
 
+/**
+ * Feie answers `ret: 0` even when it refused the printer, and puts the
+ * refusal in `data.no`, e.g. "SN1#KEY1 (错误：识别码不正确)" for a wrong
+ * KEY. A printer already on Merqo's account is not a failure: it is what a
+ * vendor re-running setup looks like.
+ */
+function addRejection(data: unknown): string | null {
+  if (typeof data !== "object" || data === null) return null;
+  const refused = (data as { no?: unknown }).no;
+  if (!Array.isArray(refused) || refused.length === 0) return null;
+
+  const reason = String(refused[0]);
+  if (reason.includes("已被添加过") || /already/i.test(reason)) return null;
+  if (reason.includes("识别码不正确")) {
+    return "The printer rejected that KEY. Check the label under the printer.";
+  }
+  if (reason.includes("3") && reason.includes("账户")) {
+    return "This printer is already linked to 3 other accounts. Unlink it in the old app first.";
+  }
+  return `The printer's service refused it: ${reason}`;
+}
+
 export const feieDriver: VendorCloudDriver = {
   id: "feie",
   connector: "vendor_cloud",
@@ -111,8 +134,12 @@ export const feieDriver: VendorCloudDriver = {
     const result = await call("Open_printerAddlist", {
       printerContent: `${sn}#${key}#${name}`,
     });
+    if (!result.ok) return result;
 
-    return result.ok ? { ok: true, deviceRef: sn } : result;
+    const rejection = addRejection(result.data);
+    return rejection === null
+      ? { ok: true, deviceRef: sn }
+      : { ok: false, error: rejection };
   },
 
   async unregisterPrinter(deviceRef: string): Promise<void> {
@@ -120,11 +147,17 @@ export const feieDriver: VendorCloudDriver = {
   },
 
   async send(deviceRef: string, job: RenderedJob): Promise<SendResult> {
-    const result = await call("Open_printLabelMsg", {
+    const params: Record<string, string> = {
       sn: deviceRef,
       content: toFeieMarkup(job.layout),
       times: "1",
-    });
+    };
+    // Without a reachable callback the sweep's status query still settles
+    // the job, only more slowly, so a missing origin is not a failure.
+    const site = publicSiteUrl();
+    if (site) params.backurl = `${site}/api/feie/callback`;
+
+    const result = await call("Open_printLabelMsg", params);
 
     if (!result.ok) return result;
     if (typeof result.data !== "string" || result.data === "") {
@@ -140,9 +173,11 @@ export const feieDriver: VendorCloudDriver = {
   },
 
   /**
-   * Feie answers with a human-readable state. Only "off-line" is reliably
-   * negative, so anything else that came back successfully counts as
-   * reachable rather than guessing at its other wordings.
+   * Feie answers with a sentence, in Chinese on the Asia-Pacific station
+   * ("离线。", "在线，工作状态正常。", "在线，工作状态不正常。") and in
+   * English elsewhere ("off-line", "The online working ..."). Only offline
+   * is negative: an "abnormal" printer, typically out of labels, is still
+   * reachable and still receives jobs.
    */
   async queryPrinter(
     deviceRef: string,
@@ -150,7 +185,9 @@ export const feieDriver: VendorCloudDriver = {
     const result = await call("Open_queryPrinterStatus", { sn: deviceRef });
     if (!result.ok) return "unknown";
     if (typeof result.data !== "string") return "unknown";
-    return result.data.toLowerCase().includes("off-line")
+
+    const state = result.data.toLowerCase();
+    return state.includes("离线") || state.includes("off-line")
       ? "offline"
       : "online";
   },

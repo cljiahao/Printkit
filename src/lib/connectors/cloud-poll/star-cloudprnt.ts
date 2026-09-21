@@ -18,10 +18,10 @@ function normaliseMac(value: unknown): string | null {
 }
 
 /**
- * Star's confirmation codes are documented loosely and are not verified on
- * real hardware yet, so anything that reads like success (absent, "OK", or
- * starting with 2) counts as printed and everything else is a failure. The
- * hardware gate checks this mapping first.
+ * Star's protocol reference sends `code` as a URL-encoded status such as
+ * "200 OK" or "511 Media Decoding Error", and says anything not beginning
+ * with "2" means printing did not succeed. An absent code or a bare "OK"
+ * is read as success too, since neither reports a failure.
  */
 function isSuccessCode(code: string | null): boolean {
   if (code === null || code === "") return true;

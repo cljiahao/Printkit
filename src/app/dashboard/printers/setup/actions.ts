@@ -11,6 +11,7 @@ import { createPairingCode, formatPairingCode } from "@/lib/bridge-pairing";
 import { getCatalogEntry } from "@/lib/printer-catalog";
 import { getVendorCloudDriver } from "@/lib/connectors/vendor-cloud/drivers";
 import { createServiceClient } from "@/lib/supabase/server";
+import { publicSiteUrl } from "@/lib/site-url";
 
 export type SetupResult<T> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -67,12 +68,18 @@ export async function createPrinterUrl(
     };
   }
 
+  // Checked before minting, so a misconfigured deploy leaves no orphan
+  // credential behind.
+  const base = publicSiteUrl();
+  if (!base) {
+    console.error("printer setup: PRINTKIT_PUBLIC_URL is not set");
+    return { ok: false, error: "Could not create the printer's address." };
+  }
+
   const token = await mintDeviceCredential(printer.id, "cloudprnt_url_token");
   if (!token) {
     return { ok: false, error: "Could not create the printer's address." };
   }
-
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   return { ok: true, url: `${base}/api/cloudprnt/${token}` };
 }
 

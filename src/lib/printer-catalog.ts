@@ -70,6 +70,7 @@ export const PRINTER_CATALOG: readonly CatalogEntry[] = [
     image: "/printers/star-mc-label2.jpg",
     notes: [
       "Connects over your WiFi or a phone hotspot.",
+      "Buy the X4 model (MCL21 X4): it has WiFi built in. The CI model is cable-only unless you add a WiFi dongle.",
       "Needs mains power.",
     ],
   },

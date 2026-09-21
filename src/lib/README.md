@@ -13,6 +13,11 @@ everything else sits flat here.
   `supabase-migrate` skill) and regenerated after any schema change. Satisfies
   Supabase's `GenericSchema` constraint with proper `Tables`, `Views`, and
   `Functions` typing for the `printkit` schema.
+- `site-url.ts` — `publicSiteUrl()`: the absolute origin a printer can
+  reach printkit on (`PRINTKIT_PUBLIC_URL`, else Vercel's production or
+  deployment host), or null. Used for a CloudPRNT printer's address and
+  Feie's callback URL; null rather than "" so nothing hands a device a
+  relative URL.
 - `safe-redirect.ts` — `safeRedirectPath(next, fallback)`: rejects an absolute
   URL, a protocol-relative `//`/`/\` path, or one carrying an embedded control
   character, falling back otherwise. The open-redirect guard for the

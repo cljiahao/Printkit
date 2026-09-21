@@ -23,7 +23,11 @@ const { privateKey, publicKey } = generateKeyPairSync("rsa", {
 
 function signed(fields: { orderId: string; status: string; stime: string }) {
   const signer = createSign("RSA-SHA256");
-  signer.update(`${fields.orderId}${fields.status}${fields.stime}`, "utf8");
+  // Feie's documented form: fields sorted by name, joined as name=value&...
+  signer.update(
+    `orderId=${fields.orderId}&status=${fields.status}&stime=${fields.stime}`,
+    "utf8",
+  );
   signer.end();
   return signer.sign(privateKey, "base64");
 }
@@ -69,7 +73,18 @@ describe("POST /api/feie/callback", () => {
     const res = await POST(callback(fields));
 
     expect(res.status).toBe(200);
+    expect(await res.text()).toBe("SUCCESS");
     expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "printed");
+  });
+
+  it("rejects a signature over the fields simply concatenated", async () => {
+    const signer = createSign("RSA-SHA256");
+    signer.update(`${fields.orderId}${fields.status}${fields.stime}`, "utf8");
+    signer.end();
+
+    const res = await POST(callback(fields, signer.sign(privateKey, "base64")));
+
+    expect(res.status).toBe(401);
   });
 
   it("marks the job failed when the maker reports a failure", async () => {
@@ -113,6 +128,7 @@ describe("POST /api/feie/callback", () => {
     const res = await POST(callback(fields));
 
     expect(res.status).toBe(200);
+    expect(await res.text()).toBe("SUCCESS");
     expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
   });
 

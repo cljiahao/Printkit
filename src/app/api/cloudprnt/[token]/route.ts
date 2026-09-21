@@ -4,6 +4,7 @@ import {
   renderJobPng,
   logDeviceEvent,
   jobBelongsToLocation,
+  latestSentJobId,
 } from "@/lib/connectors/cloud-poll/service";
 import { getCloudPollDriver } from "@/lib/connectors/cloud-poll/drivers";
 import {
@@ -84,11 +85,9 @@ export async function GET(request: Request, context: RouteContext) {
   const device = await openDevice(context);
   if (!device) return unauthorized();
 
-  const jobId = new URL(request.url).searchParams.get("token");
-  if (!jobId) {
-    return NextResponse.json({ error: "Unknown job" }, { status: 404 });
-  }
-
+  // Firmware without token support fetches without naming the job; it then
+  // gets the oldest one waiting, which is what its poll was told about.
+  const jobId = new URL(request.url).searchParams.get("token") ?? undefined;
   const job = await claimJob(device.printer.location_id, jobId);
   if (!job) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
@@ -103,20 +102,19 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!device) return unauthorized();
 
   const confirmation = device.driver.parseConfirmation(request);
-  if (!confirmation.jobId) {
+  const jobId =
+    confirmation.jobId ?? (await latestSentJobId(device.printer.location_id));
+  if (!jobId) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
   }
 
-  const owned = await jobBelongsToLocation(
-    confirmation.jobId,
-    device.printer.location_id,
-  );
+  const owned = await jobBelongsToLocation(jobId, device.printer.location_id);
   if (!owned) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
   }
 
   await updatePrintJobStatus(
-    confirmation.jobId,
+    jobId,
     confirmation.outcome,
     confirmation.outcome === "failed" ? "device_reported_error" : undefined,
   );

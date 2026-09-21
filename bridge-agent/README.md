@@ -27,32 +27,57 @@ own agent endpoints.
 - `src/config.ts` — the agent token and chosen printer, stored in
   `~/.printkit-bridge/config.json` with mode `600`: whoever can read that
   file can print to that one printer.
-- `src/printer.ts` — the Bluetooth adapter, loading the native module at
-  call time so `pair` and `use` still work on a machine without it.
+- `src/printer.ts` — the Bluetooth adapter over `@mmote/niimblue-node`
+  1.3.0 (MIT, pinned exactly): `initClient("ble", address)`, then
+  `ImageEncoder.encodeImage` and `printImages`, the same calls its own CLI
+  makes. The module is loaded at call time so `pair` and `use` still work
+  on a machine without it. The print task (`B1`, `D110`, ...) is the one
+  chosen with `use`, or whatever the printer reports when none was chosen.
 - `src/cli.ts` — `printkit-bridge pair <code> | use <name> [model] | run`.
-- `install.sh` and `printkit-bridge.service` — install under
-  `/opt/printkit-bridge` and run at boot under the vendor's own user, with
-  systemd hardening that limits the agent to its own config directory.
+- `install.sh` and `printkit-bridge.service` — install BlueZ and the build
+  tools, build the agent, install it under `/opt/printkit-bridge`, link
+  `printkit-bridge` into `/usr/local/bin`, and run it at boot under the
+  vendor's own user. The unit grants only `CAP_NET_RAW`/`CAP_NET_ADMIN`
+  (what a raw HCI socket needs) and limits writes to the agent's own
+  config directory.
+- `tsconfig.json` — builds `src/` to `dist/` (tests excluded).
 
 ## Setup
 
 1. In printkit, add a Bluetooth printer to a booth and choose Raspberry Pi.
    printkit shows an 8-character pairing code, good for 10 minutes and
    usable once.
-2. On the Pi: `sudo ./install.sh`
-3. `printkit-bridge pair <code>`
-4. `printkit-bridge use "<printer Bluetooth name>"`
-5. `sudo systemctl start printkit-bridge@<user>.service`
+2. Copy this `bridge-agent` folder onto the Pi (Raspberry Pi OS, Node 24+).
+3. On the Pi, inside the folder: `sudo ./install.sh`
+4. `printkit-bridge pair <code>`
+5. `printkit-bridge use "<printer Bluetooth name or address>" B1`
+6. `sudo systemctl start printkit-bridge@<user>.service`
 
 `PRINTKIT_URL` overrides the printkit host (for a preview deployment);
 `PRINTKIT_BRIDGE_HOME` overrides the config directory.
 
+## Troubleshooting
+
+These come from the Bluetooth library's own Linux notes (`@stoprocent/noble`).
+
+- **Nothing connects, no error.** The service lacks Bluetooth permission.
+  Run the agent through systemd, not by hand, or run it by hand with
+  `sudo`.
+- **Connects on a laptop, not on the Pi.** Add `DisablePlugins=pnat` to the
+  bottom of `/etc/bluetooth/main.conf` and reboot.
+- **A USB Bluetooth dongle is plugged in.** Pick the adapter with
+  `Environment=NOBLE_HCI_DEVICE_ID=1` in the unit.
+- **The printer is never found by name.** Use its address instead:
+  `bluetoothctl scan on` lists it.
+
 ## Not verified yet
 
-The upstream Bluetooth library documents Windows and macOS, not Linux or a
-Pi. Everything here is covered by tests against a fake printer and a fake
-printkit, but no real label has been printed from a Pi. That is the hardware
-gate the printer catalog's `hardwareVerified` flag waits on.
+The upstream library is tested on Windows and macOS. Linux goes through
+noble's HCI binding, which is widely used on a Pi, but no label has been
+printed from one here. Everything is covered by tests against a fake
+printer library and a fake printkit, and the agent builds and runs its CLI.
+That is the hardware gate the printer catalog's `hardwareVerified` flag
+waits on.
 
 ## Parent
 

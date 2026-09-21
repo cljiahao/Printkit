@@ -52,6 +52,32 @@ export async function jobBelongsToLocation(
 }
 
 /**
+ * The job a token-less confirmation refers to. Star firmware older than
+ * token support (for example mC-Print3 before 3.2) confirms without naming
+ * the job, so the only honest reading is "the one this location sent
+ * last": a cloud_poll printer fetches one job at a time.
+ */
+export async function latestSentJobId(
+  locationId: string,
+): Promise<string | null> {
+  const supabase = await createServiceClient();
+  const { data, error } = await supabase
+    .from("print_jobs")
+    .select("id")
+    .eq("location_id", locationId)
+    .eq("status", "sent")
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("latestSentJobId failed", error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+/**
  * Records a device-level event worth disputing later (a printer presenting
  * a token bound to different hardware). Never throws: an audit failure must
  * not change what the route answers.

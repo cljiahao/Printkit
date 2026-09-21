@@ -94,6 +94,45 @@ describe("feie: registerPrinter", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("fails when the maker refuses the printer inside a successful reply", async () => {
+    feieResponds({
+      ret: 0,
+      msg: "ok",
+      data: { ok: [], no: ["SN1#KEY1#Cart (错误：识别码不正确)"] },
+    });
+
+    expect(
+      await feieDriver.registerPrinter({ sn: "SN1", key: "KEY1" }),
+    ).toEqual({
+      ok: false,
+      error:
+        "The printer rejected that KEY. Check the label under the printer.",
+    });
+  });
+
+  it("treats a printer already on the account as registered", async () => {
+    feieResponds({
+      ret: 0,
+      msg: "ok",
+      data: { ok: [], no: ["SN1#KEY1#Cart (错误：已被添加过)"] },
+    });
+
+    expect(
+      await feieDriver.registerPrinter({ sn: "SN1", key: "KEY1" }),
+    ).toEqual({ ok: true, deviceRef: "SN1" });
+  });
+
+  it("passes an unrecognised refusal through", async () => {
+    feieResponds({
+      ret: 0,
+      msg: "ok",
+      data: { ok: [], no: ["SN1 (错误：x)"] },
+    });
+
+    const result = await feieDriver.registerPrinter({ sn: "SN1", key: "K" });
+    expect(result.ok).toBe(false);
+  });
+
   it("surfaces the maker's own reason for a rejection", async () => {
     feieResponds({ ret: 1002, msg: "printer already bound" });
 
@@ -114,6 +153,30 @@ describe("feie: send", () => {
     expect(body.get("content")).toContain("<SIZE>50,30</SIZE>");
     expect(body.get("times")).toBe("1");
     expect(result).toEqual({ ok: true, driverRef: "order-9" });
+  });
+
+  it("asks Feie to call back when printkit knows its own address", async () => {
+    process.env.PRINTKIT_PUBLIC_URL = "https://printkit.test";
+    const fetchMock = feieResponds({ ret: 0, msg: "ok", data: "order-9" });
+
+    await feieDriver.send("SN1", job);
+
+    expect(lastBody(fetchMock).get("backurl")).toBe(
+      "https://printkit.test/api/feie/callback",
+    );
+    delete process.env.PRINTKIT_PUBLIC_URL;
+  });
+
+  it("still sends without a callback address", async () => {
+    delete process.env.PRINTKIT_PUBLIC_URL;
+    delete process.env.VERCEL_URL;
+    delete process.env.VERCEL_ENV;
+    const fetchMock = feieResponds({ ret: 0, msg: "ok", data: "order-9" });
+
+    const result = await feieDriver.send("SN1", job);
+
+    expect(lastBody(fetchMock).has("backurl")).toBe(false);
+    expect(result.ok).toBe(true);
   });
 
   it("fails when the maker returns no job id", async () => {
@@ -173,6 +236,16 @@ describe("feie: status queries", () => {
   it("maps an offline printer", async () => {
     feieResponds({ ret: 0, msg: "ok", data: "off-line" });
     expect(await feieDriver.queryPrinter("SN1")).toBe("offline");
+  });
+
+  it("maps an offline printer on the Asia-Pacific station", async () => {
+    feieResponds({ ret: 0, msg: "ok", data: "离线。" });
+    expect(await feieDriver.queryPrinter("SN1")).toBe("offline");
+  });
+
+  it("counts an abnormal but online printer as reachable", async () => {
+    feieResponds({ ret: 0, msg: "ok", data: "在线，工作状态不正常。" });
+    expect(await feieDriver.queryPrinter("SN1")).toBe("online");
   });
 
   it("maps a working printer", async () => {

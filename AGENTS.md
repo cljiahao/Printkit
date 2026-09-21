@@ -19,6 +19,16 @@ change via a kit-agnostic lookup (`kit_api_keys.callback_url`/
 configured today, not the only one supported. Full design:
 `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`.
 
+**Printer connectors (2026-09-20):** printing is no longer Android-bridge
+only. Three connectors (`src/lib/connectors/`), each with brand drivers
+behind a fixed interface and a static catalog (`src/lib/printer-catalog.ts`):
+`cloud_poll` (Star CloudPRNT, `/api/cloudprnt/[token]`), `vendor_cloud`
+(Feie 4G, `/api/feie/callback`) and `bridge` (Android Bridge mode or the
+Raspberry Pi agent in `bridge-agent/`, least recommended). `claim_job` (SQL)
+is the only path from `queued` to `sent`; health is `printers.last_seen_at`,
+not Realtime presence. Design:
+`docs/superpowers/specs/2026-09-20-printer-connectors-design.md`.
+
 ## Stack
 
 Next.js 16 · App Router · Turbopack · TypeScript strict · Tailwind v4 · shadcn/ui
@@ -63,6 +73,11 @@ supabase/tests/rls.test.sql       — pgTAP RLS suite
   bridge to each location instead of one shared bridge per vendor.
   `print_jobs.location_id` (nullable) references it; RLS: vendor
   read-only own rows, writes service-role + bearer-secret.
+- `printers` (one per location, connector + driver + catalog id +
+  `last_seen_at`), `device_credentials` (SHA-256 hashes only: CloudPRNT URL
+  tokens, Pi agent tokens) and `bridge_pairing_codes` (8 chars, 10 minutes,
+  single use). Vendor reads own `printers`; the other two are service-role
+  only.
 - `kit_api_keys`: one hashed bearer secret per calling kit, service-role only.
 - `admins`/`is_admin(uid)`/`admin_audit`: internal platform-operator
   allow-list + immutable audit trail (service-role insert/select only, no

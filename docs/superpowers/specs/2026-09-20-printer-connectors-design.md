@@ -772,21 +772,36 @@ status API.
    that qkit's `PRINTKIT_KIT_SECRET`, `NEXT_PUBLIC_PRINTKIT_URL`, and
    `PRINTKIT_CALLBACK_SECRET` are set, before any hardware test.
 3. **Vercel plan limits** for the CloudPRNT poll volume (see "Request
-   volume").
+   volume"). _Checked 2026-09-21:_ one printer polling every 5 s is 8,640
+   invocations over a 12-hour trading day (about 260k a month), or 518k a
+   month if left on around the clock. Hobby includes 1M invocations a
+   month and is non-commercial only, so production needs Pro, where
+   invocations beyond the credit cost $0.60 per million (well under
+   US$0.50 per printer per month). Still open: which plan printkit is on.
 4. **Feie in Singapore:** printer price, shipping, whether the FP-N20H's 4G
    bands work on Singapore networks, and data-SIM cost. Ask the seller
    before buying the test unit. The Xprinter XP-T271U (Xpyun cloud) is the
    backup candidate; its driver is not built until needed.
-5. **Feie callback key.** Where Feie publishes the RSA public key for
-   callback verification, and whether the Asia-Pacific station supports
-   callbacks the same way.
-6. **`@mmote/niimblue-node` licence** and whether its programmatic API is
-   stable enough to depend on, or whether the agent should call
-   `niimbluelib` directly with a `noble` transport.
-7. **Pi agent distribution channel** (private-repo release vs a public
-   release-only repo).
-8. **Bundled font** choice for the rasterizer (must cover the scripts
-   vendors use in customer names, at least Latin and CJK).
+5. **Feie callback key.** _Resolved 2026-09-21:_ Feie publishes it as
+   `public.key` in the open-platform docs ("打印状态回调"); callbacks are
+   form posts of `orderId`/`status`/`stime`/`sign`, signed SHA256withRSA
+   over the sorted `name=value&...` string, answered with `SUCCESS`. The
+   URL is sent per job as `backurl` and must be whitelisted in Feie's
+   developer console. Still open: a real callback from the Asia-Pacific
+   station (hardware gate).
+6. **`@mmote/niimblue-node` licence.** _Resolved 2026-09-21:_ MIT (as is
+   `niimbluelib`), v1.3.0, pinned exactly. The agent uses its exported
+   `initClient`/`ImageEncoder`/`printImages`, the same calls its CLI makes.
+   Upstream tests Windows and macOS; Linux goes through
+   `@stoprocent/noble`'s HCI binding (needs BlueZ packages and
+   `CAP_NET_RAW`, both handled by the installer). Still open: a print from
+   a real Pi.
+7. **Pi agent distribution channel.** The repo is public. The guide links a
+   `printkit-bridge.tar.gz` release asset, but no release publishes it
+   yet: publishing is a decision for a human (a release workflow, or a
+   manual `gh release upload`). Until then the guide's download link 404s.
+8. **Bundled font** choice for the rasterizer. _Resolved:_ Noto Sans
+   (Latin) with Noto Sans SC (CJK) fallback, both under the OFL.
 
 ## Sources
 

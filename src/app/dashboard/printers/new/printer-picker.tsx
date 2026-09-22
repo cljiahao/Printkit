@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoButton } from "@/components/info-button";
 import {
+  compareRecommended,
+  isRecommended,
   listCatalog,
   worksWithIpadAlone,
   type CatalogEntry,
@@ -97,8 +99,7 @@ export function PrinterPicker({
           return priceOrder[a.priceBand] - priceOrder[b.priceBand];
         }
         if (sort === "setup") return a.setupEffort - b.setupEffort;
-        if (a.recommended !== b.recommended) return a.recommended ? -1 : 1;
-        return a.setupEffort - b.setupEffort;
+        return compareRecommended(a, b);
       });
   }, [entries, ipadOnly, connections, width, sort]);
 
@@ -226,7 +227,7 @@ function PrinterCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {entry.recommended && (
+        {isRecommended(entry) && (
           <>
             <Badge>Recommended</Badge>
             <InfoButton topic="recommended" />

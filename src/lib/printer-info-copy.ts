@@ -28,7 +28,7 @@ export const INFO_COPY: Record<InfoTopic, { title: string; body: string }> = {
   },
   "4g": {
     title: "4G",
-    body: "Has its own SIM card slot, so it prints without WiFi. Good for events and outdoor stalls. You pay for a data SIM.",
+    body: "Has its own SIM card slot, so it prints without WiFi. Good for stalls with no WiFi at all. Jobs go through the maker's cloud service, so the data plan is a monthly cost.",
   },
   wifi: {
     title: "WiFi",
@@ -56,7 +56,7 @@ export const INFO_COPY: Record<InfoTopic, { title: string; body: string }> = {
   },
   recommended: {
     title: "Recommended",
-    body: "What Merqo would set up for a stall like yours: least to go wrong during service.",
+    body: "Joins your WiFi or phone hotspot and prints by itself. Nothing extra to keep charged next to it, and no printing service to pay for every month.",
   },
 };
 

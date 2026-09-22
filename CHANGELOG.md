@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- The printer picker recommends by friction: standalone WiFi printers
+  (`cloud_poll`) first, maker-cloud printers (`vendor_cloud`, where the 4G
+  data plan is a running cost) second, Bluetooth printers last. The order is
+  one rule in `src/lib/printer-catalog.ts` (`CONNECTOR_RANK`,
+  `compareRecommended`), and the "Recommended" badge (`isRecommended`) goes
+  to the top tier only, replacing the per-entry `recommended` flag that had
+  the Feie 4G printer first. The 4G and "Recommended" explanations and the
+  Feie card now say the data plan is a monthly cost.
+
 ### Fixed
 
 - Printer connectors, checked against each maker's published protocol:

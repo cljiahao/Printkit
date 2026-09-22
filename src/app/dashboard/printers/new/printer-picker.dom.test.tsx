@@ -93,9 +93,9 @@ describe("PrinterPicker", () => {
     expect(cardNames()[0]).toBe("FP-N20H");
   });
 
-  it("puts recommended printers first by default", () => {
+  it("puts the standalone WiFi printer first by default", () => {
     renderPicker();
-    expect(cardNames()[0]).toBe("FP-N20H");
+    expect(cardNames()[0]).toBe("mC-Label2");
   });
 
   it("hides the development printer unless it is asked for", () => {
@@ -114,7 +114,7 @@ describe("PrinterPicker", () => {
     })[0];
     expect(link).toHaveAttribute(
       "href",
-      "/dashboard/printers/setup?location=loc-1&model=feie-fp-n20h",
+      "/dashboard/printers/setup?location=loc-1&model=star-mc-label2",
     );
   });
 

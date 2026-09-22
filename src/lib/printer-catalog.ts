@@ -19,7 +19,6 @@ export type CatalogEntry = {
   power: "mains" | "battery" | "mains_or_battery";
   setupEffort: 1 | 2 | 3;
   priceBand: "low" | "mid" | "high";
-  recommended: boolean;
   hardwareVerified: boolean;
   devOnly: boolean;
   image: string;
@@ -41,12 +40,13 @@ export const PRINTER_CATALOG: readonly CatalogEntry[] = [
     power: "mains",
     setupEffort: 1,
     priceBand: "low",
-    recommended: true,
+
     hardwareVerified: false,
     devOnly: false,
     image: "/printers/feie-fp-n20h.jpg",
     notes: [
       "Has its own SIM card slot, so it prints without WiFi.",
+      "Prints through Feie's cloud service, so the 4G data plan is a running cost.",
       "Needs mains power.",
     ],
   },
@@ -64,7 +64,7 @@ export const PRINTER_CATALOG: readonly CatalogEntry[] = [
     power: "mains",
     setupEffort: 2,
     priceBand: "high",
-    recommended: true,
+
     hardwareVerified: false,
     devOnly: false,
     image: "/printers/star-mc-label2.jpg",
@@ -88,7 +88,7 @@ export const PRINTER_CATALOG: readonly CatalogEntry[] = [
     power: "battery",
     setupEffort: 3,
     priceBand: "low",
-    recommended: false,
+
     hardwareVerified: false,
     devOnly: false,
     image: "/printers/niimbot-b1.jpg",
@@ -111,7 +111,7 @@ export const PRINTER_CATALOG: readonly CatalogEntry[] = [
     power: "mains",
     setupEffort: 1,
     priceBand: "low",
-    recommended: false,
+
     hardwareVerified: false,
     devOnly: true,
     image: "/printers/virtual.svg",
@@ -126,6 +126,45 @@ export function getCatalogEntry(id: string): CatalogEntry | null {
 export function listCatalog(opts?: { includeDev?: boolean }): CatalogEntry[] {
   return PRINTER_CATALOG.filter(
     (entry) => !entry.devOnly || opts?.includeDev === true,
+  );
+}
+
+/**
+ * Merqo's order of recommendation, lowest friction first:
+ *
+ * 1. `cloud_poll`: a standalone printer that joins WiFi and prints. Nothing
+ *    beside it, no service to pay for.
+ * 2. `vendor_cloud`: prints through the maker's cloud, usually over 4G. No
+ *    WiFi needed, but a data plan (and any maker fee) is a running cost.
+ * 3. `bridge`: the cheapest printers, but the hardest to onboard, since a
+ *    phone or Raspberry Pi has to stay beside them all day.
+ */
+export const CONNECTOR_RANK: Record<ConnectorId, number> = {
+  cloud_poll: 1,
+  vendor_cloud: 2,
+  bridge: 3,
+};
+
+const PRICE_RANK: Record<CatalogEntry["priceBand"], number> = {
+  low: 1,
+  mid: 2,
+  high: 3,
+};
+
+/**
+ * The "Recommended" badge: only the top tier earns it, so the badge and the
+ * default sort can never disagree.
+ */
+export function isRecommended(entry: CatalogEntry): boolean {
+  return CONNECTOR_RANK[entry.connector] === 1;
+}
+
+/** The default sort: connector tier, then setup effort, then price. */
+export function compareRecommended(a: CatalogEntry, b: CatalogEntry): number {
+  return (
+    CONNECTOR_RANK[a.connector] - CONNECTOR_RANK[b.connector] ||
+    a.setupEffort - b.setupEffort ||
+    PRICE_RANK[a.priceBand] - PRICE_RANK[b.priceBand]
   );
 }
 

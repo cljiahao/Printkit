@@ -19,7 +19,9 @@ is online or it is not.
 - `new/page.tsx` and `new/printer-picker.tsx` — the picker. Cards come from
   the static catalog, filtered by "works with iPad alone" (on by default,
   because that is the recommendation), connection, and the label width a
-  stall actually buys; sorted by recommendation, setup effort or price.
+  stall actually buys; sorted by recommendation (standalone WiFi printers
+  first, maker-cloud 4G printers second, Bluetooth last, from
+  `compareRecommended`), setup effort or price.
   Every badge carries an `InfoButton`, so a vendor can find out what "4G" or
   "untested" means without leaving the page. A Bluetooth card says it is the
   most setup and links to the guide before the vendor can continue.

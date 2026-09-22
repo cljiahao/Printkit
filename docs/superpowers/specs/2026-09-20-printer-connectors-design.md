@@ -197,7 +197,6 @@ type CatalogEntry = {
   power: "mains" | "battery" | "mains_or_battery";
   setupEffort: 1 | 2 | 3; // 1 = plug in and go, 3 = most setup
   priceBand: "low" | "mid" | "high"; // no exact prices, they go stale
-  recommended: boolean;
   hardwareVerified: boolean; // false until a real unit passes the gate
   image: string;
   notes: string[]; // short facts shown in the "i" popover
@@ -208,12 +207,25 @@ type CatalogEntry = {
 computes it as `entry.helperDevice === "none"`, so the badge and the filter
 can never disagree with the entry.
 
+"Recommended" is not stored either. _Decided 2026-09-22:_ Merqo recommends
+by friction, one tier per connector (`CONNECTOR_RANK`):
+
+1. `cloud_poll`: a standalone printer that joins WiFi and prints. Nothing
+   beside it and no printing service to pay for.
+2. `vendor_cloud`: the maker's cloud, usually over 4G. No WiFi needed, but a
+   data plan (and any maker fee) is a running cost.
+3. `bridge`: the cheapest printers but the hardest to onboard.
+
+`isRecommended(entry)` is true for tier 1 only, and `compareRecommended`
+(tier, then setup effort, then price) is the picker's default sort, so the
+badge and the order come from the same rule.
+
 Initial entries:
 
 | id               | Connector      | Driver           | Verified | Recommended      |
 | ---------------- | -------------- | ---------------- | -------- | ---------------- |
-| `feie-fp-n20h`   | `vendor_cloud` | `feie`           | no       | yes              |
 | `star-mc-label2` | `cloud_poll`   | `star-cloudprnt` | no       | yes              |
+| `feie-fp-n20h`   | `vendor_cloud` | `feie`           | no       | no (tier 2)      |
 | `niimbot-b1`     | `bridge`       | `niimbot`        | no       | no               |
 | `virtual`        | `cloud_poll`   | `star-cloudprnt` | n/a      | dev/preview only |
 
@@ -609,8 +621,8 @@ reached from a Bluetooth printer's row.
   - Connection: 4G, WiFi, Bluetooth
   - Label width: fits 40 mm / 50 mm / 60 mm labels
   - Price band: low / mid / high
-- **Sort:** Recommended (default: recommended first, then setup effort
-  ascending, then verified first), Setup effort, Price band.
+- **Sort:** Recommended (default: connector tier, then setup effort, then
+  price; see the catalog section), Setup effort, Price band.
 - **"i" info buttons** next to every badge, connectivity icon, and filter
   label. They open a popover on tap (not hover-only, since vendors use
   iPads) with one or two plain sentences. Initial copy:

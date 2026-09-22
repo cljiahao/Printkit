@@ -8,6 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Printer recommendation now follows what the vendor lives with rather than
+  the connector: a printer that works with an iPad alone and costs nothing
+  after purchase ranks first, cheapest first; a 4G printer with a data plan
+  second; Bluetooth last. Catalog entries gained `monthlyCost`, the rule is
+  `recommendationTier` in `src/lib/printer-catalog.ts`, and each picker card
+  shows a "Monthly cost" row with an info tip.
+
+### Added
+
+- Feie FP-N20W, the WiFi version of the Feie label printer, on the existing
+  Feie driver. It is now the first recommendation: WiFi, no SIM, no monthly
+  fee, and a fraction of the Star's price.
+
+### Changed
+
 - The printer picker recommends by friction: standalone WiFi printers
   (`cloud_poll`) first, maker-cloud printers (`vendor_cloud`, where the 4G
   data plan is a running cost) second, Bluetooth printers last. The order is

@@ -47,10 +47,11 @@ and watch the label appear and the job turn `printed`.
    for a token-less `DELETE`: that is old firmware, and the fallback should
    still settle it.
 
-## Type 2: vendor_cloud (Feie 4G)
+## Type 2: vendor_cloud (Feie WiFi or 4G)
 
 What it is: printkit pushes the label to Feie's cloud
-(`api.jp.feieyun.com`), Feie delivers it over the printer's own SIM, and
+(`api.jp.feieyun.com`), Feie delivers it over the printer's WiFi (N20W)
+or its own SIM (N20H), and
 posts the result to `/api/feie/callback`.
 
 **One-time platform setup (Merqo, not the vendor):**
@@ -66,13 +67,18 @@ posts the result to `/api/feie/callback`.
 strings and callback verification. Feie's own "test printer" in the
 developer console, if the account offers one, exercises the API end to end.
 
-**Hardware gate: Feie FP-N20H (or the 4G label model the seller confirms).**
+**Hardware gate: Feie FP-N20W (WiFi, the recommended cheap option) and/or
+FP-N20H (4G).** Both use the same driver; the N20W skips the SIM steps and
+joins WiFi instead.
 
-1. Confirm with the seller that the unit is the label model (not receipt),
-   takes a Singapore SIM, and supports 4G bands on Singapore networks.
+1. Confirm with the seller that the unit is the label model (not receipt).
+   For the N20H only: it takes a Singapore SIM and supports 4G bands on
+   Singapore networks. For the N20W: ask which WiFi bands it
+   supports, and check your phone hotspot offers one of them.
 2. printkit: Printers, add, Feie. Enter the SN and KEY from the sticker.
    Pass: "connected". A wrong KEY shows "The printer rejected that KEY".
-3. Insert the SIM and power on. The booth shows online.
+3. N20W: join it to WiFi with Feie's setup steps. N20H: insert the SIM.
+   Power on. The booth shows online.
 4. Place an order. Pass: the label prints, the job turns `printed` within
    seconds (callback), and the Chinese name test (`陈明`) prints correctly and
    centred.

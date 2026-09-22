@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { PrintkitClient, UnauthorizedError } from "./client";
 
 const BASE = "https://printkit.test";
-const TOKEN = "t0k3n_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijk";
+const TOKEN = "x".repeat(43);
 const JOB = "3f2b8c1e-9d4a-4b7e-8a61-2c5d7e9f0a13";
 
 function responds(

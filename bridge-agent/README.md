@@ -17,7 +17,9 @@ own agent endpoints.
 ## Contents
 
 - `src/client.ts` — `PrintkitClient`: pair, poll, download a label, report
-  the outcome. `UnauthorizedError` is kept distinct from other failures so
+  the outcome. It refuses a non-HTTPS printkit address (plain HTTP only to
+  this machine), a token not in printkit's format and a job id that is not
+  a UUID, since all three come from a file or the network. `UnauthorizedError` is kept distinct from other failures so
   the loop can tell "printkit is unreachable" (back off and retry) from
   "this agent has been unpaired" (stop for good).
 - `src/loop.ts` — `runOnce`/`runLoop`. One job at a time. A print failure is

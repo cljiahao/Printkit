@@ -21,12 +21,22 @@ export function configPath(): string {
 export async function readConfig(): Promise<AgentConfig | null> {
   try {
     const raw = await readFile(configPath(), "utf8");
-    const parsed = JSON.parse(raw) as Partial<AgentConfig>;
-    if (!parsed.baseUrl || !parsed.token) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (
+      typeof parsed.baseUrl !== "string" ||
+      typeof parsed.token !== "string"
+    ) {
+      return null;
+    }
+    const printer = parsed.printer as Record<string, unknown> | undefined;
+    const validPrinter =
+      typeof printer?.name === "string" && typeof printer.model === "string"
+        ? { name: printer.name, model: printer.model }
+        : undefined;
     return {
       baseUrl: parsed.baseUrl,
       token: parsed.token,
-      printer: parsed.printer,
+      printer: validPrinter,
     };
   } catch {
     return null;

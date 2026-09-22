@@ -41,6 +41,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   binding. It is now a `serverExternalPackages` entry, and the label fonts
   in `src/assets/fonts/` are added to every API route's file trace, since
   they are read from disk at run time.
+- Raspberry Pi agent input checks (CodeQL review on the PR): the printkit
+  address must be HTTPS (plain HTTP only to this machine), the agent token
+  must match printkit's format (no header injection from a tampered config
+  file), and a job id from printkit must be a UUID and is URL-encoded before
+  it goes into a path. `createPrinter` JSON-quotes an unknown catalog id in
+  its log line so a crafted id cannot forge log entries.
 - A late or repeated result report (Star `DELETE`, the Pi agent's
   `result`) could overwrite a job the vendor had since requeued. Both now
   settle only a job that is still `sent`.

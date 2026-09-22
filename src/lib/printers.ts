@@ -83,7 +83,11 @@ export async function createPrinter(input: {
 }): Promise<PrinterRow | null> {
   const entry = getCatalogEntry(input.catalogId);
   if (!entry) {
-    console.error("createPrinter: unknown catalog id", input.catalogId);
+    // JSON-quoted so a crafted id cannot forge a log line.
+    console.error(
+      "createPrinter: unknown catalog id",
+      JSON.stringify(input.catalogId),
+    );
     return null;
   }
 

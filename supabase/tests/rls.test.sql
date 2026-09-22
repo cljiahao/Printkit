@@ -1,5 +1,5 @@
 begin;
-select plan(15);
+select plan(19);
 
 select has_table('printkit', 'print_jobs', 'print_jobs table exists');
 select has_table('printkit', 'admin_audit', 'admin_audit table exists');
@@ -175,6 +175,34 @@ select throws_ok(
 );
 
 reset role;
+
+select isnt_empty(
+  $$ select 1 from pg_policies
+     where schemaname = 'printkit' and tablename = 'printers'
+       and policyname = 'printers_vendor_select' $$,
+  'printers has a vendor select policy'
+);
+
+select is_empty(
+  $$ select 1 from information_schema.role_table_grants
+     where table_schema = 'printkit' and table_name = 'device_credentials'
+       and grantee in ('anon', 'authenticated') $$,
+  'device_credentials is not granted to anon or authenticated'
+);
+
+select is_empty(
+  $$ select 1 from information_schema.role_table_grants
+     where table_schema = 'printkit' and table_name = 'bridge_pairing_codes'
+       and grantee in ('anon', 'authenticated') $$,
+  'bridge_pairing_codes is not granted to anon or authenticated'
+);
+
+select is_empty(
+  $$ select 1 from information_schema.role_routine_grants
+     where specific_schema = 'printkit' and routine_name = 'claim_job'
+       and grantee in ('anon', 'authenticated', 'public') $$,
+  'claim_job is executable by service_role only'
+);
 
 select * from finish();
 rollback;

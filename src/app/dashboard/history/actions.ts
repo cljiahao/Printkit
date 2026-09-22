@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { getVendorSession } from "@/lib/vendor-session";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
+import { dispatchJob } from "@/lib/job-dispatch";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -41,6 +42,10 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
 
   const result = await updatePrintJobStatus(jobId, "queued");
   if (!result.ok) return { success: false, error: result.error };
+
+  dispatchJob(jobId).catch((err: unknown) => {
+    console.error("reprintJob: dispatchJob failed", err);
+  });
 
   const { error: auditError } = await service.from("admin_audit").insert({
     admin_id: user.id,
@@ -89,7 +94,10 @@ export async function assignPrintLocation(
 
   const { error } = await service
     .from("print_jobs")
-    .update({ location_id: locationId })
+    .update({
+      location_id: locationId,
+      requeued_at: new Date().toISOString(),
+    })
     .eq("id", jobId)
     .eq("vendor_id", user.id);
 
@@ -97,6 +105,10 @@ export async function assignPrintLocation(
     console.error("assignPrintLocation failed", error.message);
     return { ok: false, error: "Could not assign a booth to this job." };
   }
+
+  dispatchJob(jobId).catch((err: unknown) => {
+    console.error("assignPrintLocation: dispatchJob failed", err);
+  });
 
   revalidatePath("/dashboard/history");
   return { ok: true };

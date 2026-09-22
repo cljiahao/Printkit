@@ -24,3 +24,6 @@ PRODUCT.md
 supabase/.branches
 supabase/.temp
 .vercel
+
+# Raspberry Pi agent build output
+bridge-agent/dist/

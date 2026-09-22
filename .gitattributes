@@ -1,0 +1,5 @@
+# Files that run on the Raspberry Pi must keep LF endings, even when the
+# repo is checked out on Windows: bash rejects a CRLF shebang line.
+*.sh text eol=lf
+*.service text eol=lf
+bridge-agent/src/cli.ts text eol=lf

@@ -13,46 +13,75 @@ vi.mock("@/lib/bridge-mode", () => ({
   setBridgeModeEnabled: vi.fn(),
 }));
 vi.mock("./use-job-delivery", () => ({ useJobDelivery: vi.fn() }));
-vi.mock("./use-bridge-presence", () => ({ useBridgePresence: vi.fn() }));
 vi.mock("@/lib/niimbot-print", () => ({
   connectPrinter: vi.fn().mockResolvedValue({ deviceName: "B1" }),
   printLabel: vi.fn().mockResolvedValue(undefined),
   disconnectPrinter: vi.fn().mockResolvedValue(undefined),
 }));
-const labelRendererMock = vi
-  .fn()
-  .mockReturnValue(document.createElement("canvas"));
-vi.mock("@/lib/print-job-renderers", () => ({
-  getJobRenderer: (jobType: string) =>
-    jobType === "label" ? labelRendererMock : null,
+vi.mock("@/lib/label-image", () => ({
+  fetchLabelCanvas: vi.fn(),
+  fetchSampleLabelCanvas: vi.fn(),
 }));
 vi.mock("./actions", () => ({
   reportPrintResult: vi.fn().mockResolvedValue({ success: true }),
   logBridgeEvent: vi.fn().mockResolvedValue({ success: true }),
+  claimBridgeJob: vi.fn(),
+  bridgeHeartbeat: vi.fn().mockResolvedValue(undefined),
+  ensureBridgePrinter: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { isBridgeModeEnabled, setBridgeModeEnabled } from "@/lib/bridge-mode";
 import { connectPrinter, printLabel } from "@/lib/niimbot-print";
-import { reportPrintResult, logBridgeEvent } from "./actions";
+import { fetchLabelCanvas, fetchSampleLabelCanvas } from "@/lib/label-image";
+import {
+  reportPrintResult,
+  logBridgeEvent,
+  claimBridgeJob,
+  bridgeHeartbeat,
+  ensureBridgePrinter,
+} from "./actions";
 import { useJobDelivery } from "./use-job-delivery";
 import { BridgePanel } from "./bridge-panel";
+
+function deliveredJob(): (jobId?: string) => void {
+  const call = vi.mocked(useJobDelivery).mock.calls.at(-1);
+  if (!call) throw new Error("useJobDelivery was never called");
+  return call[2] as unknown as (jobId?: string) => void;
+}
+
+async function enableAndPair() {
+  render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
+  fireEvent.click(screen.getByRole("switch"));
+  fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
+  await waitFor(() => {
+    expect(screen.getByText("Connected")).toBeInTheDocument();
+  });
+}
 
 describe("BridgePanel", () => {
   beforeEach(() => {
     vi.mocked(isBridgeModeEnabled).mockReturnValue(false);
     vi.mocked(setBridgeModeEnabled).mockClear();
     vi.mocked(connectPrinter).mockClear();
-    vi.mocked(connectPrinter).mockResolvedValue({
-      deviceName: "B1",
-    } as never);
+    vi.mocked(connectPrinter).mockResolvedValue({ deviceName: "B1" } as never);
     vi.mocked(printLabel).mockClear();
     vi.mocked(printLabel).mockResolvedValue(undefined);
-    labelRendererMock.mockClear();
-    labelRendererMock.mockReturnValue(document.createElement("canvas"));
+    vi.mocked(fetchLabelCanvas).mockClear();
+    vi.mocked(fetchLabelCanvas).mockResolvedValue(
+      document.createElement("canvas"),
+    );
+    vi.mocked(fetchSampleLabelCanvas).mockClear();
+    vi.mocked(fetchSampleLabelCanvas).mockResolvedValue(
+      document.createElement("canvas"),
+    );
     vi.mocked(reportPrintResult).mockClear();
     vi.mocked(reportPrintResult).mockResolvedValue({ success: true });
     vi.mocked(logBridgeEvent).mockClear();
     vi.mocked(logBridgeEvent).mockResolvedValue({ success: true });
+    vi.mocked(claimBridgeJob).mockClear();
+    vi.mocked(claimBridgeJob).mockResolvedValue({ ok: true, jobId: "job-1" });
+    vi.mocked(bridgeHeartbeat).mockClear();
+    vi.mocked(ensureBridgePrinter).mockClear();
     vi.mocked(useJobDelivery).mockClear();
   });
 
@@ -61,7 +90,7 @@ describe("BridgePanel", () => {
     expect(screen.getByRole("switch")).not.toBeChecked();
   });
 
-  it("persists enabling Bridge mode via setBridgeModeEnabled", () => {
+  it("persists enabling Bridge mode", () => {
     render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch"));
     expect(setBridgeModeEnabled).toHaveBeenCalledWith(true);
@@ -79,202 +108,156 @@ describe("BridgePanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("connects the printer when Pair printer is clicked", async () => {
-    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
-    fireEvent.click(screen.getByRole("switch"));
-    fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
+  it("connects the printer and registers it when pairing", async () => {
+    await enableAndPair();
 
-    await waitFor(() => expect(connectPrinter).toHaveBeenCalled());
-    expect(await screen.findByText(/connected/i)).toBeInTheDocument();
+    expect(connectPrinter).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(ensureBridgePrinter).toHaveBeenCalledWith("loc-1");
+    });
+    expect(logBridgeEvent).toHaveBeenCalledWith("printer_paired");
   });
 
-  it("shows a Print test button once paired", async () => {
-    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
-    fireEvent.click(screen.getByRole("switch"));
-    fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
+  it("claims any job already waiting when pairing finishes", async () => {
+    await enableAndPair();
 
-    expect(
-      await screen.findByRole("button", { name: /print test/i }),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(claimBridgeJob).toHaveBeenCalledWith("loc-1", undefined);
+    });
   });
 
-  it("logs a printer_paired admin_audit event once pairing succeeds", async () => {
+  it("beats the heartbeat while Bridge mode is on", async () => {
     render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
     fireEvent.click(screen.getByRole("switch"));
-    fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
 
-    await waitFor(() =>
-      expect(logBridgeEvent).toHaveBeenCalledWith("printer_paired"),
-    );
+    await waitFor(() => {
+      expect(bridgeHeartbeat).toHaveBeenCalledWith("loc-1");
+    });
   });
 
-  it("logs a bridge_disconnected admin_audit event when Bridge mode is toggled off", () => {
+  it("sends no heartbeat while Bridge mode is off", () => {
     render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
-    fireEvent.click(screen.getByRole("switch")); // on
-    fireEvent.click(screen.getByRole("switch")); // off
+    expect(bridgeHeartbeat).not.toHaveBeenCalled();
+  });
+
+  it("logs a disconnect when Bridge mode is toggled off", () => {
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
+    fireEvent.click(screen.getByRole("switch"));
+    fireEvent.click(screen.getByRole("switch"));
 
     expect(logBridgeEvent).toHaveBeenCalledWith("bridge_disconnected");
   });
 
-  it("does not log bridge_disconnected on the initial enable", () => {
-    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
-    fireEvent.click(screen.getByRole("switch")); // on
+  it("prints a test label at the booth's own size", async () => {
+    await enableAndPair();
+    fireEvent.click(screen.getByRole("button", { name: /print test/i }));
 
-    expect(logBridgeEvent).not.toHaveBeenCalledWith("bridge_disconnected");
+    await waitFor(() => {
+      expect(fetchSampleLabelCanvas).toHaveBeenCalledWith("loc-1");
+    });
+    expect(printLabel).toHaveBeenCalled();
   });
 
   describe("auto-print via job delivery", () => {
-    async function pair() {
-      render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
-      fireEvent.click(screen.getByRole("switch"));
-      fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
-      await waitFor(() => expect(connectPrinter).toHaveBeenCalled());
-    }
-
-    function deliveredJob() {
-      const call = vi.mocked(useJobDelivery).mock.calls.at(-1);
-      if (!call) throw new Error("useJobDelivery was never called");
-      // index 2: (vendorId, locationId, onJobQueued)
-      return call[2];
-    }
-
-    it("prints the job's real payload, not just its id", async () => {
-      await pair();
-      const onJobQueued = deliveredJob();
+    it("claims the job, prints the server-rendered label and reports success", async () => {
+      await enableAndPair();
+      vi.mocked(claimBridgeJob).mockClear();
 
       await act(async () => {
-        onJobQueued(
-          "job-uuid-1",
-          { customer_name: "Ada Lovelace", order_number: "0042" },
-          "label",
-        );
+        deliveredJob()("job-7");
       });
 
-      await waitFor(() =>
-        expect(labelRendererMock).toHaveBeenCalledWith({
-          customer_name: "Ada Lovelace",
-          order_number: "0042",
-        }),
-      );
-      expect(reportPrintResult).toHaveBeenCalledWith("job-uuid-1", "printed");
+      await waitFor(() => {
+        expect(claimBridgeJob).toHaveBeenCalledWith("loc-1", "job-7");
+      });
+      expect(fetchLabelCanvas).toHaveBeenCalledWith("job-1");
+      expect(printLabel).toHaveBeenCalled();
+      expect(reportPrintResult).toHaveBeenCalledWith("job-1", "printed");
     });
 
-    it("reports failure and never prints when the job_type has no renderer", async () => {
-      await pair();
-      const onJobQueued = deliveredJob();
+    it("prints nothing when the claim fails, so two bridges cannot double-print", async () => {
+      await enableAndPair();
+      vi.mocked(printLabel).mockClear();
+      vi.mocked(reportPrintResult).mockClear();
+      vi.mocked(claimBridgeJob).mockResolvedValue({ ok: false });
 
       await act(async () => {
-        onJobQueued("job-uuid-2", { customer_name: "Ada" }, "receipt");
+        deliveredJob()("job-7");
       });
 
-      await waitFor(() =>
-        expect(reportPrintResult).toHaveBeenCalledWith("job-uuid-2", "failed"),
-      );
-      expect(labelRendererMock).not.toHaveBeenCalled();
       expect(printLabel).not.toHaveBeenCalled();
+      expect(reportPrintResult).not.toHaveBeenCalled();
     });
 
-    it("serializes two jobs queued back to back so their prints don't overlap", async () => {
-      await pair();
-      const onJobQueued = deliveredJob();
-
-      const order: string[] = [];
-      let resolveFirst: () => void = () => {};
-      vi.mocked(printLabel).mockImplementation(async () => {
-        if (order.length === 0) {
-          order.push("first-start");
-          await new Promise<void>((resolve) => {
-            resolveFirst = resolve;
-          });
-          order.push("first-end");
-        } else {
-          order.push("second-start");
-        }
-      });
-
-      act(() => {
-        onJobQueued(
-          "job-1",
-          { customer_name: "A", order_number: "1" },
-          "label",
-        );
-        onJobQueued(
-          "job-2",
-          { customer_name: "B", order_number: "2" },
-          "label",
-        );
-      });
-
-      await waitFor(() => expect(order).toContain("first-start"));
-      // The second job's printLabel must not have started while the first
-      // is still in-flight.
-      expect(order).not.toContain("second-start");
+    it("reports a failure when the label cannot be downloaded", async () => {
+      await enableAndPair();
+      vi.mocked(fetchLabelCanvas).mockRejectedValue(new Error("offline"));
 
       await act(async () => {
-        resolveFirst();
+        deliveredJob()("job-7");
       });
 
-      await waitFor(() => expect(order).toContain("second-start"));
-      expect(order).toEqual(["first-start", "first-end", "second-start"]);
+      await waitFor(() => {
+        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "failed");
+      });
     });
 
-    it("keeps printing later jobs after an earlier one fails", async () => {
-      await pair();
-      const onJobQueued = deliveredJob();
-
-      vi.mocked(printLabel)
-        .mockRejectedValueOnce(new Error("jam"))
-        .mockResolvedValueOnce(undefined);
+    it("reports a failure when the printer rejects the print", async () => {
+      await enableAndPair();
+      vi.mocked(printLabel).mockRejectedValue(new Error("paper out"));
 
       await act(async () => {
-        onJobQueued(
-          "job-1",
-          { customer_name: "A", order_number: "1" },
-          "label",
-        );
+        deliveredJob()("job-7");
       });
-      await waitFor(() =>
-        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "failed"),
+
+      await waitFor(() => {
+        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "failed");
+      });
+    });
+
+    it("serializes two jobs queued back to back", async () => {
+      await enableAndPair();
+      vi.mocked(printLabel).mockClear();
+
+      let release = () => {};
+      vi.mocked(printLabel).mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve;
+          }),
       );
 
       await act(async () => {
-        onJobQueued(
-          "job-2",
-          { customer_name: "B", order_number: "2" },
-          "label",
-        );
+        deliveredJob()("job-7");
+        deliveredJob()("job-8");
       });
-      await waitFor(() =>
-        expect(reportPrintResult).toHaveBeenCalledWith("job-2", "printed"),
-      );
+
+      expect(printLabel).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        release();
+      });
+
+      await waitFor(() => {
+        expect(printLabel).toHaveBeenCalledTimes(2);
+      });
     });
 
-    it("keeps advancing the queue even if reportPrintResult unexpectedly rejects", async () => {
-      await pair();
-      const onJobQueued = deliveredJob();
-
-      // Simulates an error outside doPrintJob's own try/catch (e.g. the
-      // Server Action call itself throwing) — the queue must not wedge.
-      vi.mocked(reportPrintResult).mockRejectedValue(new Error("network"));
+    it("keeps printing later jobs after one fails", async () => {
+      await enableAndPair();
+      vi.mocked(printLabel).mockRejectedValueOnce(new Error("paper out"));
+      vi.mocked(reportPrintResult).mockClear();
 
       await act(async () => {
-        onJobQueued(
-          "job-1",
-          { customer_name: "A", order_number: "1" },
-          "label",
-        );
+        deliveredJob()("job-7");
       });
-
-      vi.mocked(reportPrintResult).mockResolvedValue({ success: true });
       await act(async () => {
-        onJobQueued(
-          "job-2",
-          { customer_name: "B", order_number: "2" },
-          "label",
-        );
+        deliveredJob()("job-8");
       });
 
-      await waitFor(() => expect(printLabel).toHaveBeenCalledTimes(2));
+      await waitFor(() => {
+        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "printed");
+      });
     });
   });
 });

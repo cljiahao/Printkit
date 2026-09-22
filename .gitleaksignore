@@ -1,0 +1,4 @@
+# Test fixture, not a secret: a fake agent token in bridge-agent/src/client.test.ts
+# (since replaced with "x".repeat(43)). Listed so the PR scan, which reads
+# every commit, does not keep flagging the commit that introduced it.
+0219895d6ac8d1c60e894ff435dba8a6c47b7ff2:bridge-agent/src/client.test.ts:generic-api-key:5

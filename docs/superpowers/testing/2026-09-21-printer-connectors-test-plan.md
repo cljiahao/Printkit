@@ -73,8 +73,8 @@ joins WiFi instead.
 
 1. Confirm with the seller that the unit is the label model (not receipt).
    For the N20H only: it takes a Singapore SIM and supports 4G bands on
-   Singapore networks. For the N20W: it joins 2.4 GHz WiFi, which most phone
-   hotspots offer.
+   Singapore networks. For the N20W: ask which WiFi bands it
+   supports, and check your phone hotspot offers one of them.
 2. printkit: Printers, add, Feie. Enter the SN and KEY from the sticker.
    Pass: "connected". A wrong KEY shows "The printer rejected that KEY".
 3. N20W: join it to WiFi with Feie's setup steps. N20H: insert the SIM.

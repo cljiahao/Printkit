@@ -261,6 +261,15 @@ function PrinterCard({
           <dd className="text-foreground">{setupWords(entry.setupEffort)}</dd>
         </div>
         <div className="flex justify-between gap-3">
+          <dt className="inline-flex items-center gap-1">
+            Monthly cost
+            <InfoButton topic="monthly_cost" />
+          </dt>
+          <dd className="text-foreground">
+            {entry.monthlyCost === "none" ? "None" : "4G data plan"}
+          </dd>
+        </div>
+        <div className="flex justify-between gap-3">
           <dt>Labels up to</dt>
           <dd className="text-foreground">{entry.labelWidthMm.max} mm</dd>
         </div>

@@ -66,7 +66,9 @@ posts the result to `/api/feie/callback`.
 strings and callback verification. Feie's own "test printer" in the
 developer console, if the account offers one, exercises the API end to end.
 
-**Hardware gate: Feie FP-N20H (or the 4G label model the seller confirms).**
+**Hardware gate: Feie FP-N20W (WiFi, the recommended cheap option) and/or
+FP-N20H (4G).** Both use the same driver; the N20W skips the SIM steps and
+joins WiFi instead.
 
 1. Confirm with the seller that the unit is the label model (not receipt),
    takes a Singapore SIM, and supports 4G bands on Singapore networks.

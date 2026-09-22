@@ -207,25 +207,35 @@ type CatalogEntry = {
 computes it as `entry.helperDevice === "none"`, so the badge and the filter
 can never disagree with the entry.
 
-"Recommended" is not stored either. _Decided 2026-09-22:_ Merqo recommends
-by friction, one tier per connector (`CONNECTOR_RANK`):
+"Recommended" is not stored either. _Decided 2026-09-22, revised the same
+day:_ Merqo recommends by what the vendor lives with, not by connector.
+Each entry carries `monthlyCost: "none" | "data_plan"`, and
+`recommendationTier(entry)` is:
 
-1. `cloud_poll`: a standalone printer that joins WiFi and prints. Nothing
-   beside it and no printing service to pay for.
-2. `vendor_cloud`: the maker's cloud, usually over 4G. No WiFi needed, but a
-   data plan (and any maker fee) is a running cost.
-3. `bridge`: the cheapest printers but the hardest to onboard.
+1. Works with an iPad alone and costs nothing after purchase: any WiFi
+   printer, whether it polls printkit (Star) or goes through its maker's
+   cloud (Feie WiFi). Maker clouds charge nothing to use.
+2. Works with an iPad alone but has a running cost: a 4G printer's data
+   plan.
+3. Needs a helper device: Bluetooth.
+
+Within a tier the cheaper printer comes first, then the easier setup.
+Star's cloud polling is built into the printer's own firmware and sold
+through enterprise POS channels, which is why it costs several times a
+Feie; the trade-off of the cheap tier-1 option is depending on Feie's
+cloud, which also carries a customer's name and order number overseas.
 
 `isRecommended(entry)` is true for tier 1 only, and `compareRecommended`
-(tier, then setup effort, then price) is the picker's default sort, so the
+(tier, then price, then setup effort) is the picker's default sort, so the
 badge and the order come from the same rule.
 
 Initial entries:
 
 | id               | Connector      | Driver           | Verified | Recommended      |
 | ---------------- | -------------- | ---------------- | -------- | ---------------- |
+| `feie-fp-n20w`   | `vendor_cloud` | `feie`           | no       | yes (WiFi)       |
 | `star-mc-label2` | `cloud_poll`   | `star-cloudprnt` | no       | yes              |
-| `feie-fp-n20h`   | `vendor_cloud` | `feie`           | no       | no (tier 2)      |
+| `feie-fp-n20h`   | `vendor_cloud` | `feie`           | no       | no (tier 2, 4G)  |
 | `niimbot-b1`     | `bridge`       | `niimbot`        | no       | no               |
 | `virtual`        | `cloud_poll`   | `star-cloudprnt` | n/a      | dev/preview only |
 

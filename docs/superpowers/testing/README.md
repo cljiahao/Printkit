@@ -11,7 +11,8 @@ person runs against real devices, with pass criteria and negative checks.
   three printer connectors (`cloud_poll`, `vendor_cloud`, `bridge`): the
   checks to run before any hardware, the dev-only virtual printer, and the
   hardware gate each catalog entry must pass before `hardwareVerified`
-  flips to true.
+  flips to true. The Feie gate covers both the WiFi FP-N20W (the
+  recommended cheap option) and the 4G FP-N20H.
 
 ## Parent
 

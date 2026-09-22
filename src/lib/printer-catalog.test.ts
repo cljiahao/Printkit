@@ -5,8 +5,15 @@ import {
   getCatalogEntry,
   isRecommended,
   listCatalog,
+  recommendationTier,
   worksWithIpadAlone,
 } from "./printer-catalog";
+
+function entryOf(id: string) {
+  const entry = getCatalogEntry(id);
+  if (!entry) throw new Error(`catalog entry ${id} missing`);
+  return entry;
+}
 
 describe("printer catalog", () => {
   it("exposes unique ids", () => {
@@ -52,29 +59,51 @@ describe("printer catalog", () => {
     }
   });
 
-  it("recommends only standalone WiFi printers", () => {
+  it("recommends only printers that need nothing else and cost nothing more", () => {
     const recommended = listCatalog().filter(isRecommended);
-    expect(recommended.map((entry) => entry.connector)).toEqual(
-      recommended.map(() => "cloud_poll"),
-    );
     expect(recommended.length).toBeGreaterThan(0);
+    for (const entry of recommended) {
+      expect(entry.helperDevice).toBe("none");
+      expect(entry.monthlyCost).toBe("none");
+    }
   });
 
-  it("ranks WiFi, then maker cloud, then Bluetooth", () => {
-    const order = [...listCatalog()]
-      .sort(compareRecommended)
-      .map((entry) => entry.connector);
-    expect(order).toEqual(["cloud_poll", "vendor_cloud", "bridge"]);
+  it("puts a WiFi printer from either connector in the top tier", () => {
+    expect(recommendationTier(entryOf("feie-fp-n20w"))).toBe(1);
+    expect(recommendationTier(entryOf("star-mc-label2"))).toBe(1);
+    expect(recommendationTier(entryOf("feie-fp-n20h"))).toBe(2);
+    expect(recommendationTier(entryOf("niimbot-b1"))).toBe(3);
   });
 
-  it("breaks a tie on setup effort, then price", () => {
-    const base = getCatalogEntry("star-mc-label2");
-    if (!base) throw new Error("catalog entry missing");
+  it("ranks cheapest first within a tier, then the running-cost and helper tiers", () => {
+    const order = [...listCatalog()].sort(compareRecommended).map((e) => e.id);
+    expect(order).toEqual([
+      "feie-fp-n20w",
+      "star-mc-label2",
+      "feie-fp-n20h",
+      "niimbot-b1",
+    ]);
+  });
+
+  it("breaks a price tie on setup effort", () => {
+    const base = entryOf("star-mc-label2");
     const easier = { ...base, setupEffort: 1 as const };
-    const cheaper = { ...base, priceBand: "low" as const };
+    const cheaper = {
+      ...base,
+      priceBand: "low" as const,
+      setupEffort: 3 as const,
+    };
 
     expect(compareRecommended(easier, base)).toBeLessThan(0);
-    expect(compareRecommended(cheaper, base)).toBeLessThan(0);
+    expect(compareRecommended(cheaper, easier)).toBeLessThan(0);
+  });
+
+  it("gives every 4G printer a running cost", () => {
+    for (const entry of PRINTER_CATALOG) {
+      if (entry.connectivity.includes("4g")) {
+        expect(entry.monthlyCost).toBe("data_plan");
+      }
+    }
   });
 
   it("ships no entry claiming hardware verification yet", () => {

@@ -15,6 +15,7 @@ export type InfoTopic =
   | "setup_effort"
   | "price_band"
   | "label_width"
+  | "monthly_cost"
   | "recommended";
 
 export const INFO_COPY: Record<InfoTopic, { title: string; body: string }> = {
@@ -54,9 +55,13 @@ export const INFO_COPY: Record<InfoTopic, { title: string; body: string }> = {
     title: "Label width",
     body: "The widest sticker roll the printer takes. Cup labels are usually 40 mm to 50 mm.",
   },
+  monthly_cost: {
+    title: "Monthly cost",
+    body: "What you keep paying after you buy the printer. A WiFi printer costs nothing more. A 4G printer needs a data plan for its SIM card.",
+  },
   recommended: {
     title: "Recommended",
-    body: "Joins your WiFi or phone hotspot and prints by itself. Nothing extra to keep charged next to it, and no printing service to pay for every month.",
+    body: "Works with just your iPad and costs nothing more after you buy it. Nothing extra to keep charged next to it, and no monthly bill.",
   },
 };
 

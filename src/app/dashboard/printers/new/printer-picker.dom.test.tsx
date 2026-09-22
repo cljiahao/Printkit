@@ -90,12 +90,22 @@ describe("PrinterPicker", () => {
       target: { value: "price" },
     });
 
-    expect(cardNames()[0]).toBe("FP-N20H");
+    expect(cardNames().slice(0, 2)).toEqual(["FP-N20W", "FP-N20H"]);
   });
 
-  it("puts the standalone WiFi printer first by default", () => {
+  it("puts the cheapest printer with no monthly cost first by default", () => {
     renderPicker();
-    expect(cardNames()[0]).toBe("mC-Label2");
+    expect(cardNames().slice(0, 3)).toEqual([
+      "FP-N20W",
+      "mC-Label2",
+      "FP-N20H",
+    ]);
+  });
+
+  it("states each printer's monthly cost", () => {
+    renderPicker();
+    expect(screen.getAllByText("4G data plan")).toHaveLength(1);
+    expect(screen.getAllByText("None").length).toBeGreaterThan(0);
   });
 
   it("hides the development printer unless it is asked for", () => {
@@ -114,7 +124,7 @@ describe("PrinterPicker", () => {
     })[0];
     expect(link).toHaveAttribute(
       "href",
-      "/dashboard/printers/setup?location=loc-1&model=star-mc-label2",
+      "/dashboard/printers/setup?location=loc-1&model=feie-fp-n20w",
     );
   });
 

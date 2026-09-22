@@ -6,7 +6,9 @@ order, through one of three connectors (`src/lib/connectors/`):
 `vendor_cloud` for printers reached through their maker's cloud (Feie 4G),
 and `bridge` for Bluetooth printers (NIIMBOT B1) through an Android phone in
 Bridge mode or the Raspberry Pi agent in `bridge-agent/`. Supported models
-live in a static catalog (`src/lib/printer-catalog.ts`); labels are laid out
+live in a static catalog (`src/lib/printer-catalog.ts`), which also holds
+the recommendation order: standalone WiFi printers first, maker-cloud
+printers second, Bluetooth last; labels are laid out
 once (`src/lib/label-layout.ts`) and rendered per driver, a PNG for most,
 Feie's own markup for Feie. Architecture is job-type-agnostic for later job
 types (receipt, kitchen-ticket, shelf-label, invoice). Internal-only —

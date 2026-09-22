@@ -120,7 +120,11 @@ everything else sits flat here.
 - `niimbot-print.ts` — `connectPrinter`/`printLabel`/`disconnectPrinter`, a thin wrapper around `@mmote/niimbluelib`'s `NiimbotBluetoothClient`/`ImageEncoder`. `printLabel`'s optional `model` param (defaults to `niimbot-model.ts`'s `DEFAULT_NIIMBOT_MODEL`) looks up that model's `printDirection` instead of hardcoding the B1's `"top"` inline (the label bitmap itself now arrives from the server, so nothing about label size lives on the device). `niimbot-print.test.ts` mocks the `NiimbotBluetoothClient` constructor with a `function` expression (not an arrow) so `vitest` 4 can call it with `new`.
 - `niimbot-model.ts` — `NIIMBOT_MODELS`/`DEFAULT_NIIMBOT_MODEL`: per-model print config, one entry (`B1`) today — `niimbluelib` itself already supports other NIIMBOT models, so adding a second one here is a config entry, not a code change in `niimbot-print.ts`.
 - `printer-catalog.ts` — `PRINTER_CATALOG`/`getCatalogEntry`/`listCatalog`/
-  `worksWithIpadAlone`: the static list of supported printer models and what
+  `worksWithIpadAlone`/`isRecommended`/`compareRecommended`. Recommendation
+  follows friction, one tier per connector (`CONNECTOR_RANK`): standalone
+  WiFi printers first, maker-cloud printers second (a data plan is a running
+  cost), Bluetooth last (cheapest, hardest to onboard). Only tier 1 gets the
+  "Recommended" badge. The catalog is the static list of supported printer models and what
   each needs (connector, driver, connectivity, whether a helper device is
   required, label width range, setup effort, price band, and a
   `hardwareVerified` flag that stays `false` until a real unit passes the

@@ -9,7 +9,10 @@ The printer picker: choose a model for a booth from the catalog.
 - `page.tsx` — loads the booth and the catalog (dev-only entries only in
   development).
 - `printer-picker.tsx` — filters (works with iPad alone, connection, label
-  width), sort, and cards with an `InfoButton` on every badge.
+  width), sort, and cards with an `InfoButton` on every badge. The default
+  sort and the "Recommended" badge come from `compareRecommended` and
+  `isRecommended` in the catalog: standalone WiFi printers first, maker-cloud
+  printers second, Bluetooth last.
 - `printer-picker.dom.test.tsx` — filtering, sorting and the Bluetooth
   warning.
 

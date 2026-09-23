@@ -6,9 +6,17 @@ import { useWakeLock } from "./use-wake-lock";
 const release = vi.fn().mockResolvedValue(undefined);
 const request = vi.fn().mockResolvedValue({ release });
 
+function visibility(state: "visible" | "hidden") {
+  Object.defineProperty(document, "visibilityState", {
+    value: state,
+    configurable: true,
+  });
+}
+
 beforeEach(() => {
   request.mockClear();
   release.mockClear();
+  visibility("visible");
   Object.defineProperty(navigator, "wakeLock", {
     value: { request },
     configurable: true,
@@ -34,6 +42,24 @@ describe("useWakeLock", () => {
     renderHook(() => useWakeLock(true));
     request.mockClear();
 
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(request).toHaveBeenCalledWith("screen");
+  });
+
+  it("asks for no lock while the tab is hidden, since that always throws", () => {
+    visibility("hidden");
+
+    renderHook(() => useWakeLock(true));
+
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("takes the lock once a hidden tab is shown", () => {
+    visibility("hidden");
+    renderHook(() => useWakeLock(true));
+
+    visibility("visible");
     document.dispatchEvent(new Event("visibilitychange"));
 
     expect(request).toHaveBeenCalledWith("screen");

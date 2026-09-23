@@ -297,7 +297,7 @@ export function BridgeSetup({
               size="sm"
               onClick={() => setHelper("android")}
             >
-              Android phone
+              Android phone or laptop
             </Button>
             <Button
               variant={helper === "pi" ? "default" : "outline"}
@@ -311,10 +311,12 @@ export function BridgeSetup({
         </Step>
 
         {helper === "android" && (
-          <Step number={2} title="Set the phone up next to the printer">
+          <Step number={2} title="Set that device up next to the printer">
             <p className="text-muted-foreground text-sm">
-              Open printkit on that phone in Chrome, turn Bridge mode on and
-              pair the printer. Keep the screen on and Battery Saver off.
+              Open printkit on it in Chrome, turn Bridge mode on and pair the
+              printer. Keep the screen on and Battery Saver off. A Windows
+              laptop or a Mac works here too. An iPad does not: Apple does not
+              let websites use Bluetooth.
             </p>
             <Button asChild size="sm">
               <Link

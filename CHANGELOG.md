@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Bluetooth copy now names every device that can act as the helper: an
+  Android phone, a Windows laptop or a Mac (Chrome on any of them), or a
+  Raspberry Pi, and states plainly that an iPad or iPhone cannot, by cable
+  or Bluetooth. Both facts were confirmed on a real B1 on 2026-09-22. The
+  guide, the picker's "Needs a helper device" tip, the B1's catalog note,
+  the setup wizard and the Bridge page all say the same thing.
+
+### Fixed
+
+- A NIIMBOT B1 that printed the label but never sent the "job done" packets
+  was reported as a failed print (first seen on real hardware, 2026-09-22:
+  paper came out, `Timeout waiting response (waited for de, df, dd, d9)`).
+  The vendor would have reprinted an order that was already labelled.
+  `printLabel` now treats an acknowledgement timeout after the page was sent
+  as printed, and still fails on every other error. Closing the job is
+  best-effort for the same reason.
+- Bridge mode asked for a screen wake lock while its tab was hidden, which
+  always throws (`NotAllowedError`). It now waits until the tab is visible.
+
+### Changed
+
 - Printer recommendation now follows what the vendor lives with rather than
   the connector: a printer that works with an iPad alone and costs nothing
   after purchase ranks first, cheapest first; a 4G printer with a data plan

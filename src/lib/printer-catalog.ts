@@ -125,7 +125,7 @@ export const PRINTER_CATALOG: readonly CatalogEntry[] = [
     devOnly: false,
     image: "/printers/niimbot-b1.jpg",
     notes: [
-      "Bluetooth only, so it needs an Android phone or a Raspberry Pi next to it.",
+      "Bluetooth only, so it needs an Android phone, a laptop or a Raspberry Pi next to it. An iPad cannot drive it.",
       "Runs on its own battery.",
     ],
   },

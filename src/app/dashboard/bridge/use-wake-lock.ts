@@ -17,6 +17,10 @@ export function useWakeLock(enabled: boolean): void {
     let wakeLock: { release: () => Promise<void> } | undefined;
 
     const acquire = async () => {
+      // A hidden tab cannot hold a wake lock, and asking anyway throws.
+      // Bridge mode can be switched on in a background tab, so skip and
+      // wait for the visibilitychange below.
+      if (document.visibilityState !== "visible") return;
       try {
         wakeLock = await navigator.wakeLock?.request("screen");
       } catch (err) {

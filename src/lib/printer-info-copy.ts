@@ -25,7 +25,7 @@ export const INFO_COPY: Record<InfoTopic, { title: string; body: string }> = {
   },
   helper_device: {
     title: "Needs a helper device",
-    body: "Bluetooth printers cannot reach the internet. An Android phone or a Raspberry Pi has to stay switched on next to the printer to pass jobs to it.",
+    body: "Bluetooth printers cannot reach the internet. Something has to stay switched on next to the printer and pass jobs to it: an Android phone, a Windows laptop, a Mac (all using Chrome), or a Raspberry Pi. An iPad or iPhone cannot do this job, because Apple does not let websites use Bluetooth.",
   },
   "4g": {
     title: "4G",

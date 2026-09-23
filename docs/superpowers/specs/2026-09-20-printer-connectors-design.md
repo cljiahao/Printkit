@@ -27,6 +27,11 @@ The answer for iPad-only vendors is a printer that reaches printkit over the
 internet by itself. Bluetooth printers stay supported, but only with a
 helper device, and are documented as the least recommended option.
 
+_Confirmed on hardware 2026-09-22:_ a NIIMBOT B1 pairs and prints from
+Chrome on Windows (and by the same Web Bluetooth path, a Mac or an Android
+phone). An iPad cannot drive it at all, by cable or Bluetooth, which is the
+premise this design rests on rather than an assumption.
+
 ## Goals
 
 1. Three connectors, and only three, each with one clear responsibility.

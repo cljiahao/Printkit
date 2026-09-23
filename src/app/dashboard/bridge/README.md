@@ -17,6 +17,14 @@ UX. This is the only part of printkit that ever touches
 - **`use-wake-lock.ts`** — Owns the Screen Wake Lock: acquired when Bridge mode turns on, re-acquired on `visibilitychange` since a wake lock auto-releases on tab-hide. A sleeping screen takes Bluetooth and the realtime connection with it, which is this transport's documented failure mode. It does not override Battery Saver, so the setup guide tells vendors to turn that off.
 - **`actions.ts`** — `reportPrintResult`: confirms the job belongs to the calling vendor (same ownership check as `history/actions.ts`'s `reprintJob`) before delegating to `updatePrintJobStatus`, letting the client-side `BridgePanel` report a print attempt's outcome without importing service-role code directly or being able to flip another vendor's job. `logBridgeEvent(action, detail?)`: writes an `admin_audit` row for bridge-side events (printer paired, bridge disconnected) that aren't a `print_jobs` write. `claimBridgeJob(locationId, jobId?)`: re-derives that the booth belongs to the caller, then claims through `claim_job` — with no `jobId` it claims whatever is waiting, which is how pairing picks up a job queued while the bridge was off. `bridgeHeartbeat(locationId)`: sweeps the booth and stamps the printer's `last_seen_at`. `ensureBridgePrinter(locationId)`: creates the booth's Bluetooth printer row once, so it carries the same connector, driver and health signal as every other printer.
 
+## Which devices can run this
+
+Any browser with Web Bluetooth, which in practice means Chrome on Android,
+Windows or macOS. Verified 2026-09-22 on a NIIMBOT B1 from Chrome on
+Windows. An iPad or iPhone cannot run Bridge mode at all: Apple allows no
+Web Bluetooth, WebUSB or Web Serial in any iOS browser, and a cable does
+not change that. That limit is the reason the other two connectors exist.
+
 ## Known printer quirk
 
 A real NIIMBOT B1 prints the label and then stays silent instead of

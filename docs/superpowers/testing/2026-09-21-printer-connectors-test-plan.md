@@ -97,10 +97,14 @@ What it is: a helper device beside the printer claims jobs from printkit,
 downloads the PNG and prints over Bluetooth. Either an Android phone running
 Bridge mode in Chrome, or a Raspberry Pi running `bridge-agent/`.
 
-**Android (NIIMBOT B1 + any Android phone with Chrome):**
+**Chrome helper device (NIIMBOT B1 + an Android phone, a Windows laptop or
+a Mac; _verified 2026-09-22_ on a B1 from Chrome on Windows). An iPad or
+iPhone cannot do this at all: no Web Bluetooth, no WebUSB, no Web Serial.**
 
-1. On the phone, sign in to printkit, open Bridge, pair the B1.
-2. Test print. Pass: a sample label.
+1. On that device, sign in to printkit, open Bridge, pair the B1.
+2. Test print. Pass: a sample label. A B1 prints it and then never
+   acknowledges the job, which printkit tolerates (see the CHANGELOG entry
+   of 2026-09-22); the toast must still report success.
 3. Leave Bridge open and place an order from the iPad. Pass: it prints, and
    the booth shows online. Lock the phone for 2 minutes. The booth should go
    offline (the heartbeat stops), which is the expected, documented

@@ -84,15 +84,21 @@ export default function BluetoothPrintersGuide() {
           job is impossible: Apple does not let websites use Bluetooth.
         </p>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          So a Bluetooth printer needs one of two helpers beside it, all day: an
-          Android phone, or a Raspberry Pi.
+          So a Bluetooth printer needs a helper beside it, all day. Any of these
+          work, because Chrome on them can use Bluetooth: an Android phone, a
+          Windows laptop, or a Mac. A Raspberry Pi works too, with no screen to
+          leave on. An iPad or iPhone cannot, whatever you try: Bluetooth and
+          USB are both closed to websites there. Merqo has printed a NIIMBOT B1
+          this way from a laptop and confirmed an iPad cannot.
         </p>
       </Section>
 
-      <Section id="android" title="Using an Android phone">
+      <Section id="android" title="Using an Android phone or a laptop">
         <p className="text-muted-foreground text-sm leading-relaxed">
           Any Android phone on Android 10 or newer, with Chrome. It can be an
-          old phone, as long as it stays plugged in.
+          old phone, as long as it stays plugged in. A Windows laptop or a Mac
+          works the same way in Chrome, which is worth knowing if you already
+          keep one at the stall. Safari cannot do it, on any device.
         </p>
         <Steps
           items={[

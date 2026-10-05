@@ -12,7 +12,9 @@ person runs against real devices, with pass criteria and negative checks.
   checks to run before any hardware, the dev-only virtual printer, and the
   hardware gate each catalog entry must pass before `hardwareVerified`
   flips to true. The Feie gate covers both the WiFi FP-N20W (the
-  recommended cheap option) and the 4G FP-N20H.
+  recommended cheap option) and the 4G FP-N20H. The Bluetooth gate's helper
+  device is any Chrome with Web Bluetooth (Android, Windows, macOS), never
+  an iPad.
 
 ## Parent
 

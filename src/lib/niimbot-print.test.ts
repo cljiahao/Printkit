@@ -94,6 +94,45 @@ describe("printLabel", () => {
     expect(newPrintTaskMock).toHaveBeenCalledWith("B1", { totalPages: 1 });
   });
 
+  it("counts a label as printed when the printer never acknowledges it", async () => {
+    const client = await connectPrinter();
+    waitForPageFinishedMock.mockRejectedValueOnce(
+      new Error("Timeout waiting response (waited for de, df, dd, d9)"),
+    );
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const canvas = document.createElement("canvas");
+
+    await expect(printLabel(client, canvas)).resolves.toBeUndefined();
+    expect(printPageMock).toHaveBeenCalled();
+  });
+
+  it("still fails when the printer rejects the page itself", async () => {
+    const client = await connectPrinter();
+    printPageMock.mockRejectedValueOnce(new Error("Timeout waiting response"));
+    const canvas = document.createElement("canvas");
+
+    await expect(printLabel(client, canvas)).rejects.toThrow(
+      "Timeout waiting response",
+    );
+  });
+
+  it("still fails on any other error while waiting", async () => {
+    const client = await connectPrinter();
+    waitForFinishedMock.mockRejectedValueOnce(new Error("out of paper"));
+    const canvas = document.createElement("canvas");
+
+    await expect(printLabel(client, canvas)).rejects.toThrow("out of paper");
+  });
+
+  it("does not fail the label when closing the job fails", async () => {
+    const client = await connectPrinter();
+    printEndMock.mockRejectedValueOnce(new Error("Timeout waiting response"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const canvas = document.createElement("canvas");
+
+    await expect(printLabel(client, canvas)).resolves.toBeUndefined();
+  });
+
   it("still calls printEnd when a print step throws (cleanup on failure)", async () => {
     const client = await connectPrinter();
     printPageMock.mockRejectedValueOnce(new Error("printer jammed"));

@@ -8,7 +8,7 @@
   "richReadme": true,
   "seeded_files": {
     "AGENTS.md": {
-      "origin_hash": "d9b2a35408ad8b6ea5a0aa8c57db18c26c943cf76be09ec7aba69e48cbe3a553",
+      "origin_hash": "227a8137f494e979287bfee0cebd9a6998df59918b68a4e4e2db15f34f0b980c",
       "path": "AGENTS.md"
     },
     ".claude/settings.json": {
@@ -68,7 +68,7 @@
       "path": ".claude/skills/next-verify/SKILL.md"
     },
     ".claude/skills/supabase-migrate/SKILL.md": {
-      "origin_hash": "48c4e931d1b17d44e9a1a727e54a5d2a20a2a583b3c357ad66b88557818d88b3",
+      "origin_hash": "27e07c1b97f826368829f166c06b0ba329b98432e944745b2228403ad0c67783",
       "path": ".claude/skills/supabase-migrate/SKILL.md"
     },
     ".husky/pre-commit": {
@@ -104,7 +104,7 @@
       "path": ".gitleaks.toml"
     },
     ".github/workflows/ci.yml": {
-      "origin_hash": "309c76fa7f293b8f01ba53c42a93389130f37615b6a92806155c3840d02987ad",
+      "origin_hash": "d7c36a6ec5b9af5a4b90e418cc6d7f324279e488996737d3fb3226d43fad27c9",
       "path": ".github/workflows/ci.yml"
     },
     ".claude/verify-harness.sh": {

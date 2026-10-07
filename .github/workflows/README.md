@@ -24,6 +24,7 @@ secret scan, dependency audit).
   skippable via `skip-comment-check`).
 - `security.yml` — gitleaks secret scan + `pnpm audit`, triggered on push to
   `main`, every PR, and a weekly cron.
+  The gitleaks job installs the pinned release binary and checks its SHA-256, because gitleaks-action needs a paid license on organization-owned repos. It scans the PR commits, or the pushed range on `main`.
 
 ## Connectivity
 

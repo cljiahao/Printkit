@@ -1,7 +1,7 @@
 # printkit — Deploy Notes
 
 printkit runs on its **own Supabase project** (not shared with qkit/loopkit/
-paykit/merqo), Vercel-deployed from `github.com/cljiahao/Printkit`.
+paykit/merqo), Vercel-deployed from `github.com/merqo-io/Printkit`.
 
 ## First deploy
 

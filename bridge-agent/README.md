@@ -50,7 +50,7 @@ own agent endpoints.
    printkit shows an 8-character pairing code, good for 10 minutes and
    usable once.
 2. On the Pi (Raspberry Pi OS, Node 24+):
-   `git clone --depth 1 https://github.com/cljiahao/Printkit.git`, then
+   `git clone --depth 1 https://github.com/merqo-io/Printkit.git`, then
    `cd Printkit/bridge-agent`. The repo is public, so no release is needed.
 3. On the Pi, inside the folder: `sudo ./install.sh`
 4. `printkit-bridge pair <code>`

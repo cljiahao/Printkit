@@ -10,7 +10,7 @@ least recommended way to print, then gives complete steps.
 - `page.tsx` — why a helper device is needed and which devices can be one
   (Chrome on Android, Windows or macOS, never an iPad), phone and laptop
   steps, Raspberry Pi
-  steps (install Node 24 and git, clone the public repo, run
+  steps (install Node 24 and git, clone the public repo from the `merqo-io` organization, run
   `bridge-agent/install.sh`, pair, choose the printer, start the service),
   and a troubleshooting FAQ.
 

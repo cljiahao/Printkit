@@ -65,3 +65,5 @@ secondary) — see `src/app/globals.css`'s own header comment.
 
 A vendor can now reprint an already-`printed` label, not just a `failed`
 one — see `src/app/dashboard/history/README.md`'s `reprintJob` entry.
+
+`e2e/` holds the Playwright public smoke and auth-guard specs, run with `pnpm test:e2e` (see its own README).

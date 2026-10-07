@@ -9,6 +9,8 @@ const eslintConfig = [
       ".next/**",
       "supabase/**",
       "coverage/**",
+      "test-results/**",
+      "playwright-report/**",
       ".stryker-tmp/**",
       "reports/**",
       // Nested git worktrees (.claude/worktrees/<name>/) are separate
@@ -44,7 +46,7 @@ const eslintConfig = [
     rules: { "sonarjs/prefer-read-only-props": "off" },
   },
   {
-    files: ["**/*.test.{ts,tsx}", "**/test/**", "scripts/**"],
+    files: ["**/*.test.{ts,tsx}", "**/test/**", "scripts/**", "e2e/**"],
     rules: {
       "no-inline-comments": "off",
       // Test fixtures use fake secrets/plain-http URLs on purpose.

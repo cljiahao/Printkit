@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- The repository moved from the `cljiahao` GitHub account to the `merqo-io` organization. `@merqo/ui` now installs from `github:merqo-io/merqo-ui` at the same tag, with the lockfile and tarball URLs updated to match. The Bluetooth guide and the bridge agent README now clone from the new URL.
 - Bluetooth copy now names every device that can act as the helper: an
   Android phone, a Windows laptop or a Mac (Chrome on any of them), or a
   Raspberry Pi, and states plainly that an iPad or iPhone cannot, by cable

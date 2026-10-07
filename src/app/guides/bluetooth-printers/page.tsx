@@ -162,7 +162,7 @@ export default function BluetoothPrintersGuide() {
               </Command>
               <Command>sudo apt-get install -y nodejs git</Command>
               <Command>
-                git clone --depth 1 https://github.com/cljiahao/Printkit.git
+                git clone --depth 1 https://github.com/merqo-io/Printkit.git
               </Command>
               <Command>cd Printkit/bridge-agent</Command>
               <p className="text-muted-foreground text-sm">

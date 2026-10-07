@@ -27,3 +27,8 @@ supabase/.temp
 
 # Raspberry Pi agent build output
 bridge-agent/dist/
+
+# playwright (e2e)
+/test-results
+/playwright-report
+/playwright/.cache

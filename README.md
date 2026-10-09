@@ -47,7 +47,7 @@ for the security context). The Vercel build does not use
 
 Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
-(`github:merqo-io/merqo-ui#v0.30.0`, `package.json` — bumped 2026-09-15 for
+(`github:merqo-io/merqo-ui#989d934c1cc8d957ff383934debf8ef083b6b6a4`, `package.json`). This audited source includes shared client-boundary and account-menu hardening; login uses its shared `GoogleMark` instead of a local copy. Earlier releases added
 `DashboardTours`, a route-matched multi-tour router for kits with more than
 one dashboard-page tour; purely additive, this kit's own `DashboardTour`
 usage is unchanged; bumped again 2026-09-16 for per-kit terms-schedule

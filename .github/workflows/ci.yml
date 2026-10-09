@@ -22,7 +22,6 @@ jobs:
       - name: Harness integrity
         run: bash .claude/verify-harness.sh
       - run: pnpm check
-      - run: pnpm test
       - run: pnpm exec vitest --run --coverage
       - name: Changed-line coverage (>= 80%)
         run: pipx run diff-cover coverage/cobertura-coverage.xml --compare-branch=origin/main --fail-under=80

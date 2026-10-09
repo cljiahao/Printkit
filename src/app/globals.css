@@ -15,6 +15,7 @@
   --popover: oklch(0.949 0.015 88);
   --popover-foreground: oklch(0.227 0.006 156);
   --primary: oklch(0.431 0.066 177);
+  --primary-text: oklch(0.431 0.066 177);
   --primary-foreground: oklch(0.949 0.015 88);
   /* warm grey, distinct from the primary's own teal-green hue. */
   --secondary: oklch(0.52 0.02 70);
@@ -25,7 +26,7 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --input: oklch(0.59 0.02 177);
   --ring: oklch(0.708 0 0);
 
   /* brand accent — a clean money-green, distinct from qkit's ember and
@@ -51,6 +52,7 @@
   --popover: oklch(0.231 0.019 172);
   --popover-foreground: oklch(0.949 0.007 127);
   --primary: oklch(0.63 0.098 172);
+  --primary-text: oklch(0.76 0.08 172);
   --primary-foreground: oklch(0.231 0.019 172);
   --secondary: oklch(0.62 0.02 70);
   --secondary-foreground: oklch(0.231 0.019 172);
@@ -60,7 +62,7 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --input: oklch(0.61 0.02 172);
   --ring: oklch(0.556 0 0);
 
   --mint: oklch(0.72 0.16 155);
@@ -78,6 +80,8 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  /* Brand text needs its own contrast; fills, borders and focus keep primary. */
+  --text-color-primary: var(--primary-text);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -105,9 +109,11 @@
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
-* {
-  border-color: var(--color-border);
-  outline-color: var(--color-ring);
+@layer base {
+  * {
+    border-color: var(--color-border);
+    outline-color: var(--color-ring);
+  }
 }
 
 body {

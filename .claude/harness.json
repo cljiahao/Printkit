@@ -12,7 +12,7 @@
       "path": "AGENTS.md"
     },
     ".claude/settings.json": {
-      "origin_hash": "4f4c90b4d431c38749d05bbeb611ece62a3f20223ea8ca76045f43d45ea8b537",
+      "origin_hash": "91265764ca1c4d084e6a24c962a60f0255fef5c01fd7af5cb2850702e1597890",
       "path": ".claude/settings.json"
     },
     ".claude/hooks/block-no-verify.sh": {
@@ -20,11 +20,11 @@
       "path": ".claude/hooks/block-no-verify.sh"
     },
     ".claude/hooks/protect-files.sh": {
-      "origin_hash": "cedefb778eee8a3b8c79bb1a4eb7b7680a0a5e1ef3c9b1a08d3cac6c8793d6b1",
+      "origin_hash": "281dabc9d452a8d00d0749d698a764fec355641723abd47ba6860f3941305048",
       "path": ".claude/hooks/protect-files.sh"
     },
     ".claude/hooks/user-prompt-guard.cjs": {
-      "origin_hash": "7d1d56b9b305dd5f3c54f919a07736ad9e5e824ca5d86ee8b77ef40f1cc5cda0",
+      "origin_hash": "534a7cb2b825a73d23a8687bbd14c9e9161b24ac3c61ae3df2fcfca8fbddccfd",
       "path": ".claude/hooks/user-prompt-guard.cjs"
     },
     ".claude/hooks/post-edit-comment-check.sh": {
@@ -104,7 +104,7 @@
       "path": ".gitleaks.toml"
     },
     ".github/workflows/ci.yml": {
-      "origin_hash": "d7c36a6ec5b9af5a4b90e418cc6d7f324279e488996737d3fb3226d43fad27c9",
+      "origin_hash": "1435733e7fbab2627b2e17ef9f683689c72b726adea62bfd1f9a300e691d0efc",
       "path": ".github/workflows/ci.yml"
     },
     ".claude/verify-harness.sh": {

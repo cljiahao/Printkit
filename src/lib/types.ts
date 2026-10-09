@@ -302,6 +302,15 @@ export type Database = {
     };
     Functions: {
       is_admin: { Args: { p_uid: string }; Returns: boolean };
+      claim_cloud_poll_job: {
+        Args: {
+          p_location_id: string;
+          p_job_id: string;
+          p_created_at: string;
+          p_requeued_at: string | null;
+        };
+        Returns: Database["printkit"]["Tables"]["print_jobs"]["Row"][];
+      };
       claim_job: {
         Args: { p_location_id: string; p_job_id?: string | null };
         Returns: Database["printkit"]["Tables"]["print_jobs"]["Row"][];

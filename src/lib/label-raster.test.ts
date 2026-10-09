@@ -69,10 +69,19 @@ describe("rasterizeLayout", () => {
     const { data } = ctx.getImageData(0, 0, image.width, image.height);
 
     let ink = 0;
+    let invalidPixels = 0;
     for (let i = 0; i < data.length; i += 4) {
-      expect([0, 255]).toContain(data[i]);
-      if (data[i] === 0) ink += 1;
+      const red = data[i];
+      if (
+        (red !== 0 && red !== 255) ||
+        data[i + 1] !== red ||
+        data[i + 2] !== red ||
+        data[i + 3] !== 255
+      )
+        invalidPixels += 1;
+      if (red === 0) ink += 1;
     }
+    expect(invalidPixels).toBe(0);
     const ratio = ink / (image.width * image.height);
     expect(ratio).toBeGreaterThan(0);
     expect(ratio).toBeLessThan(0.9);

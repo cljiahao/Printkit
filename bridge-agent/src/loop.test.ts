@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { runOnce, runLoop, type LoopDeps } from "./loop";
 import { UnauthorizedError } from "./client";
 
+const ATTEMPT = "2026-10-08T00:00:00.123456+00:00";
 const nextJob = vi.fn();
 const fetchLabel = vi.fn();
 const reportResult = vi.fn();
@@ -40,27 +41,27 @@ describe("runOnce", () => {
   });
 
   it("prints the claimed job and reports success", async () => {
-    nextJob.mockResolvedValue({ jobId: "job-1" });
+    nextJob.mockResolvedValue({ jobId: "job-1", sentAt: ATTEMPT });
 
     expect(await runOnce(deps())).toBe("printed");
 
     expect(fetchLabel).toHaveBeenCalledWith("job-1");
     expect(print).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]));
-    expect(reportResult).toHaveBeenCalledWith("job-1", "printed");
+    expect(reportResult).toHaveBeenCalledWith("job-1", "printed", ATTEMPT);
   });
 
   it("reports a failure instead of retrying silently", async () => {
-    nextJob.mockResolvedValue({ jobId: "job-1" });
+    nextJob.mockResolvedValue({ jobId: "job-1", sentAt: ATTEMPT });
     print.mockRejectedValue(new Error("paper out"));
 
     expect(await runOnce(deps())).toBe("failed");
 
-    expect(reportResult).toHaveBeenCalledWith("job-1", "failed");
+    expect(reportResult).toHaveBeenCalledWith("job-1", "failed", ATTEMPT);
     expect(print).toHaveBeenCalledTimes(1);
   });
 
   it("reconnects the printer after a failed print", async () => {
-    nextJob.mockResolvedValue({ jobId: "job-1" });
+    nextJob.mockResolvedValue({ jobId: "job-1", sentAt: ATTEMPT });
     print.mockRejectedValue(new Error("disconnected"));
 
     await runOnce(deps());
@@ -69,16 +70,16 @@ describe("runOnce", () => {
   });
 
   it("reports a failure when the label cannot be downloaded", async () => {
-    nextJob.mockResolvedValue({ jobId: "job-1" });
+    nextJob.mockResolvedValue({ jobId: "job-1", sentAt: ATTEMPT });
     fetchLabel.mockRejectedValue(new Error("offline"));
 
     await runOnce(deps());
 
-    expect(reportResult).toHaveBeenCalledWith("job-1", "failed");
+    expect(reportResult).toHaveBeenCalledWith("job-1", "failed", ATTEMPT);
   });
 
   it("lets an unpaired error through rather than reporting a print failure", async () => {
-    nextJob.mockResolvedValue({ jobId: "job-1" });
+    nextJob.mockResolvedValue({ jobId: "job-1", sentAt: ATTEMPT });
     fetchLabel.mockRejectedValue(new UnauthorizedError());
 
     await expect(runOnce(deps())).rejects.toBeInstanceOf(UnauthorizedError);
@@ -126,4 +127,16 @@ describe("runLoop", () => {
     expect(nextJob).toHaveBeenCalledTimes(1);
     expect(log).toHaveBeenCalledWith("Unpaired by printkit. Stopping.");
   });
+});
+
+it("does not report a physical failure when saving success fails", async () => {
+  nextJob.mockResolvedValue({ jobId: "job-1", sentAt: ATTEMPT });
+  reportResult.mockRejectedValue(new Error("acknowledgement lost"));
+  await expect(runOnce(deps())).rejects.toThrow("acknowledgement lost");
+  expect(print).toHaveBeenCalledTimes(1);
+  expect(reportResult).toHaveBeenCalledExactlyOnceWith(
+    "job-1",
+    "printed",
+    ATTEMPT,
+  );
 });

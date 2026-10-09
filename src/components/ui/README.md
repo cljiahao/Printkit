@@ -1,33 +1,14 @@
 # ui
 
-## Purpose
+Local shadcn primitives used by Printkit: `badge`, `button`, `input`, `label`,
+`popover`, `select`, `switch`, `table` and `tooltip`.
 
-shadcn/ui (new-york style) primitives, installed via
-`pnpm dlx shadcn@latest add <component> --yes` and left close to generated —
-don't hand-edit structurally, re-run the generator instead so upstream fixes
-aren't lost. Wrapped by feature components elsewhere in `src/components/`
-and `src/app/`; nothing here is printkit-specific.
+Feature components import these directly by name. `select` supports history
+location assignment; `switch` controls bridge mode; `popover` supports printer
+setup explanations. Account menus and help drawers use the shared Merqo UI
+package rather than unused local copies.
 
-## Contents
+These primitives remain generator-managed. Put product behavior in feature
+components instead of changing generated structure.
 
-`avatar`, `badge`, `button`, `dialog`, `dropdown-menu`, `input`, `label`,
-`popover`, `radio-group`, `select`, `sheet`, `skeleton`, `switch`, `table`, `textarea`,
-`toggle`, `toggle-group`, `tooltip` — one file per primitive, named to
-match. `sheet` backs the Feedback/Get-help drawers off the account menu;
-`radio-group` backs the payment-config kind picker; `select` backs the
-History page's multi-location assign control
-(`dashboard/history/assign-location-control.tsx`); `toggle-group` backs the
-support-form category picker; `dropdown-menu` backs the account menu
-itself; `skeleton` backs the dashboard's `loading.tsx` fallback; `switch`
-backs the Bridge mode toggle in `dashboard/bridge/bridge-panel.tsx`.
-`popover` backs `InfoButton` (`src/components/info-button.tsx`), the tap-to-open
-"i" explanations on the printer picker and setup screens.
-
-## Connectivity
-
-Imported directly by name (`@/components/ui/<name>`) from feature
-components throughout `src/components/` and `src/app/`.
-
-## Parent
-
-[components](../README.md)
+[Parent components](../README.md)

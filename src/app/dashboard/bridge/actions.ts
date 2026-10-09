@@ -1,4 +1,6 @@
 "use server";
+import { z } from "zod";
+import { printAttemptSchema } from "@/lib/print-attempt";
 import { getVendorSession } from "@/lib/vendor-session";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
 import { claimJob, sweepLocation } from "@/lib/job-dispatch";
@@ -23,19 +25,38 @@ import type { Json } from "@/lib/types";
 export async function reportPrintResult(
   jobId: string,
   result: "printed" | "failed",
+  sentAt: string,
 ): Promise<ActionResult> {
+  const parsedResult = z.enum(["printed", "failed"]).safeParse(result);
+  if (!parsedResult.success)
+    return { success: false, error: "Invalid print result" };
+  const parsedAttempt = printAttemptSchema.safeParse(sentAt);
+  if (!parsedAttempt.success)
+    return { success: false, error: "Invalid print attempt" };
   const { supabase, user } = await getVendorSession();
 
   const { data: job } = await supabase
     .from("print_jobs")
-    .select("id")
+    .select("id, status, sent_at")
     .eq("id", jobId)
     .eq("vendor_id", user.id)
+    .eq("sent_at", parsedAttempt.data)
     .maybeSingle();
 
   if (!job) return { success: false, error: "Print job not found" };
 
-  const outcome = await updatePrintJobStatus(jobId, result);
+  if (job.status === parsedResult.data) return { success: true };
+  if (job.status !== "sent")
+    return { success: false, error: "Print job is not awaiting a result" };
+  const outcome = await updatePrintJobStatus(
+    jobId,
+    parsedResult.data,
+    undefined,
+    {
+      expectedStatus: "sent",
+      sentAt: parsedAttempt.data,
+    },
+  );
   return outcome.ok
     ? { success: true }
     : { success: false, error: outcome.error };
@@ -52,6 +73,11 @@ export async function logBridgeEvent(
   action: string,
   detail?: Record<string, unknown>,
 ): Promise<ActionResult> {
+  const parsedAction = z
+    .enum(["printer_paired", "bridge_disconnected"])
+    .safeParse(action);
+  if (!parsedAction.success)
+    return { success: false, error: "Invalid bridge event" };
   const { user } = await getVendorSession();
   const service = await createServiceClient();
 
@@ -90,7 +116,8 @@ async function ownedLocation(
   return data !== null;
 }
 
-export type ClaimBridgeJobResult = { ok: true; jobId: string } | { ok: false };
+export type ClaimBridgeJobResult =
+  { ok: true; jobId: string; sentAt: string } | { ok: false };
 
 /**
  * A realtime event only says a job exists; this is what decides the bridge
@@ -105,7 +132,9 @@ export async function claimBridgeJob(
   if (!(await ownedLocation(locationId, user.id))) return { ok: false };
 
   const claimed = await claimJob(locationId, jobId);
-  return claimed ? { ok: true, jobId: claimed.id } : { ok: false };
+  return claimed?.sent_at
+    ? { ok: true, jobId: claimed.id, sentAt: claimed.sent_at }
+    : { ok: false };
 }
 
 /**

@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { printAttemptSchema } from "@/lib/print-attempt";
 import { resolveAgent } from "@/lib/agent-auth";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
 import { createServiceClient } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-const bodySchema = z.object({ result: z.enum(["printed", "failed"]) });
+const bodySchema = z.object({
+  result: z.enum(["printed", "failed"]),
+  sent_at: printAttemptSchema,
+});
 
 /**
  * What the agent saw. Scoped to the agent's own booth, so an agent cannot
@@ -34,23 +38,36 @@ export async function POST(request: Request, context: RouteContext) {
   const supabase = await createServiceClient();
   const { data: job } = await supabase
     .from("print_jobs")
-    .select("id")
+    .select("id, status, sent_at")
     .eq("id", id)
     .eq("location_id", printer.location_id)
-    // Only a job this agent claimed and has not settled yet: a late report
-    // must not overwrite a job the vendor has since requeued or reprinted.
-    .eq("status", "sent")
+    .eq("sent_at", parsed.data.sent_at)
     .maybeSingle();
 
   if (!job) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
   }
 
-  await updatePrintJobStatus(
+  if (job.status === parsed.data.result) return NextResponse.json({ ok: true });
+  if (job.status !== "sent")
+    return NextResponse.json(
+      { error: "Print attempt is no longer pending" },
+      { status: 409 },
+    );
+
+  const result = await updatePrintJobStatus(
     id,
     parsed.data.result,
     parsed.data.result === "failed" ? "device_reported_error" : undefined,
+    {
+      locationId: printer.location_id,
+      expectedStatus: "sent",
+      sentAt: parsed.data.sent_at,
+    },
   );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

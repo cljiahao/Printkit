@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { z } from "zod";
 import { toFeieMarkup } from "@/lib/connectors/vendor-cloud/feie-markup";
 import { publicSiteUrl } from "@/lib/site-url";
 import type {
@@ -10,6 +11,16 @@ import type {
 
 const DEFAULT_API_BASE = "https://api.jp.feieyun.com/Api/Open/";
 const TIMEOUT_MS = 5000;
+const registrationField = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .regex(/^[^#\r\n]+$/);
+const registrationSchema = z.object({
+  sn: registrationField,
+  key: registrationField,
+});
 
 type FeieResponse = {
   ret?: number;
@@ -76,6 +87,7 @@ async function call(
       headers: { "content-type": "application/x-www-form-urlencoded" },
       body,
       cache: "no-store",
+      redirect: "error",
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
@@ -124,13 +136,13 @@ export const feieDriver: VendorCloudDriver = {
   async registerPrinter(
     input: Record<string, string>,
   ): Promise<RegisterResult> {
-    const sn = input.sn?.trim();
-    const key = input.key?.trim();
-    if (!sn || !key) {
+    const parsed = registrationSchema.safeParse(input);
+    if (!parsed.success) {
       return { ok: false, error: "Enter the printer's SN and KEY." };
     }
 
-    const name = (input.name ?? "Merqo").replace(/[#\n]/g, " ");
+    const { sn, key } = parsed.data;
+    const name = (input.name ?? "Merqo").replace(/[#\r\n]/g, " ");
     const result = await call("Open_printerAddlist", {
       printerContent: `${sn}#${key}#${name}`,
     });

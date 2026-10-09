@@ -86,3 +86,32 @@ waits on.
 ## Parent
 
 See the repo root [README.md](../README.md).
+
+Agent HTTP requests have a ten-second deadline, including response downloads,
+and reject redirects. A stalled service returns control to the polling loop's
+backoff; pairing codes and request bodies are never forwarded through redirects.
+Printer hardware operations remain separate from the HTTP deadline.
+
+## Attempt protocol deployment
+
+The bundled client and browser bridge carry the claimed `sent_at` timestamp
+through printing to result settlement without converting it through Date.
+External agents must send `{result, sent_at}`; a result without its claim
+timestamp cannot safely settle a job and is rejected. There is no legacy fallback.
+
+For a phased rollout, first add `sent_at` to next-job responses, then update
+all agents, then enforce it on result requests. Alternatively pause and restart
+agents during a coordinated server/client deployment. Refresh already-open
+browser bridges after deployment. Old clients fail closed rather than overwrite
+a newer attempt; restart or update them before resuming the queue.
+
+The service restarts abnormal process failures. Revoking a device token ends
+the polling loop normally and leaves the service stopped; pair the device
+again and start its service to resume. Temporary network failures stay inside
+the running loop and use its bounded backoff without a process restart.
+
+## Reproducible installation
+
+The installer requires the committed package-lock.json and runs npm ci with lifecycle scripts disabled. It explicitly rebuilds only the locked native Bluetooth/USB packages as the ordinary service user, then builds the agent and removes development dependencies. Root copies the completed files; dependency scripts never run as root. Shell source paths are passed as positional arguments, so spaces and apostrophes remain literal. The installer aborts on a failed locked install.
+
+Operator regression tests use a fake npm executable and temporary directories: node --test test/operators/*.test.mjs. Bluetooth installation and physical printing still require Raspberry Pi hardware validation.

@@ -34,12 +34,12 @@ export async function runOnce(
   } catch (err) {
     if (err instanceof UnauthorizedError) throw err;
     deps.log(`Print failed: ${String(err)}`);
-    await deps.client.reportResult(job.jobId, "failed");
+    await deps.client.reportResult(job.jobId, "failed", job.sentAt);
     await deps.printer.reconnect();
     return "failed";
   }
 
-  await deps.client.reportResult(job.jobId, "printed");
+  await deps.client.reportResult(job.jobId, "printed", job.sentAt);
   return "printed";
 }
 

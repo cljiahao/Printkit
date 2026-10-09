@@ -57,11 +57,7 @@ function LoginForm() {
     }
   }
 
-  // Email a password-reset link. The link lands on /auth/callback, which
-  // establishes a recovery session and forwards to /dashboard/profile —
-  // where "Change password" (profile-form.tsx) already lets a signed-in
-  // user (a recovery session counts) set a new one. No separate
-  // reset-password page needed.
+  // The callback establishes the recovery session before opening the form.
   async function sendReset() {
     if (!email) {
       toast.error("Enter your email first");
@@ -69,16 +65,21 @@ function LoginForm() {
     }
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/dashboard/profile`,
-    });
-    setBusy(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(`Password reset link sent to ${email}.`);
+    } catch {
+      toast.error("Could not send a reset link. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    toast.success(`Password reset link sent to ${email}.`);
   }
 
   async function submit(e: FormEvent) {

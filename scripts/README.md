@@ -1,24 +1,11 @@
-# scripts
+# Operator scripts
 
-## Purpose
+create-kit-key.mjs creates or rotates an inbound kit token and stores only its SHA256 hash. The new inbound token is intentionally printed once for transfer to the calling kit's secret store. Do not capture this command's output in shared logs.
 
-One-off operator scripts, run by hand against the real Supabase project —
-never invoked by the app itself.
+To rotate only the inbound token, run node scripts/create-kit-key.mjs qkit. Existing callback fields stay unchanged.
 
-## Contents
+To configure a callback, pipe the callback secret from your secret manager into node scripts/create-kit-key.mjs qkit --callback-url https://qkit.merqo.io/api/printkit/print-status --callback-secret-stdin. Callback secrets must never be supplied as command arguments: shell history and process listings can expose them. The callback URL requires HTTPS without embedded credentials. The bounded stdin reader rejects terminal input to avoid echoing secrets.
 
-- `create-kit-key.mjs` — mints a bearer secret for a new calling kit,
-  stores its SHA-256 hash in `printkit.kit_api_keys`
-  (`0001_printkit_core.sql`), and prints the plaintext secret once — that
-  kit's own secret store is the only other place it should ever live.
-  Optional trailing `callback_url`/`callback_secret` args populate that
-  kit's outbound status-callback config (`0006_kit_api_keys_callback.sql`,
-  used by `src/lib/kit-callback.ts`) — both stored in plaintext, since
-  printkit must present them itself, unlike the hashed inbound secret.
-  Usage: `node scripts/create-kit-key.mjs <kit_slug> [callback_url] [callback_secret]`.
-  Omitting the trailing args on a re-run (e.g. rotating just the inbound
-  secret) leaves any existing callback config untouched.
+The operator supplies Supabase credentials through the shell environment; these scripts do not load dotenv files. create-kit-key-input.mjs contains argument and input validation. Regression tests run with node --test test/operators/*.test.mjs using synthetic values only.
 
-## Parent
-
-[repo root](../README.md)
+[Parent](../README.md)

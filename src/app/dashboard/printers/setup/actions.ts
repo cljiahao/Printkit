@@ -39,6 +39,9 @@ async function printerFor(
   catalogId: string,
   vendorId: string,
 ): Promise<PrinterRow | null> {
+  const entry = getCatalogEntry(catalogId);
+  if (!entry || (entry.devOnly && process.env.VERCEL_ENV === "production"))
+    return null;
   const existing = await getPrinterByLocation(locationId);
   if (existing) {
     return existing.catalog_id === catalogId ? existing : null;
@@ -60,6 +63,12 @@ export async function createPrinterUrl(
     return { ok: false, error: "That booth does not belong to your account." };
   }
 
+  if (getCatalogEntry(catalogId)?.connector !== "cloud_poll") {
+    return {
+      ok: false,
+      error: "That printer does not use a CloudPRNT address.",
+    };
+  }
   const printer = await printerFor(locationId, catalogId, user.id);
   if (!printer) {
     return {

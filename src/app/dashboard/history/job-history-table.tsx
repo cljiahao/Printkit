@@ -51,7 +51,12 @@ export function JobHistoryTable({
                   <span className="text-muted-foreground text-sm">
                     Unrouted
                   </span>
-                  <AssignLocationControl jobId={job.id} locations={locations} />
+                  {job.status === "queued" && (
+                    <AssignLocationControl
+                      jobId={job.id}
+                      locations={locations}
+                    />
+                  )}
                 </div>
               ) : (
                 (job.print_locations?.label ?? "Unrouted")

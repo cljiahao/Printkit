@@ -18,3 +18,10 @@ Where Feie reports a print result for a job printkit handed it.
 ## Parent
 
 [feie](../README.md)
+
+Persistence errors return HTTP 500 so Feie retries. Unknown, requeued and
+already-settled jobs are acknowledged without another write. The write checks
+both the current sent state and the signed driver reference atomically, so a
+callback cannot settle a different delivery attempt after the lookup.
+
+Callback form bodies are capped at 16 KiB of streamed bytes before RSA verification or database lookup. Both multipart and URL-encoded forms retain their signature semantics; oversized input returns 413 regardless of Content-Length.

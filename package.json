@@ -2,7 +2,7 @@
   "name": "printkit",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.5.2",
+  "packageManager": "pnpm@11.10.0",
   "engines": {
     "node": "24.x",
     "pnpm": ">=11"
@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "check": "prettier --check . && eslint . && tsc --noEmit",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:operators": "node --test test/operators/*.test.mjs"
   },
   "dependencies": {
     "@merqo/ui": "github:merqo-io/merqo-ui#v0.30.0",

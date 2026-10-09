@@ -31,8 +31,7 @@ new brand is one driver file inside an existing connector.
   the printer picker tells a catalog entry whose driver exists from one that
   is still just a plan. `resetDriverRegistry` is test-only.
 
-One subfolder per connector (`cloud-poll/`, `vendor-cloud/`, `bridge/`)
-arrives with each connector's own phase; none exist yet.
+Implemented driver modules live in `cloud-poll/` and `vendor-cloud/`; browser and Raspberry Pi bridge delivery use the shared label pipeline and bridge routes.
 
 ## Connectivity
 

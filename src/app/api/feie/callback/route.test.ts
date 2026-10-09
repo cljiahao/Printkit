@@ -1,6 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { generateKeyPairSync, createSign } from "node:crypto";
 
+const { verifySpy } = vi.hoisted(() => ({ verifySpy: vi.fn() }));
+vi.mock("node:crypto", async () => {
+  const actual =
+    await vi.importActual<typeof import("node:crypto")>("node:crypto");
+  return {
+    ...actual,
+    createVerify: (...args: Parameters<typeof actual.createVerify>) => {
+      verifySpy();
+      return actual.createVerify(...args);
+    },
+  };
+});
+
 const updatePrintJobStatusMock = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("@/lib/print-jobs", () => ({
   updatePrintJobStatus: (...args: unknown[]) =>
@@ -47,17 +60,19 @@ function callback(
   });
 }
 
-function jobFound(id: string | null) {
+function jobFound(id: string | null, status = "sent") {
   selectMock.mockReturnValue({
     eq: () => ({
       maybeSingle: () =>
-        Promise.resolve({ data: id ? { id } : null, error: null }),
+        Promise.resolve({ data: id ? { id, status } : null, error: null }),
     }),
   });
 }
 
 beforeEach(() => {
   process.env.FEIE_CALLBACK_PUBLIC_KEY = publicKey;
+  verifySpy.mockClear();
+  selectMock.mockClear();
   updatePrintJobStatusMock.mockClear();
   jobFound("job-1");
 });
@@ -74,7 +89,12 @@ describe("POST /api/feie/callback", () => {
 
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("SUCCESS");
-    expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "printed");
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-1",
+      "printed",
+      undefined,
+      { expectedStatus: "sent", driverRef: "order-9" },
+    );
   });
 
   it("rejects a signature over the fields simply concatenated", async () => {
@@ -95,6 +115,7 @@ describe("POST /api/feie/callback", () => {
       "job-1",
       "failed",
       "device_reported_error",
+      { expectedStatus: "sent", driverRef: "order-9" },
     );
   });
 
@@ -144,4 +165,76 @@ describe("POST /api/feie/callback", () => {
 
     expect(res.status).toBe(401);
   });
+});
+
+it("asks Feie to retry a failed lookup instead of losing the result", async () => {
+  selectMock.mockReturnValue({
+    eq: () => ({
+      maybeSingle: () =>
+        Promise.resolve({ data: null, error: { message: "unavailable" } }),
+    }),
+  });
+  expect((await POST(callback(fields))).status).toBe(500);
+  expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+});
+
+it("asks Feie to retry when the result could not be persisted", async () => {
+  updatePrintJobStatusMock.mockResolvedValueOnce({
+    ok: false,
+    error: "Could not update print job status.",
+  });
+  expect((await POST(callback(fields))).status).toBe(500);
+});
+
+it.each(["queued", "printed", "failed"])(
+  "acknowledges a stale Feie callback for a %s job without changing it",
+  async (status) => {
+    jobFound("job-1", status);
+    const response = await POST(callback(fields));
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("SUCCESS");
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+  },
+);
+
+it.each([undefined, "1", "99999"])(
+  "rejects oversized form input with length %s before crypto or storage",
+  async (length) => {
+    const headers: Record<string, string> = {
+      "content-type": "application/x-www-form-urlencoded",
+    };
+    if (length !== undefined) headers["content-length"] = length;
+    const response = await POST(
+      new Request("https://printkit.test/callback", {
+        method: "POST",
+        headers,
+        body: "x=" + "a".repeat(16385),
+      }),
+    );
+    expect(response.status).toBe(413);
+    expect(verifySpy).not.toHaveBeenCalled();
+    expect(selectMock).not.toHaveBeenCalled();
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+  },
+);
+it("preserves signed URL-encoded callbacks as well as multipart forms", async () => {
+  const body = new URLSearchParams({ ...fields, sign: signed(fields) });
+  const response = await POST(
+    new Request("https://printkit.test/callback", { method: "POST", body }),
+  );
+  expect(response.status).toBe(200);
+  expect(await response.text()).toBe("SUCCESS");
+  expect(verifySpy).toHaveBeenCalledOnce();
+  expect(updatePrintJobStatusMock).toHaveBeenCalled();
+});
+it("returns400 for a malformed form content type before crypto or storage", async () => {
+  const response = await POST(
+    new Request("https://printkit.test/callback", {
+      method: "POST",
+      body: "raw",
+    }),
+  );
+  expect(response.status).toBe(400);
+  expect(verifySpy).not.toHaveBeenCalled();
+  expect(selectMock).not.toHaveBeenCalled();
 });

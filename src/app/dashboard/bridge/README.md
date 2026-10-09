@@ -35,3 +35,10 @@ else still fails the job, and the vendor can reprint from History.
 ## Parent
 
 See [../README.md](../README.md).
+
+Claiming returns the job ID and its `sentAt` timestamp. The browser carries
+that timestamp through printing and echoes it when reporting the result.
+Ownership and the incoming attempt are checked before settlement and again
+in the conditional UPDATE, so a delayed report cannot settle a later reclaim
+of the same job. Same-attempt identical retries succeed without another
+callback. Refresh already-open bridges after this protocol deployment.

@@ -21,5 +21,10 @@ export async function GET(request: Request) {
   const job = await claimJob(printer.location_id);
   if (!job) return new Response(null, { status: 204 });
 
-  return NextResponse.json({ job_id: job.id });
+  if (!job.sent_at)
+    return NextResponse.json(
+      { error: "Invalid print attempt" },
+      { status: 503 },
+    );
+  return NextResponse.json({ job_id: job.id, sent_at: job.sent_at });
 }

@@ -18,7 +18,7 @@ ignores their `#!/usr/bin/env bash` shebang and doesn't support
   install check when `package.json` is staged, a gitleaks secret-scan on
   staged files (if gitleaks is installed), then `readme-coupling.sh` and
   `comment-hygiene.sh`.
-- `pre-push.sh` — runs `../../.claude/verify-harness.sh` (integrity check)
+- `pre-push.sh` — runs `.claude/verify-harness.sh` from the repository root (integrity check)
   plus `pnpm run check && pnpm test`.
 - `readme-coupling.sh` — pre-commit nudge (non-blocking): warns to stderr
   when staged files touch a folder whose `README.md` wasn't also staged;

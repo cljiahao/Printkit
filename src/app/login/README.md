@@ -3,8 +3,7 @@
 ## Purpose
 
 The single sign-in/sign-up page (`/login`) — email+password and Google
-OAuth, plus password reset. No separate `/signup` or `/reset-password`
-route; mode is a client-side toggle on this one page.
+OAuth, plus password reset. Sign-up is a client-side toggle; `/reset-password` completes emailed recovery links.
 
 ## Contents
 
@@ -23,9 +22,7 @@ route; mode is a client-side toggle on this one page.
     `supabase.auth.resetPasswordForEmail`, toasting an error if the email
     field is empty or the call fails, and a success toast otherwise. The
     reset link lands on `/auth/callback`, which establishes a recovery
-    session and forwards to `/dashboard/profile`, where "Change password"
-    already lets a signed-in (recovery counts) user set a new one — no
-    separate reset-password page needed.
+    session and forwards to `/reset-password`, which validates the session and offers a new-password form.
   - `Wordmark` (`@/components/wordmark`) and `GoogleMark`
     (`./google-mark`) brand the card; the card container is `ElevatedCard`
     (`@/components/elevated-card`), matching every other kit's login page.
@@ -43,7 +40,7 @@ route; mode is a client-side toggle on this one page.
 ## Connectivity
 
 Signed-out visitors reach `/login` directly (the landing page,
-`src/app/page.tsx`, is currently a placeholder with no nav links yet). On
+`src/app/page.tsx`, redirects to `/dashboard`, whose auth gate sends signed-out visitors to `/login`). On
 success it calls `router.push("/dashboard")` + `router.refresh()`;
 `/dashboard`'s `layout.tsx` (`getVendorSession()`) is the actual auth gate
 this page's happy path leads into.

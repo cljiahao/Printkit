@@ -61,10 +61,18 @@ function confirmTimeoutFor(printer: PrinterRow | null): number {
  * A job nobody collected in time is failed rather than printed later: a
  * printer switched on the next morning must not print yesterday's labels.
  */
-async function expireIfStale(row: SweepRow, now: number): Promise<void> {
+async function expireIfStale(
+  row: SweepRow,
+  now: number,
+  locationId: string,
+): Promise<void> {
   const since = new Date(row.requeued_at ?? row.created_at).getTime();
   if (now - since > JOB_EXPIRY_MS) {
-    await updatePrintJobStatus(row.id, "failed", "expired");
+    await updatePrintJobStatus(row.id, "failed", "expired", {
+      locationId,
+      expectedStatus: "queued",
+      requeuedAt: row.requeued_at,
+    });
   }
 }
 
@@ -91,13 +99,16 @@ async function resolveSentJob(
   printer: PrinterRow | null,
   now: number,
   budget: number,
+  locationId: string,
 ): Promise<boolean> {
   if (!row.sent_at) return false;
   const age = now - new Date(row.sent_at).getTime();
 
-  if (shouldReconcile(row, printer, age, budget) && printer) {
-    await reconcileVendorCloudJob(row, printer);
-    return true;
+  const reconcile =
+    shouldReconcile(row, printer, age, budget) && printer !== null;
+  if (reconcile && printer) {
+    const terminal = await reconcileVendorCloudJob(row, printer);
+    if (terminal) return true;
   }
 
   if (age > confirmTimeoutFor(printer)) {
@@ -107,9 +118,41 @@ async function resolveSentJob(
       printer?.connector === "vendor_cloud"
         ? "driver_error"
         : "device_reported_error",
+      { locationId, expectedStatus: "sent", sentAt: row.sent_at },
     );
   }
-  return false;
+  return reconcile;
+}
+
+async function readSweepRows(locationId: string): Promise<SweepRow[] | null> {
+  const supabase = await createServiceClient();
+  const rows: SweepRow[] = [];
+  let cursor: string | null = null;
+  while (true) {
+    let query = supabase
+      .from("print_jobs")
+      .select("id, status, created_at, requeued_at, sent_at, driver_ref")
+      .eq("location_id", locationId)
+      .in("status", ["queued", "sent"]);
+    if (cursor) query = query.gt("id", cursor);
+    const { data, error } = await query
+      .order("id", { ascending: true })
+      .limit(500);
+    if (error) {
+      console.error("sweepLocation failed", error.message);
+      return null;
+    }
+    const batch = (data ?? []) as SweepRow[];
+    if (!batch.length) break;
+    const next = batch[batch.length - 1].id;
+    if (cursor && next <= cursor) {
+      console.error("sweepLocation cursor did not advance");
+      return null;
+    }
+    rows.push(...batch);
+    cursor = next;
+  }
+  return rows;
 }
 
 /**
@@ -118,20 +161,8 @@ async function resolveSentJob(
  * asks about has no jobs waiting on anything either.
  */
 export async function sweepLocation(locationId: string): Promise<void> {
-  const supabase = await createServiceClient();
-  const { data, error } = await supabase
-    .from("print_jobs")
-    .select("id, status, created_at, requeued_at, sent_at, driver_ref")
-    .eq("location_id", locationId)
-    .in("status", ["queued", "sent"]);
-
-  if (error) {
-    console.error("sweepLocation failed", error.message);
-    return;
-  }
-
-  const rows = (data ?? []) as SweepRow[];
-  if (rows.length === 0) return;
+  const rows = await readSweepRows(locationId);
+  if (!rows || rows.length === 0) return;
 
   const printer = await getPrinterByLocation(locationId);
   const now = Date.now();
@@ -139,21 +170,20 @@ export async function sweepLocation(locationId: string): Promise<void> {
 
   for (const row of rows) {
     if (row.status === "queued") {
-      await expireIfStale(row, now);
+      await expireIfStale(row, now, locationId);
       continue;
     }
     if (row.status !== "sent") continue;
 
-    const spent = await resolveSentJob(row, printer, now, budget);
+    const spent = await resolveSentJob(row, printer, now, budget, locationId);
     if (spent) budget -= 1;
   }
 }
 
 /**
- * Push connectors send immediately; pull connectors wait for the device to
- * ask. Never throws: a dispatch failure must not fail job creation. The
- * claim runs before the send, so a repeated dispatch of the same job sends
- * nothing.
+ * Push connectors send after an atomic claim; pull connectors wait for the
+ * device. Callers catch dispatch failures separately from successful creation
+ * or requeue, so delivery outages do not change those primary results.
  */
 export async function dispatchJob(jobId: string): Promise<void> {
   const supabase = await createServiceClient();
@@ -175,7 +205,11 @@ export async function dispatchJob(jobId: string): Promise<void> {
   if (!claimed) return;
 
   await sendVendorCloudJob(
-    { id: claimed.id, payload: claimed.payload as Json },
+    {
+      id: claimed.id,
+      payload: claimed.payload as Json,
+      sent_at: claimed.sent_at,
+    },
     printer,
   );
 }

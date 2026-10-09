@@ -11,13 +11,20 @@ vi.mock("@/lib/print-jobs", () => ({
     updatePrintJobStatusMock(...args),
 }));
 
+const ATTEMPT = "2026-10-08T00:00:00.123456+00:00";
+const sessionFilters: Array<[string, unknown]> = [];
 const maybeSingleMock = vi.fn();
+const sessionQuery = {
+  eq(column: string, value: unknown) {
+    sessionFilters.push([column, value]);
+    return sessionQuery;
+  },
+  maybeSingle: maybeSingleMock,
+};
 const sessionFromMock = vi.fn((table: string) => {
   if (table === "print_jobs") {
     return {
-      select: () => ({
-        eq: () => ({ eq: () => ({ maybeSingle: maybeSingleMock }) }),
-      }),
+      select: () => sessionQuery,
     };
   }
   throw new Error(`unexpected table on session client: ${table}`);
@@ -73,6 +80,7 @@ describe("reportPrintResult", () => {
   beforeEach(() => {
     updatePrintJobStatusMock.mockReset();
     maybeSingleMock.mockReset();
+    sessionFilters.length = 0;
     sessionFromMock.mockClear();
     getVendorSessionMock.mockReset();
     getVendorSessionMock.mockResolvedValue({
@@ -82,23 +90,34 @@ describe("reportPrintResult", () => {
   });
 
   it("marks the job printed on success", async () => {
-    maybeSingleMock.mockResolvedValue({ data: { id: "job-1" }, error: null });
+    maybeSingleMock.mockResolvedValue({
+      data: { id: "job-1", status: "sent", sent_at: ATTEMPT },
+      error: null,
+    });
     updatePrintJobStatusMock.mockResolvedValue({ ok: true });
 
-    const result = await reportPrintResult("job-1", "printed");
+    const result = await reportPrintResult("job-1", "printed", ATTEMPT);
 
-    expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "printed");
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-1",
+      "printed",
+      undefined,
+      { expectedStatus: "sent", sentAt: ATTEMPT },
+    );
     expect(result).toEqual({ success: true });
   });
 
   it("marks the job failed and surfaces the error", async () => {
-    maybeSingleMock.mockResolvedValue({ data: { id: "job-1" }, error: null });
+    maybeSingleMock.mockResolvedValue({
+      data: { id: "job-1", status: "sent", sent_at: ATTEMPT },
+      error: null,
+    });
     updatePrintJobStatusMock.mockResolvedValue({
       ok: false,
       error: "Could not update print job status.",
     });
 
-    const result = await reportPrintResult("job-1", "failed");
+    const result = await reportPrintResult("job-1", "failed", ATTEMPT);
 
     expect(result).toEqual({
       success: false,
@@ -109,7 +128,11 @@ describe("reportPrintResult", () => {
   it("refuses to update a job that doesn't belong to the calling vendor", async () => {
     maybeSingleMock.mockResolvedValue({ data: null, error: null });
 
-    const result = await reportPrintResult("someone-elses-job", "printed");
+    const result = await reportPrintResult(
+      "someone-elses-job",
+      "printed",
+      ATTEMPT,
+    );
 
     expect(result).toEqual({ success: false, error: "Print job not found" });
     expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
@@ -118,9 +141,79 @@ describe("reportPrintResult", () => {
   it("scopes the ownership check to the calling vendor's id", async () => {
     maybeSingleMock.mockResolvedValue({ data: null, error: null });
 
-    await reportPrintResult("job-1", "printed");
+    await reportPrintResult("job-1", "printed", ATTEMPT);
 
     expect(sessionFromMock).toHaveBeenCalledWith("print_jobs");
+    expect(sessionFilters).toContainEqual(["vendor_id", "vendor-1"]);
+    expect(sessionFilters).toContainEqual(["id", "job-1"]);
+  });
+});
+
+describe("attempt identity", () => {
+  beforeEach(() => {
+    updatePrintJobStatusMock.mockReset().mockResolvedValue({ ok: true });
+    maybeSingleMock.mockReset();
+    sessionFilters.length = 0;
+    getVendorSessionMock.mockReset().mockResolvedValue({
+      supabase: { from: sessionFromMock },
+      user: { id: "vendor-1" },
+    });
+  });
+  it.each(["printed", "failed"] as const)(
+    "acknowledges a duplicate %s result without another callback",
+    async (status) => {
+      maybeSingleMock.mockResolvedValue({
+        data: { id: "job-1", status, sent_at: ATTEMPT },
+        error: null,
+      });
+      expect(await reportPrintResult("job-1", status, ATTEMPT)).toEqual({
+        success: true,
+      });
+      expect(sessionFilters).toContainEqual(["sent_at", ATTEMPT]);
+      expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+    },
+  );
+  it("rejects an old result after the same job is reclaimed", async () => {
+    const current = {
+      id: "job-1",
+      status: "sent",
+      sent_at: "2026-10-08T00:00:01.123456+00:00",
+    };
+    maybeSingleMock.mockImplementation(async () => ({
+      data:
+        Object.fromEntries(sessionFilters).sent_at === current.sent_at
+          ? current
+          : null,
+      error: null,
+    }));
+    expect((await reportPrintResult("job-1", "failed", ATTEMPT)).success).toBe(
+      false,
+    );
+    expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+    sessionFilters.length = 0;
+    expect(
+      (await reportPrintResult("job-1", "printed", current.sent_at)).success,
+    ).toBe(true);
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-1",
+      "printed",
+      undefined,
+      { expectedStatus: "sent", sentAt: current.sent_at },
+    );
+  });
+  it("rejects an absent or invalid attempt before looking up a session", async () => {
+    for (const timestamp of [
+      undefined,
+      "not-a-date",
+      "2026-02-30T00:00:00Z",
+      "2026-10-08T00:00:00.1234567Z",
+    ]) {
+      expect(
+        (await reportPrintResult("job-1", "printed", timestamp as string))
+          .success,
+      ).toBe(false);
+    }
+    expect(getVendorSessionMock).not.toHaveBeenCalled();
   });
 });
 
@@ -186,11 +279,12 @@ describe("bridge job claiming and health", () => {
   });
 
   it("claims a job before the bridge prints it", async () => {
-    claimJobMock.mockResolvedValue({ id: "job-1" });
+    claimJobMock.mockResolvedValue({ id: "job-1", sent_at: ATTEMPT });
 
     expect(await claimBridgeJob("loc-1", "job-1")).toEqual({
       ok: true,
       jobId: "job-1",
+      sentAt: ATTEMPT,
     });
     expect(claimJobMock).toHaveBeenCalledWith("loc-1", "job-1");
   });
@@ -243,4 +337,15 @@ describe("bridge job claiming and health", () => {
 
     expect(createPrinterMock).not.toHaveBeenCalled();
   });
+});
+
+it("rejects runtime print statuses and forged audit actions", async () => {
+  updatePrintJobStatusMock.mockClear();
+  insertMock.mockClear();
+  expect(
+    (await reportPrintResult("job-1", "queued" as never, ATTEMPT)).success,
+  ).toBe(false);
+  expect((await logBridgeEvent("admin_role_granted")).success).toBe(false);
+  expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+  expect(insertMock).not.toHaveBeenCalled();
 });

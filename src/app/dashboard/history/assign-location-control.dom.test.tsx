@@ -67,3 +67,19 @@ describe("AssignLocationControl", () => {
     );
   });
 });
+
+it("re-enables the control when the action throws", async () => {
+  assignPrintLocationMock.mockRejectedValueOnce(
+    new Error("network unavailable"),
+  );
+  render(
+    <AssignLocationControl
+      jobId="job-1"
+      locations={[{ id: "loc-1", label: "Booth" }]}
+    />,
+  );
+  const button = screen.getByRole("button");
+  fireEvent.click(button);
+  expect(button).toBeDisabled();
+  await waitFor(() => expect(button).toBeEnabled());
+});

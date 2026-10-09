@@ -13,6 +13,7 @@ import {
 import { startVirtualPrinter } from "./actions";
 
 const POLL_INTERVAL_MS = 3000;
+const MAX_PREVIEWS = 20;
 
 type Printed = { jobId: string; src: string; at: string };
 
@@ -31,9 +32,21 @@ export function VirtualPrinterPanel({
   const [starting, setStarting] = useState(false);
   const [printed, setPrinted] = useState<Printed[]>([]);
   const busyRef = useRef(false);
+  const mountedRef = useRef(false);
+  const printedRef = useRef<Printed[]>([]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      for (const preview of printedRef.current)
+        URL.revokeObjectURL(preview.src);
+      printedRef.current = [];
+    };
+  }, []);
 
   const pollOnce = useCallback(async (deviceToken: string) => {
-    if (busyRef.current) return;
+    if (busyRef.current || !mountedRef.current) return;
     busyRef.current = true;
     try {
       const url = `/api/cloudprnt/${deviceToken}`;
@@ -55,14 +68,19 @@ export function VirtualPrinterPanel({
       if (!job.ok) return;
 
       const blob = await job.blob();
-      setPrinted((current) => [
+      if (!mountedRef.current) return;
+      const previews = [
         {
           jobId,
           src: URL.createObjectURL(blob),
           at: new Date().toLocaleTimeString(),
         },
-        ...current,
-      ]);
+        ...printedRef.current,
+      ];
+      for (const dropped of previews.splice(MAX_PREVIEWS))
+        URL.revokeObjectURL(dropped.src);
+      printedRef.current = previews;
+      setPrinted(previews);
 
       await fetch(`${url}?token=${encodeURIComponent(jobId)}&code=200`, {
         method: "DELETE",
@@ -88,15 +106,21 @@ export function VirtualPrinterPanel({
 
   const onStart = async () => {
     setStarting(true);
-    const result = await startVirtualPrinter(locationId);
-    setStarting(false);
-
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await startVirtualPrinter(locationId);
+      if (!mountedRef.current) return;
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setToken(result.token);
+      toast.success("Virtual printer running");
+    } catch {
+      if (mountedRef.current)
+        toast.error("Could not start the virtual printer. Please try again.");
+    } finally {
+      if (mountedRef.current) setStarting(false);
     }
-    setToken(result.token);
-    toast.success("Virtual printer running");
   };
 
   return (
@@ -132,7 +156,7 @@ export function VirtualPrinterPanel({
 
       <div className="grid gap-4 sm:grid-cols-2">
         {printed.map((label) => (
-          <figure key={label.jobId} className="rounded-lg border p-3">
+          <figure key={label.src} className="rounded-lg border p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={label.src}

@@ -1,4 +1,4 @@
-export type NextJob = { jobId: string } | null;
+export type NextJob = { jobId: string; sentAt: string } | null;
 
 export type PrintResult = "printed" | "failed";
 
@@ -32,6 +32,29 @@ function checkedToken(token: unknown): string {
     throw new Error("The agent token is not in the expected format.");
   }
   return token;
+}
+
+function checkedSentAt(value: unknown): string {
+  if (typeof value !== "string")
+    throw new Error("Missing print attempt timestamp.");
+  const parts =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-]([01]\d|2[0-3]):([0-5]\d))$/.exec(
+      value,
+    );
+  if (!parts) throw new Error("Invalid print attempt timestamp.");
+  const [, year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0] =
+    parts.map(Number);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (
+    day < 1 ||
+    day > (days[month - 1] ?? 0) ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  )
+    throw new Error("Invalid print attempt timestamp.");
+  return value;
 }
 
 export class UnauthorizedError extends Error {
@@ -78,6 +101,8 @@ export class PrintkitClient {
       `${printkitOrigin(baseUrl)}/api/v1/bridge-agent/pair`,
       {
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
+        redirect: "error",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ code }),
       },
@@ -98,6 +123,8 @@ export class PrintkitClient {
 
   async nextJob(): Promise<NextJob> {
     const response = await fetch(this.url("/api/v1/bridge-agent/next-job"), {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       headers: this.headers(),
     });
 
@@ -105,16 +132,21 @@ export class PrintkitClient {
     if (response.status === 401) throw new UnauthorizedError();
     if (!response.ok) throw new Error(`Poll failed (${response.status})`);
 
-    const body = (await response.json()) as { job_id?: unknown };
+    const body = (await response.json()) as {
+      job_id?: unknown;
+      sent_at?: unknown;
+    };
     if (!body.job_id) return null;
     if (typeof body.job_id !== "string" || !JOB_ID_PATTERN.test(body.job_id)) {
       throw new Error("printkit returned a job id in an unexpected format.");
     }
-    return { jobId: body.job_id };
+    return { jobId: body.job_id, sentAt: checkedSentAt(body.sent_at) };
   }
 
   async fetchLabel(jobId: string): Promise<Uint8Array> {
     const response = await fetch(this.jobUrl(jobId, "label"), {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       headers: this.headers(),
     });
 
@@ -125,11 +157,18 @@ export class PrintkitClient {
     return new Uint8Array(await response.arrayBuffer());
   }
 
-  async reportResult(jobId: string, result: PrintResult): Promise<void> {
+  async reportResult(
+    jobId: string,
+    result: PrintResult,
+    sentAt: string,
+  ): Promise<void> {
+    const attempt = checkedSentAt(sentAt);
     const response = await fetch(this.jobUrl(jobId, "result"), {
       method: "POST",
+      signal: AbortSignal.timeout(10_000),
+      redirect: "error",
       headers: { ...this.headers(), "content-type": "application/json" },
-      body: JSON.stringify({ result }),
+      body: JSON.stringify({ result, sent_at: attempt }),
     });
 
     if (response.status === 401) throw new UnauthorizedError();

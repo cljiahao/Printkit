@@ -15,6 +15,8 @@ export function useWakeLock(enabled: boolean): void {
     if (!enabled) return;
 
     let wakeLock: { release: () => Promise<void> } | undefined;
+    let active = true;
+    let generation = 0;
 
     const acquire = async () => {
       // A hidden tab cannot hold a wake lock, and asking anyway throws.
@@ -22,7 +24,15 @@ export function useWakeLock(enabled: boolean): void {
       // wait for the visibilitychange below.
       if (document.visibilityState !== "visible") return;
       try {
-        wakeLock = await navigator.wakeLock?.request("screen");
+        const attempt = ++generation;
+        const acquired = await navigator.wakeLock?.request("screen");
+        if (!active || attempt !== generation) {
+          await acquired?.release();
+          return;
+        }
+        const previous = wakeLock;
+        wakeLock = acquired;
+        await previous?.release();
       } catch (err) {
         console.error("Wake Lock request failed", err);
       }
@@ -35,6 +45,8 @@ export function useWakeLock(enabled: boolean): void {
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
+      active = false;
+      generation += 1;
       document.removeEventListener("visibilitychange", onVisibilityChange);
       wakeLock?.release().catch(() => {});
     };

@@ -8,7 +8,7 @@ and its verifier.
 
 ## Contents
 
-- `harness.json` — harness manifest: templateCentral version/stack/adaptation metadata, plus `seeded_files` — the enforcement-layer file list (path + sha256 `origin_hash`) that `verify-harness.sh` diffs against Of the workflow files, only `ci.yml` is listed, so a change to it needs a human `regen-harness.sh` run while `security.yml` does not.
+- `harness.json` — harness manifest: templateCentral version/stack/adaptation metadata, plus `seeded_files` — the enforcement-layer file list (path + sha256 `origin_hash`) that `verify-harness.sh` compares against committed HEAD blobs. Of the workflow files, only `ci.yml` is listed, so a change to it needs a human `regen-harness.sh` run while `security.yml` does not.
 - `.harness-base/` — as-seeded mirror of every enforcement-layer file (hooks, `settings.json`, husky, `.gitleaks.toml`, `ci.yml`, the verifier scripts, project skills), used as the 3-way-merge base when a future templateCentral re-sync needs to combine upstream changes with this repo's own edits without clobbering either. Deliberately excludes `AGENTS.md` — it's genuinely customized for this repo's Supabase stack with no legitimate seeded baseline to snapshot.
 - `comment-hygiene-patterns.txt` — the shared change-narration/oversized-comment pattern list read at runtime by `hooks/post-edit-comment-check.sh`, `.husky/lib/comment-hygiene.sh`, and the `comment-hygiene` CI job — one canonical copy instead of three
 - `hooks/` — the lifecycle scripts `settings.json` wires up (see `hooks/README.md`)

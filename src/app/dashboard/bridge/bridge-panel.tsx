@@ -42,20 +42,104 @@ export function BridgePanel({
   const [enabled, setEnabled] = useState(false);
   const [pairState, setPairState] = useState<PairState>("unpaired");
   const clientRef = useRef<NiimbotBluetoothClient | null>(null);
-  // Chains print attempts so two jobs queued close together never run their
-  // Bluetooth print sequences concurrently against the same client — a
-  // second printLabel() starting mid-sequence can fire printEnd() while the
-  // first is still printing.
   const queueRef = useRef<Promise<void>>(Promise.resolve());
+  const generationRef = useRef(0);
+  const mountedRef = useRef(false);
+  const drainingRef = useRef(false);
 
-  useEffect(() => {
-    // localStorage is unavailable during SSR; reading it post-mount (rather
-    // than as useState's initializer) avoids a hydration mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setEnabled(isBridgeModeEnabled());
+  const disconnect = useCallback(() => {
+    generationRef.current += 1;
+    const client = clientRef.current;
+    clientRef.current = null;
+    if (client) disconnectPrinter(client).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    mountedRef.current = true;
+    // Read browser storage after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEnabled(isBridgeModeEnabled());
+    return () => {
+      mountedRef.current = false;
+      disconnect();
+    };
+  }, [disconnect]);
+
   useWakeLock(enabled);
+
+  const enqueue = useCallback(
+    (task: (isCurrent: () => boolean) => Promise<void>) => {
+      const generation = generationRef.current;
+      const isCurrent = () =>
+        mountedRef.current && generationRef.current === generation;
+      queueRef.current = queueRef.current
+        .then(async () => {
+          if (isCurrent()) await task(isCurrent);
+        })
+        .catch((err: unknown) => {
+          console.error("Unexpected error in print queue", err);
+        });
+    },
+    [],
+  );
+
+  const doPrintJob = useCallback(
+    async (isCurrent: () => boolean, jobId?: string) => {
+      const client = clientRef.current;
+      if (!client || !isCurrent()) return false;
+      const claim = await claimBridgeJob(locationId, jobId);
+      if (!claim.ok || !isCurrent()) return false;
+      let result: "printed" | "failed" = "printed";
+      try {
+        const canvas = await fetchLabelCanvas(claim.jobId);
+        if (!isCurrent()) return false;
+        await printLabel(client, canvas);
+      } catch (err) {
+        console.error("Print failed", err);
+        toast.error("Print failed. Check the printer and try again.");
+        result = "failed";
+      }
+      // A failed acknowledgement must not turn a physically printed label into a failure.
+      try {
+        const outcome = await reportPrintResult(
+          claim.jobId,
+          result,
+          claim.sentAt,
+        );
+        if (!outcome.success) throw new Error(outcome.error);
+      } catch (err) {
+        console.error("Print result could not be saved", err);
+        toast.error(
+          "Print status could not be saved. Check the label before reprinting.",
+        );
+      }
+      return isCurrent();
+    },
+    [locationId],
+  );
+
+  const printJob = useCallback(
+    (jobId?: string) => {
+      if (!clientRef.current) return;
+      if (jobId) {
+        enqueue(async (isCurrent) => {
+          await doPrintJob(isCurrent, jobId);
+        });
+        return;
+      }
+      if (drainingRef.current) return;
+      drainingRef.current = true;
+      enqueue(async (isCurrent) => {
+        for (let count = 0; count < 10 && isCurrent(); count += 1) {
+          if (!(await doPrintJob(isCurrent))) break;
+        }
+      });
+      queueRef.current = queueRef.current.finally(() => {
+        drainingRef.current = false;
+      });
+    },
+    [doPrintJob, enqueue],
+  );
 
   useEffect(() => {
     if (!enabled) return;
@@ -63,49 +147,12 @@ export function BridgePanel({
       bridgeHeartbeat(locationId).catch((err: unknown) => {
         console.error("Heartbeat failed", err);
       });
+      printJob();
     };
     beat();
     const timer = setInterval(beat, HEARTBEAT_MS);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [enabled, locationId]);
-
-  const doPrintJob = useCallback(
-    async (jobId?: string) => {
-      const client = clientRef.current;
-      if (!client) return;
-
-      const claim = await claimBridgeJob(locationId, jobId);
-      if (!claim.ok) return;
-
-      try {
-        const canvas = await fetchLabelCanvas(claim.jobId);
-        await printLabel(client, canvas);
-        await reportPrintResult(claim.jobId, "printed");
-      } catch (err) {
-        console.error("Print failed", err);
-        toast.error("Print failed. Check the printer and try again.");
-        await reportPrintResult(claim.jobId, "failed");
-      }
-    },
-    [locationId],
-  );
-
-  const printJob = useCallback(
-    (jobId?: string) => {
-      // .catch() resets the chain to resolved after each job — doPrintJob
-      // already swallows print/report failures internally, but this is a
-      // backstop so an unexpected throw can't leave every future job
-      // permanently chained onto a rejected promise.
-      queueRef.current = queueRef.current
-        .then(() => doPrintJob(jobId))
-        .catch((err: unknown) => {
-          console.error("Unexpected error in print queue", err);
-        });
-    },
-    [doPrintJob],
-  );
+    return () => clearInterval(timer);
+  }, [enabled, locationId, printJob]);
 
   useJobDelivery(vendorId, locationId, printJob);
 
@@ -113,47 +160,52 @@ export function BridgePanel({
     setEnabled(next);
     setBridgeModeEnabled(next);
     if (!next) {
-      const client = clientRef.current;
-      if (client) disconnectPrinter(client).catch(() => {});
-      clientRef.current = null;
+      disconnect();
       setPairState("unpaired");
       logBridgeEvent("bridge_disconnected").catch(() => {});
     }
   };
 
   const handlePair = async () => {
+    const generation = generationRef.current;
+    const isCurrent = () =>
+      mountedRef.current && generationRef.current === generation;
     setPairState("connecting");
     try {
       const client = await connectPrinter();
+      if (!isCurrent()) {
+        await disconnectPrinter(client);
+        return;
+      }
       clientRef.current = client;
+      await ensureBridgePrinter(locationId);
+      if (!isCurrent()) return;
       setPairState("connected");
       logBridgeEvent("printer_paired").catch(() => {});
-      await ensureBridgePrinter(locationId);
-      // A job queued while this bridge was off is still printable, so long
-      // as it has not expired: claim whatever is waiting rather than making
-      // the vendor reprint it by hand.
       printJob();
     } catch (err) {
+      if (!isCurrent()) return;
+      disconnect();
       console.error("Pairing failed", err);
       toast.error("Could not pair with the printer.");
       setPairState("error");
     }
   };
 
-  const handleTestPrint = async () => {
-    const client = clientRef.current;
-    if (!client) return;
-    // Verifies the paired printer works, not any real queued job, so it
-    // asks the server for a sample label rather than claiming one.
-    try {
-      const canvas = await fetchSampleLabelCanvas(locationId);
-      await printLabel(client, canvas);
-      toast.success("Test label sent.");
-    } catch (err) {
-      console.error("Test print failed", err);
-      toast.error("Test print failed.");
-    }
-  };
+  const handleTestPrint = () =>
+    enqueue(async (isCurrent) => {
+      const client = clientRef.current;
+      if (!client) return;
+      try {
+        const canvas = await fetchSampleLabelCanvas(locationId);
+        if (!isCurrent()) return;
+        await printLabel(client, canvas);
+        toast.success("Test label sent.");
+      } catch (err) {
+        console.error("Test print failed", err);
+        toast.error("Test print failed.");
+      }
+    });
 
   return (
     <div className="space-y-6">

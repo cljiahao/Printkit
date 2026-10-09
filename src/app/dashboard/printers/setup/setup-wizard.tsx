@@ -94,13 +94,19 @@ export function CloudPollSetup({
 
   const onCreate = async () => {
     setBusy(true);
-    const result = await createPrinterUrl(locationId, entry.id);
-    setBusy(false);
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await createPrinterUrl(locationId, entry.id);
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setUrl(result.url);
+    } catch {
+      toast.error("Could not complete setup. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setUrl(result.url);
   };
 
   return (
@@ -175,25 +181,30 @@ export function VendorCloudSetup({
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
-    const result = await registerBrandCloudPrinter(
-      locationId,
-      entry.id,
-      sn.trim(),
-      key.trim(),
-    );
-    setBusy(false);
+    try {
+      const result = await registerBrandCloudPrinter(
+        locationId,
+        entry.id,
+        sn.trim(),
+        key.trim(),
+      );
 
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setRegistered(true);
+      setKey("");
+      toast.success(
+        result.state === "online"
+          ? "Printer added and online"
+          : "Printer added. It will show as online once it is switched on.",
+      );
+    } catch {
+      toast.error("Could not complete setup. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setRegistered(true);
-    setKey("");
-    toast.success(
-      result.state === "online"
-        ? "Printer added and online"
-        : "Printer added. It will show as online once it is switched on.",
-    );
   };
 
   return (
@@ -263,13 +274,19 @@ export function BridgeSetup({
 
   const onPairingCode = async () => {
     setBusy(true);
-    const result = await createBridgePairingCode(locationId);
-    setBusy(false);
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await createBridgePairingCode(locationId);
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      setCode(result.code);
+    } catch {
+      toast.error("Could not complete setup. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setCode(result.code);
   };
 
   return (

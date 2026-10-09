@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import LoginPage from "./page";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -60,7 +61,6 @@ beforeEach(() => {
 describe("LoginPage", () => {
   it("shows an error message when the URL has ?error=oauth", async () => {
     useSearchParamsMock.mockReturnValue(new URLSearchParams("error=oauth"));
-    const { default: LoginPage } = await import("./page");
     render(<LoginPage />);
 
     const alert = screen.getByRole("alert");
@@ -150,7 +150,7 @@ describe("LoginPage", () => {
       expect(resetPasswordForEmailMock).toHaveBeenCalledWith(
         "vendor@example.com",
         expect.objectContaining({
-          redirectTo: expect.stringContaining("/dashboard/profile"),
+          redirectTo: expect.stringContaining("/reset-password"),
         }),
       );
     });
@@ -215,4 +215,21 @@ describe("LoginPage", () => {
       screen.getByRole("heading", { name: /welcome back/i }),
     ).toBeInTheDocument();
   });
+});
+
+it("releases reset controls after transport rejection", async () => {
+  resetPasswordForEmailMock.mockRejectedValue(new Error("network"));
+  const { default: LoginPage } = await import("./page");
+  render(<LoginPage />);
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("Email"), "vendor@example.com");
+  await user.click(screen.getByRole("button", { name: /forgot password/i }));
+  await waitFor(() =>
+    expect(toast.error).toHaveBeenCalledWith(
+      "Could not send a reset link. Please try again.",
+    ),
+  );
+  expect(
+    screen.getByRole("button", { name: /forgot password/i }),
+  ).toBeEnabled();
 });

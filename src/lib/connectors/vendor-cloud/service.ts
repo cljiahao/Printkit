@@ -13,18 +13,27 @@ import type { Json } from "@/lib/types";
  * guarantees one send per job.
  */
 export async function sendVendorCloudJob(
-  job: { id: string; payload: Json },
+  job: { id: string; payload: Json; sent_at: string | null },
   printer: PrinterRow,
 ): Promise<void> {
+  if (!job.sent_at) {
+    console.error("vendor-cloud: refused job without a claimed attempt");
+    return;
+  }
+  const conditions = {
+    locationId: printer.location_id,
+    expectedStatus: "sent" as const,
+    sentAt: job.sent_at,
+  };
   const driver = getVendorCloudDriver(printer.driver);
   if (!driver) {
     console.error("vendor-cloud: no driver built for", printer.driver);
-    await updatePrintJobStatus(job.id, "failed", "driver_error");
+    await updatePrintJobStatus(job.id, "failed", "driver_error", conditions);
     return;
   }
 
   if (!printer.device_ref) {
-    await updatePrintJobStatus(job.id, "failed", "printer_offline");
+    await updatePrintJobStatus(job.id, "failed", "printer_offline", conditions);
     return;
   }
 
@@ -42,22 +51,32 @@ export async function sendVendorCloudJob(
 
   if (!result.ok) {
     console.error("vendor-cloud: send failed", result.error);
-    await updatePrintJobStatus(job.id, "failed", "driver_error");
+    await updatePrintJobStatus(job.id, "failed", "driver_error", conditions);
     return;
   }
 
-  await recordDriverRef(job.id, result.driverRef);
+  await recordDriverRef(
+    job.id,
+    result.driverRef,
+    printer.location_id,
+    job.sent_at,
+  );
 }
 
 async function recordDriverRef(
   jobId: string,
   driverRef: string,
+  locationId: string,
+  sentAt: string,
 ): Promise<void> {
   const supabase = await createServiceClient();
   const { error } = await supabase
     .from("print_jobs")
     .update({ driver_ref: driverRef })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .eq("location_id", locationId)
+    .eq("status", "sent")
+    .eq("sent_at", sentAt);
 
   if (error)
     console.error("vendor-cloud: driver_ref write failed", error.message);
@@ -69,19 +88,25 @@ async function recordDriverRef(
  * leaves anything still pending for the sweep's own timeout to decide.
  */
 export async function reconcileVendorCloudJob(
-  job: { id: string; driver_ref: string | null },
+  job: { id: string; driver_ref: string | null; sent_at?: string | null },
   printer: PrinterRow,
-): Promise<void> {
-  if (!job.driver_ref) return;
+): Promise<boolean> {
+  if (!job.driver_ref) return false;
   const driver = getVendorCloudDriver(printer.driver);
-  if (!driver) return;
+  if (!driver) return false;
 
   const state = await driver.queryJob(job.driver_ref);
-  if (state === "printed") {
-    await updatePrintJobStatus(job.id, "printed");
-    return;
-  }
-  if (state === "failed") {
-    await updatePrintJobStatus(job.id, "failed", "driver_error");
-  }
+  if (state === "pending") return false;
+  await updatePrintJobStatus(
+    job.id,
+    state,
+    state === "failed" ? "driver_error" : undefined,
+    {
+      locationId: printer.location_id,
+      expectedStatus: "sent",
+      driverRef: job.driver_ref,
+      sentAt: job.sent_at,
+    },
+  );
+  return true;
 }

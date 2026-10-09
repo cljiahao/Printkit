@@ -143,20 +143,56 @@ export async function updatePrintJobStatus(
   jobId: string,
   status: PrintJobStatus,
   failureReason?: PrintJobFailureReason,
+  conditions?: {
+    locationId?: string;
+    expectedStatus?: PrintJobStatus;
+    driverRef?: string;
+    sentAt?: string | null;
+    requeuedAt?: string | null;
+  },
 ): Promise<UpdatePrintJobStatusResult> {
   const supabase = await createServiceClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("print_jobs")
     .update({
       status,
       failure_reason: failureReason ?? null,
       ...(status === "printed" ? { printed_at: new Date().toISOString() } : {}),
       ...(status === "queued"
-        ? { requeued_at: new Date().toISOString(), sent_at: null }
+        ? {
+            requeued_at: new Date().toISOString(),
+            sent_at: null,
+            driver_ref: null,
+          }
         : {}),
     })
-    .eq("id", jobId)
-    .select("source_kit, source_ref")
+    .eq("id", jobId);
+
+  // Recheck device authority and delivery state in the write itself.
+  if (conditions?.locationId !== undefined) {
+    query = query.eq("location_id", conditions.locationId);
+  }
+  if (conditions?.expectedStatus !== undefined) {
+    query = query.eq("status", conditions.expectedStatus);
+  }
+  if (conditions?.driverRef !== undefined) {
+    query = query.eq("driver_ref", conditions.driverRef);
+  }
+  // A status may recur after reprint; match the observed attempt as well.
+  if (conditions?.sentAt !== undefined) {
+    query =
+      conditions.sentAt === null
+        ? query.is("sent_at", null)
+        : query.eq("sent_at", conditions.sentAt);
+  }
+  if (conditions?.requeuedAt !== undefined) {
+    query =
+      conditions.requeuedAt === null
+        ? query.is("requeued_at", null)
+        : query.eq("requeued_at", conditions.requeuedAt);
+  }
+  const { data, error } = await query
+    .select("source_kit, source_ref, sent_at, requeued_at, created_at")
     .single();
 
   if (error || !data) {
@@ -169,7 +205,12 @@ export async function updatePrintJobStatus(
     // timeout to this call. Kit-agnostic: notifyKitPrintStatus looks up
     // whichever kit created this job and no-ops if it has no callback
     // configured.
-    void notifyKitPrintStatus(data.source_kit, data.source_ref, status);
+    void notifyKitPrintStatus(
+      data.source_kit,
+      data.source_ref,
+      status,
+      data.sent_at ?? data.requeued_at ?? data.created_at,
+    );
   }
 
   return { ok: true };

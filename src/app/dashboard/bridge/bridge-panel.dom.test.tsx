@@ -31,7 +31,11 @@ vi.mock("./actions", () => ({
 }));
 
 import { isBridgeModeEnabled, setBridgeModeEnabled } from "@/lib/bridge-mode";
-import { connectPrinter, printLabel } from "@/lib/niimbot-print";
+import {
+  connectPrinter,
+  printLabel,
+  disconnectPrinter,
+} from "@/lib/niimbot-print";
 import { fetchLabelCanvas, fetchSampleLabelCanvas } from "@/lib/label-image";
 import {
   reportPrintResult,
@@ -42,6 +46,8 @@ import {
 } from "./actions";
 import { useJobDelivery } from "./use-job-delivery";
 import { BridgePanel } from "./bridge-panel";
+
+const ATTEMPT = "2026-10-08T00:00:00.123456+00:00";
 
 function deliveredJob(): (jobId?: string) => void {
   const call = vi.mocked(useJobDelivery).mock.calls.at(-1);
@@ -56,33 +62,140 @@ async function enableAndPair() {
   await waitFor(() => {
     expect(screen.getByText("Connected")).toBeInTheDocument();
   });
+  await waitFor(() =>
+    expect(claimBridgeJob).toHaveBeenCalledWith("loc-1", undefined),
+  );
+  await act(async () => {});
 }
 
 describe("BridgePanel", () => {
   beforeEach(() => {
     vi.mocked(isBridgeModeEnabled).mockReturnValue(false);
-    vi.mocked(setBridgeModeEnabled).mockClear();
-    vi.mocked(connectPrinter).mockClear();
+    vi.mocked(setBridgeModeEnabled).mockReset();
+    vi.mocked(disconnectPrinter).mockReset().mockResolvedValue(undefined);
+    vi.mocked(connectPrinter).mockReset();
     vi.mocked(connectPrinter).mockResolvedValue({ deviceName: "B1" } as never);
-    vi.mocked(printLabel).mockClear();
+    vi.mocked(printLabel).mockReset();
     vi.mocked(printLabel).mockResolvedValue(undefined);
-    vi.mocked(fetchLabelCanvas).mockClear();
+    vi.mocked(fetchLabelCanvas).mockReset();
     vi.mocked(fetchLabelCanvas).mockResolvedValue(
       document.createElement("canvas"),
     );
-    vi.mocked(fetchSampleLabelCanvas).mockClear();
+    vi.mocked(fetchSampleLabelCanvas).mockReset();
     vi.mocked(fetchSampleLabelCanvas).mockResolvedValue(
       document.createElement("canvas"),
     );
-    vi.mocked(reportPrintResult).mockClear();
+    vi.mocked(reportPrintResult).mockReset();
     vi.mocked(reportPrintResult).mockResolvedValue({ success: true });
-    vi.mocked(logBridgeEvent).mockClear();
+    vi.mocked(logBridgeEvent).mockReset();
     vi.mocked(logBridgeEvent).mockResolvedValue({ success: true });
-    vi.mocked(claimBridgeJob).mockClear();
-    vi.mocked(claimBridgeJob).mockResolvedValue({ ok: true, jobId: "job-1" });
-    vi.mocked(bridgeHeartbeat).mockClear();
-    vi.mocked(ensureBridgePrinter).mockClear();
-    vi.mocked(useJobDelivery).mockClear();
+    vi.mocked(claimBridgeJob).mockReset();
+    vi.mocked(claimBridgeJob).mockImplementation(async (_location, jobId) =>
+      jobId ? { ok: true, jobId: "job-1", sentAt: ATTEMPT } : { ok: false },
+    );
+    vi.mocked(bridgeHeartbeat).mockReset().mockResolvedValue(undefined);
+    vi.mocked(ensureBridgePrinter).mockReset().mockResolvedValue(undefined);
+    vi.mocked(useJobDelivery).mockReset();
+  });
+
+  it("disconnects a pairing completed after unmount", async () => {
+    let finish!: (client: Awaited<ReturnType<typeof connectPrinter>>) => void;
+    vi.mocked(connectPrinter).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const { unmount } = render(
+      <BridgePanel vendorId="vendor-1" locationId="loc-1" />,
+    );
+    fireEvent.click(screen.getByRole("switch"));
+    fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
+    unmount();
+    const client = { deviceName: "late" } as unknown as Awaited<
+      ReturnType<typeof connectPrinter>
+    >;
+    await act(async () => finish(client));
+    expect(disconnectPrinter).toHaveBeenCalledWith(client);
+    expect(ensureBridgePrinter).not.toHaveBeenCalled();
+  });
+
+  it("disconnects a pairing completed after switching off", async () => {
+    let finish!: (client: Awaited<ReturnType<typeof connectPrinter>>) => void;
+    vi.mocked(connectPrinter).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(<BridgePanel vendorId="vendor-1" locationId="loc-1" />);
+    fireEvent.click(screen.getByRole("switch"));
+    fireEvent.click(screen.getByRole("button", { name: /pair printer/i }));
+    fireEvent.click(screen.getByRole("switch"));
+    const client = { deviceName: "late" } as unknown as Awaited<
+      ReturnType<typeof connectPrinter>
+    >;
+    await act(async () => finish(client));
+    expect(disconnectPrinter).toHaveBeenCalledWith(client);
+    expect(screen.queryByText("Connected")).not.toBeInTheDocument();
+  });
+
+  it("drains the backlog after pairing without another realtime event", async () => {
+    vi.mocked(claimBridgeJob)
+      .mockResolvedValueOnce({ ok: true, jobId: "first", sentAt: ATTEMPT })
+      .mockResolvedValueOnce({ ok: true, jobId: "second", sentAt: ATTEMPT });
+    await enableAndPair();
+    await waitFor(() =>
+      expect(reportPrintResult).toHaveBeenCalledWith(
+        "second",
+        "printed",
+        ATTEMPT,
+      ),
+    );
+    expect(printLabel).toHaveBeenCalledTimes(2);
+  });
+
+  it("serializes test labels with real jobs", async () => {
+    await enableAndPair();
+    let release!: () => void;
+    vi.mocked(printLabel).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    await act(async () => deliveredJob()("job-1"));
+    fireEvent.click(screen.getByRole("button", { name: /print test/i }));
+    expect(fetchSampleLabelCanvas).not.toHaveBeenCalled();
+    await act(async () => release());
+    await waitFor(() => expect(printLabel).toHaveBeenCalledTimes(2));
+  });
+
+  it("does not report physical failure when saving success rejects", async () => {
+    await enableAndPair();
+    vi.mocked(reportPrintResult).mockRejectedValueOnce(new Error("offline"));
+    await act(async () => deliveredJob()("job-1"));
+    expect(reportPrintResult).toHaveBeenCalledExactlyOnceWith(
+      "job-1",
+      "printed",
+      ATTEMPT,
+    );
+  });
+
+  it("does not print a downloaded label after switching off", async () => {
+    await enableAndPair();
+    let finish!: (canvas: HTMLCanvasElement) => void;
+    vi.mocked(fetchLabelCanvas).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    await act(async () => deliveredJob()("job-1"));
+    fireEvent.click(screen.getByRole("switch"));
+    await act(async () => finish(document.createElement("canvas")));
+    expect(printLabel).not.toHaveBeenCalled();
+    expect(disconnectPrinter).toHaveBeenCalledTimes(1);
   });
 
   it("renders the Bridge mode toggle off by default", () => {
@@ -172,7 +285,11 @@ describe("BridgePanel", () => {
       });
       expect(fetchLabelCanvas).toHaveBeenCalledWith("job-1");
       expect(printLabel).toHaveBeenCalled();
-      expect(reportPrintResult).toHaveBeenCalledWith("job-1", "printed");
+      expect(reportPrintResult).toHaveBeenCalledWith(
+        "job-1",
+        "printed",
+        ATTEMPT,
+      );
     });
 
     it("prints nothing when the claim fails, so two bridges cannot double-print", async () => {
@@ -198,7 +315,11 @@ describe("BridgePanel", () => {
       });
 
       await waitFor(() => {
-        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "failed");
+        expect(reportPrintResult).toHaveBeenCalledWith(
+          "job-1",
+          "failed",
+          ATTEMPT,
+        );
       });
     });
 
@@ -211,7 +332,11 @@ describe("BridgePanel", () => {
       });
 
       await waitFor(() => {
-        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "failed");
+        expect(reportPrintResult).toHaveBeenCalledWith(
+          "job-1",
+          "failed",
+          ATTEMPT,
+        );
       });
     });
 
@@ -256,7 +381,11 @@ describe("BridgePanel", () => {
       });
 
       await waitFor(() => {
-        expect(reportPrintResult).toHaveBeenCalledWith("job-1", "printed");
+        expect(reportPrintResult).toHaveBeenCalledWith(
+          "job-1",
+          "printed",
+          ATTEMPT,
+        );
       });
     });
   });

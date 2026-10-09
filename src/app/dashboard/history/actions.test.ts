@@ -21,6 +21,7 @@ vi.mock("@/lib/job-dispatch", () => ({
   dispatchJob: (...args: unknown[]) => dispatchJobMock(...args),
 }));
 
+const ATTEMPT = "2026-10-09T00:00:00.123456+00:00";
 const maybeSingleMock = vi.fn();
 const sessionFromMock = vi.fn((table: string) => {
   if (table === "print_jobs") {
@@ -46,6 +47,18 @@ locationEqVendorMock.mockImplementation(() => ({
 
 const jobUpdateEqIdMock = vi.fn();
 const jobUpdateEqVendorMock = vi.fn();
+const jobUpdateStatusMock = vi.fn();
+const jobUpdateLocationMock = vi.fn();
+const jobUpdateSelectMock = vi.fn();
+const jobUpdateSingleMock = vi.fn();
+jobUpdateEqVendorMock.mockImplementation(() => ({ eq: jobUpdateStatusMock }));
+jobUpdateStatusMock.mockImplementation(() => ({ is: jobUpdateLocationMock }));
+jobUpdateLocationMock.mockImplementation(() => ({
+  select: jobUpdateSelectMock,
+}));
+jobUpdateSelectMock.mockImplementation(() => ({
+  maybeSingle: jobUpdateSingleMock,
+}));
 const jobUpdateMock = vi.fn(() => ({ eq: jobUpdateEqIdMock }));
 jobUpdateEqIdMock.mockImplementation(() => ({ eq: jobUpdateEqVendorMock }));
 
@@ -74,7 +87,7 @@ describe("reprintJob", () => {
     getVendorSessionMock.mockReset();
     updatePrintJobStatusMock.mockReset();
     maybeSingleMock.mockReset();
-    insertMock.mockClear();
+    insertMock.mockReset().mockResolvedValue({ error: null });
     sessionFromMock.mockClear();
     serviceFromMock.mockClear();
     revalidatePathMock.mockClear();
@@ -91,6 +104,7 @@ describe("reprintJob", () => {
 
     expect(result).toEqual({ success: false, error: "Print job not found" });
     expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
   it("returns an error when the job is still queued or sent (would race an in-flight print)", async () => {
@@ -109,14 +123,19 @@ describe("reprintJob", () => {
 
   it("resets a failed job to queued and logs an admin_audit entry", async () => {
     maybeSingleMock.mockResolvedValue({
-      data: { status: "failed" },
+      data: { status: "failed", sent_at: ATTEMPT, requeued_at: null },
       error: null,
     });
     updatePrintJobStatusMock.mockResolvedValue({ ok: true });
 
     const result = await reprintJob("job-1");
 
-    expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "queued");
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-1",
+      "queued",
+      undefined,
+      { expectedStatus: "failed", sentAt: ATTEMPT, requeuedAt: null },
+    );
     expect(insertMock).toHaveBeenCalledWith(
       expect.objectContaining({
         admin_id: "vendor-1",
@@ -130,24 +149,36 @@ describe("reprintJob", () => {
 
   it("also allows resetting an already-printed job to queued (vendor lost/peeled the label)", async () => {
     maybeSingleMock.mockResolvedValue({
-      data: { status: "printed" },
+      data: { status: "printed", sent_at: ATTEMPT, requeued_at: null },
       error: null,
     });
     updatePrintJobStatusMock.mockResolvedValue({ ok: true });
 
     const result = await reprintJob("job-1");
 
-    expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "queued");
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-1",
+      "queued",
+      undefined,
+      { expectedStatus: "printed", sentAt: ATTEMPT, requeuedAt: null },
+    );
     expect(result).toEqual({ success: true });
   });
+});
 
-  it("does not revalidate when the job isn't found or isn't failed", async () => {
-    maybeSingleMock.mockResolvedValue({ data: null, error: null });
-
-    await reprintJob("job-1");
-
-    expect(revalidatePathMock).not.toHaveBeenCalled();
+it("preserves a successful requeue when the audit request rejects", async () => {
+  getVendorSessionMock.mockResolvedValue({
+    supabase: { from: sessionFromMock },
+    user: { id: "vendor-1" },
   });
+  maybeSingleMock.mockResolvedValue({
+    data: { status: "failed", sent_at: ATTEMPT, requeued_at: null },
+    error: null,
+  });
+  updatePrintJobStatusMock.mockResolvedValue({ ok: true });
+  insertMock.mockRejectedValueOnce(new Error("audit offline"));
+  expect(await reprintJob("job-1")).toEqual({ success: true });
+  expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/history");
 });
 
 describe("assignPrintLocation", () => {
@@ -164,7 +195,12 @@ describe("assignPrintLocation", () => {
     locationEqVendorMock.mockClear();
     jobUpdateMock.mockClear();
     jobUpdateEqIdMock.mockClear();
-    jobUpdateEqVendorMock.mockReset();
+    jobUpdateEqVendorMock.mockClear();
+    jobUpdateStatusMock.mockClear();
+    jobUpdateLocationMock.mockClear();
+    jobUpdateSelectMock.mockClear();
+    jobUpdateSingleMock.mockReset();
+    dispatchJobMock.mockClear();
     sessionFromMock.mockClear();
     serviceFromMock.mockClear();
     revalidatePathMock.mockClear();
@@ -174,12 +210,15 @@ describe("assignPrintLocation", () => {
     });
   });
 
-  it("sets location_id regardless of the job's current status, without touching status", async () => {
+  it("assigns an unrouted queued job without changing its status", async () => {
     locationMaybeSingleMock.mockResolvedValue({
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+    jobUpdateSingleMock.mockResolvedValue({
+      data: { id: "job-1" },
+      error: null,
+    });
 
     const result = await assignPrintLocation("job-1", "loc-1");
 
@@ -198,7 +237,10 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+    jobUpdateSingleMock.mockResolvedValue({
+      data: { id: "job-1" },
+      error: null,
+    });
 
     await assignPrintLocation("job-1", "loc-1");
 
@@ -212,7 +254,10 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+    jobUpdateSingleMock.mockResolvedValue({
+      data: { id: "job-1" },
+      error: null,
+    });
 
     await assignPrintLocation("job-1", "loc-1");
 
@@ -225,7 +270,10 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+    jobUpdateSingleMock.mockResolvedValue({
+      data: { id: "job-1" },
+      error: null,
+    });
 
     await assignPrintLocation("job-1", "loc-1");
 
@@ -253,7 +301,10 @@ describe("assignPrintLocation", () => {
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqVendorMock.mockResolvedValue({ error: { message: "boom" } });
+    jobUpdateSingleMock.mockResolvedValue({
+      data: null,
+      error: { message: "boom" },
+    });
 
     const result = await assignPrintLocation("job-1", "loc-1");
 
@@ -263,16 +314,72 @@ describe("assignPrintLocation", () => {
     });
   });
 
-  it("never reads or checks job status before assigning", async () => {
+  it("checks the unrouted queued state atomically in the update", async () => {
     locationMaybeSingleMock.mockResolvedValue({
       data: { id: "loc-1" },
       error: null,
     });
-    jobUpdateEqVendorMock.mockResolvedValue({ error: null });
+    jobUpdateSingleMock.mockResolvedValue({
+      data: { id: "job-1" },
+      error: null,
+    });
 
     await assignPrintLocation("job-1", "loc-1");
 
     expect(maybeSingleMock).not.toHaveBeenCalled();
     expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+    expect(jobUpdateStatusMock).toHaveBeenCalledWith("status", "queued");
+    expect(jobUpdateLocationMock).toHaveBeenCalledWith("location_id", null);
   });
+
+  it("does not dispatch or claim success when a competing assignment won", async () => {
+    locationMaybeSingleMock.mockResolvedValue({
+      data: { id: "loc-1" },
+      error: null,
+    });
+    jobUpdateSingleMock.mockResolvedValue({ data: null, error: null });
+    expect(await assignPrintLocation("job-1", "loc-1")).toEqual({
+      ok: false,
+      error: "This job is no longer waiting for a booth.",
+    });
+    expect(dispatchJobMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+});
+
+it("refuses a delayed reprint after another attempt returned to printed", async () => {
+  const current = {
+    status: "printed",
+    sent_at: "2026-10-09T00:00:01.123456+00:00",
+    requeued_at: "2026-10-09T00:00:00.223456+00:00",
+  };
+  getVendorSessionMock.mockReset().mockResolvedValue({
+    supabase: { from: sessionFromMock },
+    user: { id: "vendor-1" },
+  });
+  maybeSingleMock.mockReset().mockResolvedValue({
+    data: { status: "printed", sent_at: ATTEMPT, requeued_at: null },
+    error: null,
+  });
+  updatePrintJobStatusMock
+    .mockReset()
+    .mockImplementation(async (_id, _status, _reason, conditions) => ({
+      ok:
+        conditions.sentAt === current.sent_at &&
+        conditions.requeuedAt === current.requeued_at,
+      error: "Print attempt changed",
+    }));
+  dispatchJobMock.mockClear();
+  insertMock.mockReset().mockResolvedValue({ error: null });
+  revalidatePathMock.mockClear();
+  expect(await reprintJob("job-1")).toEqual({
+    success: false,
+    error: "Print attempt changed",
+  });
+  expect(dispatchJobMock).not.toHaveBeenCalled();
+  expect(insertMock).not.toHaveBeenCalled();
+  expect(revalidatePathMock).not.toHaveBeenCalled();
+  maybeSingleMock.mockResolvedValue({ data: current, error: null });
+  expect(await reprintJob("job-1")).toEqual({ success: true });
+  expect(dispatchJobMock).toHaveBeenCalledExactlyOnceWith("job-1");
 });

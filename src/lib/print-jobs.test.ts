@@ -55,6 +55,8 @@ describe("createPrintJob", () => {
     });
 
     expect(result).toEqual({ ok: true, id: "job-1" });
+    expect(resolveActiveLocationMock).not.toHaveBeenCalled();
+    expect(listActiveLocationsMock).toHaveBeenCalledWith("vendor-1");
     expect(insertMock).toHaveBeenCalledWith({
       vendor_id: "vendor-1",
       job_type: "label",
@@ -225,32 +227,6 @@ describe("createPrintJob", () => {
     });
   });
 
-  it("creates the job with location_id null when locationRef is omitted", async () => {
-    insertMock.mockReturnValue({
-      select: () => ({
-        single: () => Promise.resolve({ data: { id: "job-1" }, error: null }),
-      }),
-    });
-
-    const result = await createPrintJob({
-      vendorId: "vendor-1",
-      payload: { customer_name: "Ada", order_number: "0007" },
-      sourceKit: "qkit",
-      sourceRef: "order-uuid-1",
-    });
-
-    expect(result).toEqual({ ok: true, id: "job-1" });
-    expect(resolveActiveLocationMock).not.toHaveBeenCalled();
-    expect(insertMock).toHaveBeenCalledWith({
-      vendor_id: "vendor-1",
-      job_type: "label",
-      payload: { customer_name: "Ada", order_number: "0007" },
-      source_kit: "qkit",
-      source_ref: "order-uuid-1",
-      location_id: null,
-    });
-  });
-
   it("passes an explicit jobType through identically to omitting it", async () => {
     insertMock.mockReturnValue({
       select: () => ({
@@ -301,27 +277,6 @@ describe("single-active-location auto-delivery fallback", () => {
     expect(listActiveLocationsMock).toHaveBeenCalledWith("vendor-1");
     expect(insertMock).toHaveBeenCalledWith(
       expect.objectContaining({ location_id: "loc-1" }),
-    );
-  });
-
-  it("stays unrouted when the vendor has zero active locations", async () => {
-    listActiveLocationsMock.mockResolvedValue([]);
-    insertMock.mockReturnValue({
-      select: () => ({
-        single: () => Promise.resolve({ data: { id: "job-1" }, error: null }),
-      }),
-    });
-
-    const result = await createPrintJob({
-      vendorId: "vendor-1",
-      payload: { customer_name: "Ada", order_number: "0007" },
-      sourceKit: "qkit",
-      sourceRef: "order-uuid-1",
-    });
-
-    expect(result).toEqual({ ok: true, id: "job-1" });
-    expect(insertMock).toHaveBeenCalledWith(
-      expect.objectContaining({ location_id: null }),
     );
   });
 
@@ -444,7 +399,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "qkit", source_ref: "order-1" },
+              data: {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -458,6 +417,7 @@ describe("updatePrintJobStatus", () => {
       "qkit",
       "order-1",
       "failed",
+      "2026-10-08T01:00:00.123456+00:00",
     );
   });
 
@@ -467,7 +427,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "qkit", source_ref: "order-1" },
+              data: {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -485,7 +449,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "some-other-kit", source_ref: "ref-1" },
+              data: {
+                source_kit: "some-other-kit",
+                source_ref: "ref-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -498,6 +466,7 @@ describe("updatePrintJobStatus", () => {
       "some-other-kit",
       "ref-1",
       "failed",
+      "2026-10-08T01:00:00.123456+00:00",
     );
   });
 
@@ -507,7 +476,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "qkit", source_ref: "order-1" },
+              data: {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -528,7 +501,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "qkit", source_ref: "order-1" },
+              data: {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -542,6 +519,7 @@ describe("updatePrintJobStatus", () => {
       failure_reason: null,
       requeued_at: expect.any(String),
       sent_at: null,
+      driver_ref: null,
     });
   });
 
@@ -551,7 +529,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "qkit", source_ref: "order-1" },
+              data: {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -572,7 +554,11 @@ describe("updatePrintJobStatus", () => {
         select: () => ({
           single: () =>
             Promise.resolve({
-              data: { source_kit: "qkit", source_ref: "order-1" },
+              data: {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              },
               error: null,
             }),
         }),
@@ -606,3 +592,67 @@ describe("updatePrintJobStatus", () => {
     expect(notifyKitPrintStatusMock).not.toHaveBeenCalled();
   });
 });
+
+describe("atomic device result predicates", () => {
+  beforeEach(() => {
+    updateMock.mockReset();
+    notifyKitPrintStatusMock.mockClear();
+  });
+
+  it.each([true, false])(
+    "rechecks location, attempt and state in the update (matched=%s)",
+    async (matched) => {
+      const query = {
+        eq: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: matched
+            ? {
+                source_kit: "qkit",
+                source_ref: "order-1",
+                created_at: "2026-10-08T01:00:00.123456+00:00",
+              }
+            : null,
+          error: null,
+        }),
+      };
+      updateMock.mockReturnValue(query);
+      const result = await updatePrintJobStatus("job-1", "printed", undefined, {
+        locationId: "loc-1",
+        expectedStatus: "sent",
+        driverRef: "order-9",
+      });
+      expect(query.eq.mock.calls).toEqual([
+        ["id", "job-1"],
+        ["location_id", "loc-1"],
+        ["status", "sent"],
+        ["driver_ref", "order-9"],
+      ]);
+      expect(result.ok).toBe(matched);
+      expect(notifyKitPrintStatusMock).toHaveBeenCalledTimes(matched ? 1 : 0);
+    },
+  );
+});
+
+it.each([null, "2026-10-08T00:00:00Z"])(
+  "matches nullable attempt timestamps (%s)",
+  async (timestamp) => {
+    const query = {
+      eq: vi.fn().mockReturnThis(),
+      is: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    updateMock.mockReturnValue(query);
+    notifyKitPrintStatusMock.mockClear();
+    const result = await updatePrintJobStatus("job-1", "failed", "expired", {
+      sentAt: timestamp,
+      requeuedAt: timestamp,
+    });
+    const filter = timestamp === null ? query.is : query.eq;
+    expect(filter).toHaveBeenCalledWith("sent_at", timestamp);
+    expect(filter).toHaveBeenCalledWith("requeued_at", timestamp);
+    expect(result.ok).toBe(false);
+    expect(notifyKitPrintStatusMock).not.toHaveBeenCalled();
+  },
+);

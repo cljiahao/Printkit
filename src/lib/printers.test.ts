@@ -189,61 +189,105 @@ describe("bindDeviceRef", () => {
 });
 
 describe("peekClaimableJob", () => {
-  function jobsReturn(rows: unknown[]) {
-    selectMock.mockReturnValue({
-      eq: () => ({
-        eq: () => ({
-          order: () => Promise.resolve({ data: rows, error: null }),
+  function jobsReturn(
+    rows: { id: string; created_at: string; requeued_at: string | null }[],
+    fail = false,
+  ) {
+    const calls: unknown[][] = [];
+    selectMock.mockImplementation(() => {
+      let requeuedOnly = true;
+      let cutoff = "";
+      const chain = {
+        eq: vi.fn().mockImplementation(() => chain),
+        is: vi.fn().mockImplementation(() => {
+          requeuedOnly = false;
+          return chain;
         }),
-      }),
+        gt: vi.fn().mockImplementation((field, value) => {
+          calls.push([field, value]);
+          cutoff = value;
+          return chain;
+        }),
+        order: vi.fn().mockImplementation(() => chain),
+        limit: vi.fn().mockImplementation((limit) => {
+          calls.push(["limit", limit]);
+          const data = rows
+            .filter((row) =>
+              requeuedOnly
+                ? row.requeued_at !== null && row.requeued_at > cutoff
+                : row.requeued_at === null && row.created_at > cutoff,
+            )
+            .sort(
+              (a, b) =>
+                Date.parse(a.requeued_at ?? a.created_at) -
+                Date.parse(b.requeued_at ?? b.created_at),
+            )
+            .slice(0, limit);
+          return Promise.resolve({
+            data: fail ? null : data,
+            error: fail ? { message: "offline" } : null,
+          });
+        }),
+      };
+      return chain;
     });
+    return calls;
   }
-
-  it("returns the oldest job inside the expiry window", async () => {
-    const older = new Date(Date.now() - 10 * 60_000).toISOString();
-    const newer = new Date(Date.now() - 60_000).toISOString();
-    jobsReturn([
-      { id: "job-new", created_at: newer, requeued_at: null },
-      { id: "job-old", created_at: older, requeued_at: null },
+  it("queries just the oldest unexpired candidate from each queue", async () => {
+    const old = new Date(Date.now() - 10 * 60_000).toISOString();
+    const fresh = new Date().toISOString();
+    const calls = jobsReturn([
+      { id: "new", created_at: fresh, requeued_at: null },
+      { id: "old", created_at: old, requeued_at: null },
     ]);
-
-    expect(await peekClaimableJob("loc-1")).toEqual({ id: "job-old" });
+    expect(await peekClaimableJob("loc-1")).toEqual({
+      id: "old",
+      created_at: old,
+      requeued_at: null,
+    });
+    expect(calls.filter((call) => call[0] === "limit")).toEqual([
+      ["limit", 1],
+      ["limit", 1],
+    ]);
   });
-
-  it("ignores an expired job", async () => {
+  it("does not let many expired rows hide a requeued job", async () => {
+    const expired = new Date(Date.now() - 31 * 60_000).toISOString();
     jobsReturn([
-      {
-        id: "job-expired",
-        created_at: new Date(Date.now() - 31 * 60_000).toISOString(),
+      ...Array.from({ length: 1500 }, (_, index) => ({
+        id: String(index),
+        created_at: expired,
         requeued_at: null,
-      },
-    ]);
-
-    expect(await peekClaimableJob("loc-1")).toBeNull();
-  });
-
-  it("uses requeued_at when a job was reprinted", async () => {
-    jobsReturn([
+      })),
       {
-        id: "job-reprinted",
-        created_at: new Date(Date.now() - 31 * 60_000).toISOString(),
+        id: "reprinted",
+        created_at: expired,
         requeued_at: new Date().toISOString(),
       },
     ]);
-
-    expect(await peekClaimableJob("loc-1")).toEqual({ id: "job-reprinted" });
-  });
-
-  it("returns null when the query fails", async () => {
-    selectMock.mockReturnValue({
-      eq: () => ({
-        eq: () => ({
-          order: () =>
-            Promise.resolve({ data: null, error: { message: "boom" } }),
-        }),
-      }),
+    expect(await peekClaimableJob("loc-1")).toMatchObject({
+      id: "reprinted",
+      created_at: expired,
+      requeued_at: expect.any(String),
     });
-
+  });
+  it("compares effective queue times across new and requeued jobs", async () => {
+    const old = new Date(Date.now() - 20 * 60_000).toISOString();
+    jobsReturn([
+      { id: "new", created_at: new Date().toISOString(), requeued_at: null },
+      { id: "requeued", created_at: "2020-01-01T00:00:00Z", requeued_at: old },
+    ]);
+    expect(await peekClaimableJob("loc-1")).toEqual({
+      id: "requeued",
+      created_at: "2020-01-01T00:00:00Z",
+      requeued_at: old,
+    });
+  });
+  it("returns no candidate on expiry or a database failure", async () => {
+    jobsReturn([
+      { id: "expired", created_at: "2020-01-01T00:00:00Z", requeued_at: null },
+    ]);
+    expect(await peekClaimableJob("loc-1")).toBeNull();
+    jobsReturn([], true);
     expect(await peekClaimableJob("loc-1")).toBeNull();
   });
 });

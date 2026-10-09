@@ -94,8 +94,9 @@ supabase/tests/rls.test.sql       — pgTAP RLS suite
   in client components.
 - No secrets in `NEXT_PUBLIC_*`.
 - `@supabase/ssr` and `@supabase/supabase-js` versions must stay compatible.
-- Every `/api/v1/*` route verifies the caller's bearer secret via
-  `verifyKitAuth` before touching the database.
+- Kit API routes verify the calling kit with `verifyKitAuth` before database
+  access. Bridge-agent routes verify device credentials with `resolveAgent`;
+  public pairing redeems a bounded, expiring, single-use pairing code.
 - No shared code library for print/Bluetooth logic — printkit-only, never
   imported by another kit.
 - After editing the schema, update both `supabase/migrations/` and
@@ -129,11 +130,14 @@ better-auth / Drizzle and will break RLS.
 
 ## AI Harness
 
-PreToolUse: blocks secret files (exit 2): `.env*` (except `.env.example`),
-cert files (`.pem`/`.key`/`.p12`/`.pfx`/`.secret`), `credentials.json`/`.netrc`/`.secrets`;
-and blocks `--no-verify`. App code, skills, specs, and `.github/workflows/`
-unrestricted.
-UserPromptSubmit: pattern-checks prompts for injection phrases; exit 2 blocks.
+PreToolUse(Read|Edit|Write): normalize Windows and relative paths; hard-block
+secret-file reads and writes (environment files except the blank templates,
+secret directories and certificate/credential files). Governance and CI/CD
+writes require human approval; their reads are allowed. Ordinary application
+code, skills and specifications remain unrestricted. The Bash guard continues
+to block hook bypasses, protected-branch force pushes and destructive guard edits.
+UserPromptSubmit: credential-shaped input is blocked; injection-phrase matches
+produce advisory context so quoted security research can proceed.
 PostToolUse: `tsc --noEmit --incremental` after every Edit/Write, plus a
 comment-hygiene scan (`post-edit-comment-check.sh`) flagging change-narration
 comments (`was`/`added`/dated/ticket-ref-shaped openers, per

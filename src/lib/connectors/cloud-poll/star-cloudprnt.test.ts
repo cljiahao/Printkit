@@ -127,3 +127,18 @@ describe("star-cloudprnt: jobResponse", () => {
     );
   });
 });
+
+it("rejects an oversized poll while preserving empty-body compatibility", async () => {
+  const oversized = new Request("https://printkit.test/poll", {
+    method: "POST",
+    body: "x".repeat(65537),
+  });
+  await expect(starCloudPrntDriver.parsePoll(oversized)).rejects.toMatchObject({
+    status: 413,
+  });
+  await expect(
+    starCloudPrntDriver.parsePoll(
+      new Request("https://printkit.test/poll", { method: "POST" }),
+    ),
+  ).resolves.toEqual({ deviceRef: null, ready: true });
+});

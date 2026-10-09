@@ -4,6 +4,13 @@ Companion to `docs/superpowers/specs/2026-09-20-printer-connectors-design.md`.
 Every catalog entry stays `hardwareVerified: false` until its hardware gate
 below passes on a real device.
 
+> Current verification requirements (2026-10-09): apply all migrations through
+> `0010`, including the `0009` queue-revision claim wrapper. A token-less
+> CloudPRNT DELETE is rejected; upgrade incompatible firmware instead of
+> enabling the historical fallback described below. Bridge installation uses
+> the lockfile and runs dependency builds as the invoking user; quote checkout
+> paths containing spaces. Hardware gates remain unverified by this audit.
+
 ## Before any hardware
 
 1. `pnpm check && pnpm test` (unit + jsdom; all three connectors are covered

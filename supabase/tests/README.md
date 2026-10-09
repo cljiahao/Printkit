@@ -56,3 +56,5 @@ no API keys, no running Next.js app needed.
 See the repo root [README.md](../../README.md) for the full layout.
 
 `cloudprnt-revision.test.sql` covers conditional claim revisions and stale outcomes. `admin-membership-scope.test.sql` checks authenticated users cannot probe another user through the admin-membership helper. These prepared SQL regressions remain unrun while the local database engine is unavailable.
+
+CloudPRNT mutation assertions attach their data-modifying CTE to the top-level SELECT, as PostgreSQL requires. Each assertion retains its exact attempt/location/revision predicates and verifies the number of matched rows.

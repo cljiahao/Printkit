@@ -25,24 +25,24 @@ select is((select count(*) from printkit.claim_cloud_poll_job('9c999999-9999-499
 
 -- This transaction deliberately gives both claims the same now() value.
 -- The queue revision still prevents an old confirmation from settling it.
-select is((with settled as (
+with settled as (
   update printkit.print_jobs set status='failed'
   where id='9c999999-9999-4999-8999-999999999993'
     and location_id='9c999999-9999-4999-8999-999999999992'
     and status='sent' and sent_at=now() and requeued_at is null returning id
-) select count(*) from settled),0::bigint,'stale same-job confirmation cannot settle a newer queue revision');
-select is((with settled as (
+) select is((select count(*) from settled),0::bigint,'stale same-job confirmation cannot settle a newer queue revision');
+with settled as (
   update printkit.print_jobs set status='printed'
   where id='9c999999-9999-4999-8999-999999999993'
     and location_id='9c999999-9999-4999-8999-999999999992'
     and status='sent' and sent_at=now() and requeued_at=now()+interval '1 microsecond' returning id
-) select count(*) from settled),1::bigint,'current revision confirmation settles its claimed attempt');
-select is((with settled as (
+) select is((select count(*) from settled),1::bigint,'current revision confirmation settles its claimed attempt');
+with settled as (
   update printkit.print_jobs set status='failed'
   where id='9c999999-9999-4999-8999-999999999993'
     and location_id='9c999999-9999-4999-8999-999999999992'
     and status='sent' and sent_at=now() and requeued_at=now()+interval '1 microsecond' returning id
-) select count(*) from settled),0::bigint,'opposite terminal confirmation cannot overwrite a printed attempt');
+) select is((select count(*) from settled),0::bigint,'opposite terminal confirmation cannot overwrite a printed attempt');
 
 update printkit.print_jobs set status='queued',sent_at=null,requeued_at=null,created_at=now()-interval '31 minutes' where id='9c999999-9999-4999-8999-999999999993';
 select is((select count(*) from printkit.claim_cloud_poll_job('9c999999-9999-4999-8999-999999999992','9c999999-9999-4999-8999-999999999993',now()-interval '31 minutes',null)),0::bigint,'revision wrapper retains the existing claim expiry boundary');

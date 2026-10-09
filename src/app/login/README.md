@@ -24,11 +24,8 @@ OAuth, plus password reset. Sign-up is a client-side toggle; `/reset-password` c
     reset link lands on `/auth/callback`, which establishes a recovery
     session and forwards to `/reset-password`, which validates the session and offers a new-password form.
   - `Wordmark` (`@/components/wordmark`) and `GoogleMark`
-    (`./google-mark`) brand the card; the card container is `ElevatedCard`
+    (`@merqo/ui`) brand the card; the card container is `ElevatedCard`
     (`@/components/elevated-card`), matching every other kit's login page.
-- `google-mark.tsx` — `GoogleMark`: the Google "G" icon SVG, extracted out
-  of `page.tsx` so it matches the shared component used across every kit's
-  login page.
 - `page.test.tsx` — RTL/jsdom tests: the `?error=oauth` banner, the
   check-your-email state on a sessionless sign-up (and returning from it via
   "Back to sign in"), the redirect-on-session-present path, and the Forgot

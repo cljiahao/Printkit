@@ -45,3 +45,5 @@ this page's happy path leads into.
 ## Parent
 
 [printkit](../../../README.md)
+
+Unexpected OAuth or password request failures restore the controls and retain credentials for retry. Successful navigation retains the pending state while leaving the page; signup without a session displays email confirmation.

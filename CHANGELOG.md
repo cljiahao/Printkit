@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Reuse touch-first shared printer help with preserved target sizing and pin its tested immutable UI commit.
+
+- Batch vendor printer summaries, reuse the shared history table and brand mark, and separate connector setup components for clearer ownership.
+
 - Pin shared UI to audited commit `989d934c1cc8d957ff383934debf8ef083b6b6a4` and reuse its identical Google login icon, removing the local duplicate.
 
 - Pin pnpm 11.10.0 and restrict dependency build permissions to the locked shared-UI commit and required native tooling, replacing placeholder permissions.
@@ -25,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the setup wizard and the Bridge page all say the same thing.
 
 ### Fixed
+
+- Restore login controls after unexpected authentication failures and display offline printer timestamps in the Singapore timezone.
 
 - Improve small brand-text and input-boundary contrast in both themes while preserving primary button fills and decorative separators.
 

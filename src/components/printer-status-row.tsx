@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 export type PrinterStatusRowProps = {
   label: string;
@@ -17,7 +17,7 @@ function describe(props: PrinterStatusRowProps): string {
   if (props.state === "not_set_up") return "No printer yet";
   if (props.state === "online") return "Printer connected";
   return props.lastSeenAt
-    ? `Offline since ${new Date(props.lastSeenAt).toLocaleTimeString()}`
+    ? `Offline since ${formatDateTime(props.lastSeenAt)}`
     : "Offline";
 }
 

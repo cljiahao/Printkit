@@ -41,13 +41,15 @@ Design: `docs/superpowers/specs/2026-08-21-printkit-v0.1-design.md`,
 `docs/superpowers/specs/2026-08-23-printkit-location-routing-design.md`,
 `docs/superpowers/specs/2026-09-20-printer-connectors-design.md`
 
-`next` is pinned to `16.3.4` and `vitest` to `4.1.11` (see `CHANGELOG.md`
+`next` is pinned to `16.3.8` and `vitest` to `4.1.11` (see `CHANGELOG.md`
 for the security context). The Vercel build does not use
 `output: "standalone"`; that config was dropped.
 
-Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
+Overview and printers share a vendor-scoped batch loader. Connector setup flows live in separate local components; history uses shared DataTable with Printkit-specific action eligibility.
+
+Shared dashboard nav/account menu, and `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
-(`github:merqo-io/merqo-ui#989d934c1cc8d957ff383934debf8ef083b6b6a4`, `package.json`). This audited source includes shared client-boundary and account-menu hardening; login uses its shared `GoogleMark` instead of a local copy. Earlier releases added
+(`github:merqo-io/merqo-ui#6d5714e54e27892db824b0aa8bba070860c8c97a`, `package.json`). This audited source includes shared client-boundary and account-menu hardening; login uses its shared `GoogleMark` instead of a local copy. Earlier releases added
 `DashboardTours`, a route-matched multi-tour router for kits with more than
 one dashboard-page tour; purely additive, this kit's own `DashboardTour`
 usage is unchanged; bumped again 2026-09-16 for per-kit terms-schedule

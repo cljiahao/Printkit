@@ -6,13 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ElevatedCard } from "@/components/elevated-card";
 import { Wordmark } from "@/components/wordmark";
 
-/**
- * Root-level error boundary for non-dashboard routes (landing, login,
- * auth). `/dashboard/*` has its own, more specific `dashboard/error.tsx` —
- * this one is the fallback for everything else. Same branded treatment as
- * login/page.tsx (ElevatedCard + Wordmark) instead of the framework's bare
- * default error screen.
- */
+/** Branded fallback for route errors, with retry and home navigation. */
 export default function RootError({
   error,
   reset,

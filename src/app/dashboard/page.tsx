@@ -1,25 +1,19 @@
 import Link from "next/link";
 import { getVendorSession } from "@/lib/vendor-session";
 import { listPrintJobs, countUnroutedJobs } from "@/lib/print-jobs-list";
-import { listActiveLocations } from "@/lib/print-locations";
+import { listLocationPrinterSummaries } from "@/lib/location-printer-summaries";
 import { PrinterStatusRow } from "@/components/printer-status-row";
-import { getPrinterByLocation, printerState } from "@/lib/printers";
 import { JobHistoryTable } from "./history/job-history-table";
 
 export default async function DashboardPage() {
   const { supabase, user } = await getVendorSession();
-  const [recentJobs, locations, unroutedCount] = await Promise.all([
+  const [recentJobs, printers, unroutedCount] = await Promise.all([
     listPrintJobs(supabase, user.id, 5),
-    listActiveLocations(user.id),
+    listLocationPrinterSummaries(user.id),
     countUnroutedJobs(user.id),
   ]);
 
-  const printers = await Promise.all(
-    locations.map(async (loc) => ({
-      loc,
-      printer: await getPrinterByLocation(loc.id),
-    })),
-  );
+  const locations = printers.map(({ location }) => location);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -37,14 +31,12 @@ export default async function DashboardPage() {
             booth settings.
           </p>
         ) : (
-          printers.map(({ loc, printer }) => (
+          printers.map(({ location: loc, printer, state }) => (
             <PrinterStatusRow
               key={loc.id}
               label={loc.label}
               printerName={printer?.display_name ?? null}
-              state={
-                printer ? printerState(printer.last_seen_at) : "not_set_up"
-              }
+              state={state}
               lastSeenAt={printer?.last_seen_at ?? null}
             />
           ))

@@ -11,41 +11,47 @@ vi.mock("@/lib/print-jobs-list", () => ({
   listPrintJobs: vi.fn().mockResolvedValue([]),
   countUnroutedJobs: vi.fn().mockResolvedValue(0),
 }));
-vi.mock("@/lib/print-locations", () => ({
-  listActiveLocations: vi.fn().mockResolvedValue([]),
+vi.mock("@/lib/location-printer-summaries", () => ({
+  listLocationPrinterSummaries: vi.fn().mockResolvedValue([]),
 }));
-vi.mock("@/lib/printers", async () => {
-  const actual =
-    await vi.importActual<typeof import("@/lib/printers")>("@/lib/printers");
-  return { ...actual, getPrinterByLocation: vi.fn() };
-});
 
-import { listActiveLocations } from "@/lib/print-locations";
+import { listLocationPrinterSummaries } from "@/lib/location-printer-summaries";
 import { countUnroutedJobs } from "@/lib/print-jobs-list";
-import { getPrinterByLocation } from "@/lib/printers";
 import DashboardPage from "./page";
 
 describe("DashboardPage", () => {
   beforeEach(() => {
-    vi.mocked(listActiveLocations).mockReset().mockResolvedValue([]);
+    vi.mocked(listLocationPrinterSummaries).mockReset().mockResolvedValue([]);
     vi.mocked(countUnroutedJobs).mockReset().mockResolvedValue(0);
-    vi.mocked(getPrinterByLocation).mockReset().mockResolvedValue(null);
   });
 
   it("reports each booth's printer and its live state", async () => {
-    vi.mocked(listActiveLocations).mockResolvedValue([
-      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
-      { id: "loc-2", label: "Ice Cream Cart", source_ref: "booth-2" },
+    vi.mocked(listLocationPrinterSummaries).mockResolvedValue([
+      {
+        location: {
+          id: "loc-1",
+          label: "Kopitiam Cart",
+          source_ref: "booth-1",
+        },
+        printer: {
+          location_id: "loc-1",
+          display_name: "Feie FP-N20H",
+          connector: "vendor_cloud",
+          catalog_id: "feie-fp-n20h",
+          last_seen_at: new Date().toISOString(),
+        },
+        state: "online",
+      },
+      {
+        location: {
+          id: "loc-2",
+          label: "Ice Cream Cart",
+          source_ref: "booth-2",
+        },
+        printer: null,
+        state: "not_set_up",
+      },
     ]);
-    vi.mocked(getPrinterByLocation).mockImplementation(async (locationId) =>
-      locationId === "loc-1"
-        ? ({
-            id: "printer-1",
-            display_name: "Feie FP-N20H",
-            last_seen_at: new Date().toISOString(),
-          } as Awaited<ReturnType<typeof getPrinterByLocation>>)
-        : null,
-    );
 
     render(await DashboardPage());
 
@@ -58,14 +64,23 @@ describe("DashboardPage", () => {
   });
 
   it("reports a printer that has gone quiet as offline", async () => {
-    vi.mocked(listActiveLocations).mockResolvedValue([
-      { id: "loc-1", label: "Kopitiam Cart", source_ref: "booth-1" },
+    vi.mocked(listLocationPrinterSummaries).mockResolvedValue([
+      {
+        location: {
+          id: "loc-1",
+          label: "Kopitiam Cart",
+          source_ref: "booth-1",
+        },
+        printer: {
+          location_id: "loc-1",
+          display_name: "Star mC-Label2",
+          connector: "cloud_poll",
+          catalog_id: "star-mc-label2",
+          last_seen_at: "2026-01-01T16:30:00Z",
+        },
+        state: "offline",
+      },
     ]);
-    vi.mocked(getPrinterByLocation).mockResolvedValue({
-      id: "printer-1",
-      display_name: "Star mC-Label2",
-      last_seen_at: new Date(Date.now() - 5 * 60_000).toISOString(),
-    } as Awaited<ReturnType<typeof getPrinterByLocation>>);
 
     render(await DashboardPage());
 
@@ -73,7 +88,7 @@ describe("DashboardPage", () => {
   });
 
   it("shows an empty-state message when there are no active locations", async () => {
-    vi.mocked(listActiveLocations).mockResolvedValue([]);
+    vi.mocked(listLocationPrinterSummaries).mockResolvedValue([]);
     render(await DashboardPage());
     expect(
       screen.getByText(/no booths have printing enabled yet/i),

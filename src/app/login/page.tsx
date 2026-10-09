@@ -43,16 +43,20 @@ function LoginForm() {
   async function signInWithGoogle() {
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: { hl: "en" },
-      },
-    });
-    if (error) {
-      setError(error.message);
+    try {
+      const { error } = await createClient().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { hl: "en" },
+        },
+      });
+      if (error) {
+        setError(error.message);
+        setBusy(false);
+      }
+    } catch {
+      setError("Could not sign in with Google. Please try again.");
       setBusy(false);
     }
   }
@@ -86,42 +90,43 @@ function LoginForm() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const supabase = createClient();
-
-    if (mode === "signup") {
-      const { data: result, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-      });
-      setBusy(false);
-      if (error) {
-        setError(error.message);
-        return;
-      }
-      // Email confirmation on -> no session yet. Show a "check your email"
-      // state rather than redirecting to a dashboard the unconfirmed user
-      // can't reach.
-      if (!result.session) {
-        setCheckEmail(email);
-        return;
+    try {
+      const supabase = createClient();
+      if (mode === "signup") {
+        const { data: result, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+        if (error) {
+          setError(error.message);
+          setBusy(false);
+          return;
+        }
+        if (!result.session) {
+          setCheckEmail(email);
+          setBusy(false);
+          return;
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) {
+          setError(error.message);
+          setBusy(false);
+          return;
+        }
       }
       router.push("/dashboard");
       router.refresh();
-      return;
+    } catch {
+      setError("Could not sign in. Check your connection and try again.");
+      setBusy(false);
     }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setBusy(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    router.push("/dashboard");
-    router.refresh();
   }
 
   if (checkEmail) {

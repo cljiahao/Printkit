@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Wordmark } from "@/components/wordmark";
 import { usePathname } from "next/navigation";
 import { DashboardNav as SharedDashboardNav, getSwitchKits } from "@merqo/ui";
 import { SUPPORT_CATEGORY_LABELS } from "@/lib/schemas";
@@ -58,7 +59,7 @@ export function DashboardNav({
           aria-label="printkit dashboard home"
           className="font-display shrink-0 text-3xl font-semibold tracking-tight outline-none transition-opacity hover:opacity-80 focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          printkit
+          <Wordmark />
         </Link>
       }
       navLinks={LINKS}

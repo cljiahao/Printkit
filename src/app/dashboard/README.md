@@ -67,3 +67,5 @@ see `bridge/README.md` for what reads it.
 ## Parent
 
 [app](../README.md)
+
+Overview and printers pages share `listLocationPrinterSummaries`, which batches the verified vendor's active-booth printer summaries instead of one query per booth.

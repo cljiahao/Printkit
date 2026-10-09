@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Zero-call-site adapter over `@merqo/ui`'s shared hooks — keeps every existing
+Async-action adapter over `@merqo/ui`'s shared hooks — used by history reprint and booth assignment controls; keeps existing
 `run(async () => { … })` call site working unchanged while the actual
 pending/error-state logic lives in the shared package.
 

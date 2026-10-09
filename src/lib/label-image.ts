@@ -5,16 +5,19 @@
  */
 export async function pngToCanvas(blob: Blob): Promise<HTMLCanvasElement> {
   const bitmap = await createImageBitmap(blob);
-  const canvas = document.createElement("canvas");
-  canvas.width = bitmap.width;
-  canvas.height = bitmap.height;
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
 
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Canvas 2D context unavailable");
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D context unavailable");
+    ctx.drawImage(bitmap, 0, 0);
 
-  return canvas;
+    return canvas;
+  } finally {
+    bitmap.close();
+  }
 }
 
 export async function fetchLabelCanvas(

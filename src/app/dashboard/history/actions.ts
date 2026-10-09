@@ -7,19 +7,9 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 
 /**
- * Only a job's own vendor can reprint it. The `print_jobs` read below uses
- * the session-scoped client from getVendorSession(), so the
- * `print_jobs_vendor_select` RLS policy (`auth.uid() = vendor_id`) already
- * refuses a cross-vendor read as the real authorization boundary; the
- * explicit `.eq("vendor_id", ...)` here is belt-and-braces on top of that,
- * not the sole check. Only a 'failed' or already-'printed' job may be
- * reprinted — a vendor who peeled/lost a good label needs this too, not
- * just a genuine print failure. 'queued'/'sent' stay excluded: reprinting
- * either would race an in-flight print. The service-role client is used
- * only for the write path
- * (updatePrintJobStatus, which bypasses RLS internally) and the
- * admin_audit insert (whose own RLS restricts reads to admins, so writing
- * on behalf of the acting vendor as audit actor needs to bypass that too).
+ * The session-scoped read enforces vendor RLS. Only failed or printed jobs may
+ * be requeued; comparing status and attempt prevents stale concurrent reprints.
+ * Audit failure must not disguise a successful requeue as a failed request.
  */
 export async function reprintJob(jobId: string): Promise<ActionResult> {
   const { supabase, user } = await getVendorSession();
@@ -27,7 +17,7 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
 
   const { data: job } = await supabase
     .from("print_jobs")
-    .select("status")
+    .select("status, sent_at, requeued_at")
     .eq("id", jobId)
     .eq("vendor_id", user.id)
     .maybeSingle();
@@ -40,21 +30,31 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
     };
   }
 
-  const result = await updatePrintJobStatus(jobId, "queued");
+  const result = await updatePrintJobStatus(jobId, "queued", undefined, {
+    expectedStatus: job.status,
+    sentAt: job.sent_at,
+    requeuedAt: job.requeued_at,
+  });
   if (!result.ok) return { success: false, error: result.error };
 
   dispatchJob(jobId).catch((err: unknown) => {
     console.error("reprintJob: dispatchJob failed", err);
   });
 
-  const { error: auditError } = await service.from("admin_audit").insert({
-    admin_id: user.id,
-    action: "manual_reprint_triggered",
-    target_id: jobId,
-    detail: null,
-  });
-  if (auditError) {
-    console.error("reprintJob: admin_audit insert failed", auditError.message);
+  try {
+    const { error: auditError } = await service.from("admin_audit").insert({
+      admin_id: user.id,
+      action: "manual_reprint_triggered",
+      target_id: jobId,
+      detail: null,
+    });
+    if (auditError)
+      console.error(
+        "reprintJob: admin_audit insert failed",
+        auditError.message,
+      );
+  } catch (error) {
+    console.error("reprintJob: admin_audit insert rejected", error);
   }
 
   revalidatePath("/dashboard/history");
@@ -62,17 +62,9 @@ export async function reprintJob(jobId: string): Promise<ActionResult> {
 }
 
 /**
- * Manually routes an "unrouted" job (location_id null) to a booth. Distinct
- * from reprintJob: no status precondition, and never touches status — a
- * queued job stays queued, it just now has a location to print at.
- *
- * print_jobs has no UPDATE grant/policy for `authenticated` (only SELECT —
- * see 0001_printkit_core.sql), so the write goes through the service-role
- * client, same as updatePrintJobStatus/createPrintJob. That makes the
- * `.eq("id", jobId).eq("vendor_id", user.id)` scoping below the real
- * authorization boundary, not defense-in-depth on top of RLS. locationId is
- * separately verified to belong to this vendor before the write — the FK
- * on print_jobs.location_id only checks the id exists, not who owns it.
+ * Assigns only an unrouted queued job. The service write checks vendor ownership
+ * and the current routing state atomically because authenticated clients cannot
+ * update print_jobs. The destination must also belong to the acting vendor.
  */
 export async function assignPrintLocation(
   jobId: string,
@@ -92,18 +84,26 @@ export async function assignPrintLocation(
     return { ok: false, error: "That booth doesn't belong to your account." };
   }
 
-  const { error } = await service
+  const { data: assigned, error } = await service
     .from("print_jobs")
     .update({
       location_id: locationId,
       requeued_at: new Date().toISOString(),
     })
     .eq("id", jobId)
-    .eq("vendor_id", user.id);
+    .eq("vendor_id", user.id)
+    .eq("status", "queued")
+    .is("location_id", null)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     console.error("assignPrintLocation failed", error.message);
     return { ok: false, error: "Could not assign a booth to this job." };
+  }
+
+  if (!assigned) {
+    return { ok: false, error: "This job is no longer waiting for a booth." };
   }
 
   dispatchJob(jobId).catch((err: unknown) => {

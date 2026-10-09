@@ -21,12 +21,15 @@ vendor session or a kit secret.
     A different device presenting the same token gets 401 and an
     `admin_audit` row.
   - `GET` claims the job named by the `token` query parameter (CloudPRNT's
-    echo of the poll's `jobToken`, not the URL token) through `claim_job`,
+    echo of the poll's opaque revision `jobToken`, not the URL credential)
+    through the revision-locking wrapper and existing `claim_job`,
     so a second fetch of the same job gets 404. That is the double-print
     guard.
   - `DELETE` verifies the job is at this printer's location and still
-    `sent` before recording `printed` or `failed`, so a late confirmation
-    cannot overwrite a requeued job.
+    `sent` for the advertised queue revision before recording `printed`
+    or `failed`. The UPDATE also matches sent/requeue timestamps, so late
+    confirmations cannot settle a later reclaim. Identical terminal retries
+    are acknowledged without another callback. Token-less firmware is refused.
 
 ## Connectivity
 

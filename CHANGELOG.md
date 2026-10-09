@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Pin shared UI to audited commit `989d934c1cc8d957ff383934debf8ef083b6b6a4` and reuse its identical Google login icon, removing the local duplicate.
+
+- Pin pnpm 11.10.0 and restrict dependency build permissions to the locked shared-UI commit and required native tooling, replacing placeholder permissions.
 - The repository moved from the `cljiahao` GitHub account to the `merqo-io` organization. `@merqo/ui` now installs from `github:merqo-io/merqo-ui` at the same tag, with the lockfile and tarball URLs updated to match. The Bluetooth guide and the bridge agent README now clone from the new URL.
 - The `secret scan (gitleaks)` CI job runs the pinned gitleaks release binary, verified against the release checksum, instead of `gitleaks-action`. The action is free only for personal-account repos and needs a paid license on organization-owned ones, so every run failed after the move to `merqo-io`. It scans the PR commits, or the pushed range on `main`.
 - Bluetooth copy now names every device that can act as the helper: an
@@ -22,6 +25,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the setup wizard and the Bridge page all say the same thing.
 
 ### Fixed
+
+- Improve small brand-text and input-boundary contrast in both themes while preserving primary button fills and decorative separators.
+
+- Device result handlers return an error when the result could not be saved.
+  Agent and CloudPRNT updates recheck location and sent state atomically;
+  Feie updates recheck the signed attempt reference and sent state. Failed
+  Feie lookups request a retry; stale callbacks remain idempotent.
+- Outbound callback lookup failures remain best-effort, canvas bitmaps close
+  even when rendering fails, and setup action failures restore the retry UI.
 
 - A NIIMBOT B1 that printed the label but never sent the "job done" packets
   was reported as a failed print (first seen on real hardware, 2026-09-22:
@@ -226,6 +238,9 @@ actions.ts` to import `LEGAL_VERSIONS`/`getLegalDocSource`/`isLegalCurrent`
   `/legal/accept` instead of surfacing the real error.
 
 ### Security
+
+- Bound streamed pairing, printer-poll and signed callback bodies before parsing; require revision-bound CloudPRNT results and scope administrator membership (migrations 0009–0010). SQL and physical-printer validation remain pending.
+- Read kit callback secrets through bounded stdin and install the bridge from its lockfile with only named native builds as an unprivileged service user.
 
 - Bumped `next` to `16.3.4` (`eslint-config-next` to match), which pulls
   `sharp` to `0.35.4`. Clears two critical Next.js RCE advisories

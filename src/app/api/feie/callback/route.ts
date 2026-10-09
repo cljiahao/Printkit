@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readBoundedForm, RequestBodyError } from "@/lib/bounded-json";
 import { createVerify } from "node:crypto";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -57,25 +58,31 @@ function acknowledged(): Response {
   });
 }
 
-async function findJobByDriverRef(driverRef: string): Promise<string | null> {
+async function findJobByDriverRef(
+  driverRef: string,
+): Promise<{ ok: true; id: string | null } | { ok: false }> {
   const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from("print_jobs")
-    .select("id")
+    .select("id, status")
     .eq("driver_ref", driverRef)
     .maybeSingle();
 
   if (error) {
     console.error("feie callback: job lookup failed", error.message);
-    return null;
+    return { ok: false };
   }
-  return data?.id ?? null;
+  // Already-settled and requeued attempts are idempotent acknowledgements.
+  return { ok: true, id: data?.status === "sent" ? data.id : null };
 }
 
 export async function POST(request: Request) {
-  const form = await request.formData().catch(() => null);
-  if (!form) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  let form: FormData;
+  try {
+    form = await readBoundedForm(request);
+  } catch (error) {
+    const status = error instanceof RequestBodyError ? error.status : 400;
+    return NextResponse.json({ error: "Invalid body" }, { status });
   }
 
   const orderId = String(form.get("orderId") ?? "");
@@ -91,13 +98,24 @@ export async function POST(request: Request) {
 
   // An order that is not ours still gets SUCCESS: anything else makes Feie
   // retry a callback that can never succeed.
-  const jobId = await findJobByDriverRef(orderId);
-  if (!jobId) return acknowledged();
+  const job = await findJobByDriverRef(orderId);
+  if (!job.ok) {
+    return NextResponse.json(
+      { error: "Could not find print job." },
+      { status: 500 },
+    );
+  }
+  if (!job.id) return acknowledged();
 
-  if (status === "1") {
-    await updatePrintJobStatus(jobId, "printed");
-  } else {
-    await updatePrintJobStatus(jobId, "failed", "device_reported_error");
+  const outcome = status === "1" ? "printed" : "failed";
+  const result = await updatePrintJobStatus(
+    job.id,
+    outcome,
+    outcome === "failed" ? "device_reported_error" : undefined,
+    { expectedStatus: "sent", driverRef: orderId },
+  );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
   return acknowledged();

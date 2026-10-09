@@ -3,6 +3,7 @@ import { PrintkitClient, UnauthorizedError } from "./client";
 
 const BASE = "https://printkit.test";
 const TOKEN = "x".repeat(43);
+const ATTEMPT = "2026-10-08T00:00:00.123456+00:00";
 const JOB = "3f2b8c1e-9d4a-4b7e-8a61-2c5d7e9f0a13";
 
 function responds(
@@ -54,10 +55,12 @@ describe("PrintkitClient.nextJob", () => {
   });
 
   it("returns the claimed job", async () => {
-    responds(() => new Response(JSON.stringify({ job_id: JOB })));
+    responds(
+      () => new Response(JSON.stringify({ job_id: JOB, sent_at: ATTEMPT })),
+    );
     const client = new PrintkitClient(BASE, TOKEN);
 
-    expect(await client.nextJob()).toEqual({ jobId: JOB });
+    expect(await client.nextJob()).toEqual({ jobId: JOB, sentAt: ATTEMPT });
   });
 
   it("sends the agent token", async () => {
@@ -97,13 +100,15 @@ describe("PrintkitClient.fetchLabel", () => {
 describe("PrintkitClient.reportResult", () => {
   it("posts the outcome", async () => {
     const fetchMock = responds(() => new Response("{}"));
-    await new PrintkitClient(BASE, TOKEN).reportResult(JOB, "printed");
+    await new PrintkitClient(BASE, TOKEN).reportResult(JOB, "printed", ATTEMPT);
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(
       `https://printkit.test/api/v1/bridge-agent/jobs/${JOB}/result`,
     );
-    expect(init.body).toBe(JSON.stringify({ result: "printed" }));
+    expect(init.body).toBe(
+      JSON.stringify({ result: "printed", sent_at: ATTEMPT }),
+    );
   });
 });
 
@@ -141,4 +146,65 @@ describe("PrintkitClient input checks", () => {
       /expected format/,
     );
   });
+});
+
+describe("bounded agent requests", () => {
+  it.each(["pair", "poll", "label", "result"])(
+    "aborts a stalled %s request without following redirects",
+    async (operation) => {
+      const controller = new AbortController();
+      const timeout = vi
+        .spyOn(AbortSignal, "timeout")
+        .mockReturnValue(controller.signal);
+      const fetchMock = vi.fn(
+        (_url: unknown, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener(
+              "abort",
+              () => reject(new Error("request expired")),
+              { once: true },
+            );
+          }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      const client = new PrintkitClient(BASE, TOKEN);
+      const actions: Record<string, () => Promise<unknown>> = {
+        pair: () => PrintkitClient.pair(BASE, "ABCD-2345"),
+        poll: () => client.nextJob(),
+        label: () => client.fetchLabel(JOB),
+        result: () => client.reportResult(JOB, "printed", ATTEMPT),
+      };
+      try {
+        const request = actions[operation]();
+        const rejected = expect(request).rejects.toThrow("request expired");
+        controller.abort();
+        await rejected;
+        expect(timeout).toHaveBeenCalledWith(10_000);
+        expect(fetchMock.mock.calls[0][1].redirect).toBe("error");
+      } finally {
+        timeout.mockRestore();
+      }
+    },
+  );
+});
+
+it.each([
+  undefined,
+  "invalid",
+  "2026-02-30T00:00:00Z",
+  "2026-10-08T00:00:00.1234567Z",
+  "2026-10-08T24:00:00Z",
+])("refuses an invalid claimed attempt %s before printing", async (sent_at) => {
+  responds(() => new Response(JSON.stringify({ job_id: JOB, sent_at })));
+  await expect(new PrintkitClient(BASE, TOKEN).nextJob()).rejects.toThrow(
+    /attempt timestamp/,
+  );
+});
+
+it("refuses an invalid outgoing attempt before making a request", async () => {
+  const fetchMock = responds(() => new Response("{}"));
+  await expect(
+    new PrintkitClient(BASE, TOKEN).reportResult(JOB, "printed", "invalid"),
+  ).rejects.toThrow(/attempt timestamp/);
+  expect(fetchMock).not.toHaveBeenCalled();
 });

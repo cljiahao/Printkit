@@ -39,17 +39,30 @@ const job = {
   vendor_id: "vendor-1",
 };
 
+function sweepPage(rows: unknown[], error: unknown = null) {
+  const limit = vi
+    .fn()
+    .mockResolvedValueOnce({ data: rows, error })
+    .mockResolvedValue({ data: [], error: null });
+  const chain = { gt: vi.fn(), order: vi.fn(), limit };
+  chain.gt.mockReturnValue(chain);
+  chain.order.mockReturnValue(chain);
+  return chain;
+}
+
 function sweepReturns(rows: unknown[]) {
+  const page = sweepPage(rows);
   selectMock.mockReturnValue({
-    eq: () => ({ in: () => Promise.resolve({ data: rows, error: null }) }),
+    eq: () => ({ in: () => page }),
   });
 }
 
 function jobRowReturns(row: unknown, sweepRows: unknown[] = []) {
+  const page = sweepPage(sweepRows);
   selectMock.mockReturnValue({
     eq: () => ({
       maybeSingle: () => Promise.resolve({ data: row, error: null }),
-      in: () => Promise.resolve({ data: sweepRows, error: null }),
+      in: () => page,
     }),
   });
 }
@@ -114,6 +127,10 @@ describe("sweepLocation", () => {
       "job-old",
       "failed",
       "expired",
+      expect.objectContaining({
+        locationId: "loc-1",
+        expectedStatus: "queued",
+      }),
     );
   });
 
@@ -151,6 +168,7 @@ describe("sweepLocation", () => {
       "job-stuck",
       "failed",
       "device_reported_error",
+      expect.objectContaining({ locationId: "loc-1", expectedStatus: "sent" }),
     );
   });
 
@@ -173,7 +191,7 @@ describe("sweepLocation", () => {
   it("does not throw on a query error", async () => {
     selectMock.mockReturnValue({
       eq: () => ({
-        in: () => Promise.resolve({ data: null, error: { message: "boom" } }),
+        in: () => sweepPage([], { message: "boom" }),
       }),
     });
 
@@ -221,7 +239,13 @@ describe("dispatchJob", () => {
       device_ref: "SN1",
     });
     rpcMock.mockResolvedValue({
-      data: [{ id: "job-1", payload: { order_number: "7" } }],
+      data: [
+        {
+          id: "job-1",
+          payload: { order_number: "7" },
+          sent_at: "2026-10-08T12:00:00Z",
+        },
+      ],
       error: null,
     });
 
@@ -232,7 +256,11 @@ describe("dispatchJob", () => {
       p_job_id: "job-1",
     });
     expect(sendVendorCloudJobMock).toHaveBeenCalledWith(
-      { id: "job-1", payload: { order_number: "7" } },
+      {
+        id: "job-1",
+        payload: { order_number: "7" },
+        sent_at: "2026-10-08T12:00:00Z",
+      },
       expect.objectContaining({ driver: "feie" }),
     );
   });
@@ -321,6 +349,86 @@ describe("sweepLocation: push connectors", () => {
       "job-sent",
       "failed",
       "driver_error",
+      expect.objectContaining({ locationId: "loc-1", expectedStatus: "sent" }),
     );
   });
+});
+
+it.each([false, true])(
+  "times out unresolved cloud jobs after reconciliation (terminal=%s)",
+  async (terminal) => {
+    const old = new Date(Date.now() - 6 * 60_000).toISOString();
+    const row = {
+      id: "job-old",
+      status: "sent",
+      created_at: old,
+      requeued_at: null,
+      sent_at: old,
+      driver_ref: "attempt-old",
+    };
+    sweepReturns([row]);
+    getPrinterByLocationMock.mockResolvedValue({
+      connector: "vendor_cloud",
+      location_id: "loc-1",
+    });
+    reconcileVendorCloudJobMock.mockResolvedValueOnce(terminal);
+    await sweepLocation("loc-1");
+    expect(reconcileVendorCloudJobMock).toHaveBeenCalledOnce();
+    if (terminal) expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
+    else
+      expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+        "job-old",
+        "failed",
+        "driver_error",
+        { locationId: "loc-1", expectedStatus: "sent", sentAt: old },
+      );
+  },
+);
+
+it("pins queued expiry to the original requeue timestamp", async () => {
+  const old = new Date(Date.now() - 31 * 60_000).toISOString();
+  sweepReturns([
+    {
+      id: "queued-old",
+      status: "queued",
+      created_at: old,
+      requeued_at: old,
+      sent_at: null,
+      driver_ref: null,
+    },
+  ]);
+  await sweepLocation("loc-1");
+  expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+    "queued-old",
+    "failed",
+    "expired",
+    { locationId: "loc-1", expectedStatus: "queued", requeuedAt: old },
+  );
+});
+
+it("sweeps later pages despite a lower server row cap", async () => {
+  const page = sweepPage([]);
+  const old = new Date(Date.now() - 31 * 60_000).toISOString();
+  const row = (id: string) => ({
+    id,
+    status: "queued",
+    created_at: old,
+    requeued_at: null,
+    sent_at: null,
+    driver_ref: null,
+  });
+  page.limit
+    .mockReset()
+    .mockResolvedValueOnce({ data: [row("a")], error: null })
+    .mockResolvedValueOnce({ data: [row("b")], error: null })
+    .mockResolvedValue({ data: [], error: null });
+  selectMock.mockReturnValue({ eq: () => ({ in: () => page }) });
+  await sweepLocation("loc-1");
+  expect(page.gt).toHaveBeenCalledWith("id", "a");
+  expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+    "b",
+    "failed",
+    "expired",
+    { locationId: "loc-1", expectedStatus: "queued", requeuedAt: null },
+  );
 });

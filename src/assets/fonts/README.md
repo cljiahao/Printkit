@@ -31,3 +31,7 @@ process under the internal family names `PrintkitLabel`,
 ## Parent
 
 See the repo root [README.md](../../../README.md) for the full layout.
+
+## License notices
+
+Retain `OFL-NotoSans.txt` and `OFL-NotoSansSC.txt` alongside redistributed fonts. These notices come from the official [Noto Sans repository](https://github.com/notofonts/latin-greek-cyrillic/blob/main/OFL.txt) and [Noto CJK repository](https://github.com/notofonts/noto-cjk/blob/main/Sans/LICENSE).

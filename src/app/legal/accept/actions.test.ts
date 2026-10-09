@@ -128,23 +128,6 @@ describe("acceptLegalTerms", () => {
     expect(redirectMock).toHaveBeenCalledWith("/dashboard");
   });
 
-  it("still posts privacy when terms is a tolerated duplicate (merqo returns 200)", async () => {
-    getUserMock.mockResolvedValue({
-      data: { user: { id: "u1", email: "vendor@business.sg" } },
-    });
-    // merqo maps a 23505 to { ok: true } — both calls independently succeed.
-    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, status: 200 });
-    global.fetch = fetchSpy as never;
-
-    await acceptLegalTerms(formData("/dashboard"));
-
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(
-      fetchSpy.mock.calls.map((c) => JSON.parse(c[1].body).doc_type),
-    ).toEqual(["terms", "privacy"]);
-    expect(redirectMock).toHaveBeenCalledWith("/dashboard");
-  });
-
   it("throws when merqo responds non-2xx (no redirect)", async () => {
     getUserMock.mockResolvedValue({
       data: { user: { id: "u1", email: "vendor@business.sg" } },

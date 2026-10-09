@@ -262,3 +262,17 @@ describe("feie: status queries", () => {
     expect(await feieDriver.queryPrinter("SN1")).toBe("unknown");
   });
 });
+
+it.each(["SN#KEY", "SN\nOTHER", "SN\rOTHER"])(
+  "rejects printer-list delimiters in %j",
+  async (injected) => {
+    const fetchMock = feieResponds({ ret: 0, data: {} });
+    expect(
+      (await feieDriver.registerPrinter({ sn: injected, key: "KEY1" })).ok,
+    ).toBe(false);
+    expect(
+      (await feieDriver.registerPrinter({ sn: "SN1", key: injected })).ok,
+    ).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  },
+);

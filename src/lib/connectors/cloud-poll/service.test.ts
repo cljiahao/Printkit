@@ -11,22 +11,25 @@ vi.mock("@/lib/label-raster", () => ({
   rasterizeLayout: (...args: unknown[]) => rasterizeLayoutMock(...args),
 }));
 
+const rpcMock = vi.fn();
 const selectMock = vi.fn();
 const insertMock = vi.fn().mockResolvedValue({ error: null });
 vi.mock("@/lib/supabase/server", () => ({
   createServiceClient: () =>
     Promise.resolve({
       from: () => ({ select: selectMock, insert: insertMock }),
+      rpc: rpcMock,
     }),
 }));
 
 import {
   resolveDevice,
   renderJobPng,
-  awaitsConfirmation,
-  latestSentJobId,
+  readCloudPollJob,
+  claimCloudPollJob,
   logDeviceEvent,
 } from "./service";
+import { cloudPollJobToken } from "./job-token";
 import { hashDeviceToken } from "@/lib/device-credentials";
 
 const printer = {
@@ -48,6 +51,7 @@ beforeEach(() => {
   getPrinterByTokenHashMock.mockReset();
   rasterizeLayoutMock.mockClear();
   selectMock.mockReset();
+  rpcMock.mockReset();
   insertMock.mockClear();
 });
 
@@ -94,47 +98,6 @@ describe("renderJobPng", () => {
   });
 });
 
-describe("awaitsConfirmation", () => {
-  it("is true when the job is at this location", async () => {
-    const filters: Array<[string, unknown]> = [];
-    const query = {
-      eq: (column: string, value: unknown) => {
-        filters.push([column, value]);
-        return query;
-      },
-      maybeSingle: () =>
-        Promise.resolve({ data: { id: "job-1" }, error: null }),
-    };
-    selectMock.mockReturnValue(query);
-
-    expect(await awaitsConfirmation("job-1", "loc-1")).toBe(true);
-    expect(filters).toEqual([
-      ["id", "job-1"],
-      ["location_id", "loc-1"],
-      ["status", "sent"],
-    ]);
-  });
-
-  it("is false when it is not", async () => {
-    const query = {
-      eq: () => query,
-      maybeSingle: () => Promise.resolve({ data: null, error: null }),
-    };
-    selectMock.mockReturnValue(query);
-    expect(await awaitsConfirmation("job-9", "loc-1")).toBe(false);
-  });
-
-  it("is false when the query fails", async () => {
-    const query = {
-      eq: () => query,
-      maybeSingle: () =>
-        Promise.resolve({ data: null, error: { message: "boom" } }),
-    };
-    selectMock.mockReturnValue(query);
-    expect(await awaitsConfirmation("job-1", "loc-1")).toBe(false);
-  });
-});
-
 describe("logDeviceEvent", () => {
   it("writes an audit row against the printer's vendor", async () => {
     await logDeviceEvent(printer, "cloudprnt_mac_mismatch", { bound: "a" });
@@ -155,38 +118,91 @@ describe("logDeviceEvent", () => {
   });
 });
 
-describe("latestSentJobId", () => {
-  function sentJobs(data: unknown, error: unknown = null) {
-    const query = {
-      eq: () => query,
-      order: () => query,
-      limit: () => query,
-      maybeSingle: () => Promise.resolve({ data, error }),
-    };
-    selectMock.mockReturnValue(query);
-  }
-
-  it("names the location's most recently sent job", async () => {
-    sentJobs({ id: "job-7" });
-    expect(await latestSentJobId("loc-1")).toBe("job-7");
-  });
-
-  it("is null when nothing is waiting for confirmation", async () => {
-    sentJobs(null);
-    expect(await latestSentJobId("loc-1")).toBeNull();
-  });
-
-  it("is null when the query fails", async () => {
-    sentJobs(null, { message: "boom" });
-    vi.spyOn(console, "error").mockImplementation(() => undefined);
-    expect(await latestSentJobId("loc-1")).toBeNull();
-  });
-});
-
 describe("logDeviceEvent when the client itself fails", () => {
   it("swallows the error", async () => {
     insertMock.mockRejectedValueOnce(new Error("network"));
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     await expect(logDeviceEvent(printer, "x", {})).resolves.toBeUndefined();
   });
+});
+
+const revision = {
+  id: "11111111-1111-4111-8111-111111111111",
+  created_at: "2026-10-09T00:00:00.123456+00:00",
+  requeued_at: null,
+};
+function returnedJob(data: unknown, error: unknown = null) {
+  const filters: Array<[string, unknown]> = [];
+  const query = {
+    eq(column: string, value: unknown) {
+      filters.push([column, value]);
+      return query;
+    },
+    maybeSingle: () => Promise.resolve({ data, error }),
+  };
+  selectMock.mockReturnValue(query);
+  return filters;
+}
+it("reads only the printer's own current revision", async () => {
+  const filters = returnedJob({ ...revision, status: "sent" });
+  expect(
+    await readCloudPollJob(cloudPollJobToken(revision), "loc-1"),
+  ).toMatchObject(revision);
+  expect(filters).toEqual([
+    ["id", revision.id],
+    ["location_id", "loc-1"],
+  ]);
+});
+it("refuses a stale same-job token after requeue", async () => {
+  const newer = {
+    ...revision,
+    requeued_at: "2026-10-09T00:00:01.123456+00:00",
+    status: "sent",
+  };
+  returnedJob(newer);
+  expect(
+    await readCloudPollJob(cloudPollJobToken(revision), "loc-1"),
+  ).toBeNull();
+  expect(await readCloudPollJob(cloudPollJobToken(newer), "loc-1")).toEqual(
+    newer,
+  );
+});
+it.each([null, revision.id, "malformed"])(
+  "refuses missing or legacy token %s before database access",
+  async (token) => {
+    expect(await readCloudPollJob(token, "loc-1")).toBeNull();
+    expect(selectMock).not.toHaveBeenCalled();
+  },
+);
+it("fails closed on missing jobs and failed reads", async () => {
+  returnedJob(null);
+  expect(
+    await readCloudPollJob(cloudPollJobToken(revision), "loc-1"),
+  ).toBeNull();
+  returnedJob(null, { message: "offline" });
+  expect(
+    await readCloudPollJob(cloudPollJobToken(revision), "loc-1"),
+  ).toBeNull();
+});
+it("passes both queue timestamps into the atomic claim", async () => {
+  rpcMock.mockResolvedValue({
+    data: [{ ...revision, status: "sent" }],
+    error: null,
+  });
+  expect(await claimCloudPollJob("loc-1", revision)).toMatchObject({
+    status: "sent",
+  });
+  expect(rpcMock).toHaveBeenCalledWith("claim_cloud_poll_job", {
+    p_location_id: "loc-1",
+    p_job_id: revision.id,
+    p_created_at: revision.created_at,
+    p_requeued_at: null,
+  });
+});
+it("returns no claim after a competing revision change or database fault", async () => {
+  rpcMock
+    .mockResolvedValueOnce({ data: [], error: null })
+    .mockResolvedValueOnce({ data: null, error: { message: "offline" } });
+  expect(await claimCloudPollJob("loc-1", revision)).toBeNull();
+  expect(await claimCloudPollJob("loc-1", revision)).toBeNull();
 });

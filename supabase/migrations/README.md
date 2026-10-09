@@ -19,3 +19,11 @@ tables, RLS policies, and grants, applied in order.
 ## Parent
 
 See the repo root [README.md](../../README.md) for the full layout.
+
+Migration 0009 adds the service-only CloudPRNT revision claim wrapper. It
+locks the exact advertised queued row before calling the existing claim RPC;
+apply it before deploying the strict revision-token HTTP route.
+
+## Scoped administration predicates
+
+The latest migration limits `is_admin(uuid)` to the signed-in user or trusted service-role administration. Anonymous and foreign-user membership probing is denied; existing self-scoped RLS policies retain their behavior.

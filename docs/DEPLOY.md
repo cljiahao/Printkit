@@ -7,7 +7,8 @@ paykit/merqo), Vercel-deployed from `github.com/merqo-io/Printkit`.
 
 1. Create a Supabase project for printkit. Link it and apply migrations in
    order (`supabase link --project-ref <ref>` then `supabase db push`) —
-   `0001_printkit_core.sql` through `0004_printkit_realtime.sql`.
+   all committed migrations, currently `0001_printkit_core.sql` through `0009_cloud_poll_claim_revision.sql`.
+   Validate them against a disposable local database before applying them to the hosted project.
 2. Set Vercel env vars (see `.env.example` / `src/lib/env.ts` for the
    authoritative list):
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
@@ -16,11 +17,12 @@ paykit/merqo), Vercel-deployed from `github.com/merqo-io/Printkit`.
      only; leave unset in Preview (it doesn't run on merqo.io — setting it
      there breaks login instead of just failing to share it).
 3. Mint qkit's inbound bearer secret AND its outbound callback config in one
-   call: `node scripts/create-kit-key.mjs qkit https://qkit.merqo.io/api/printkit/print-status <callback-secret>`
+   call: pipe the callback secret from your secret manager into
+   `node scripts/create-kit-key.mjs qkit --callback-url https://qkit.merqo.io/api/printkit/print-status --callback-secret-stdin`
    (needs `NEXT_PUBLIC_SUPABASE_URL`/`SUPABASE_SECRET_KEY` in the shell env).
    The printed inbound secret goes into qkit's `PRINTKIT_KIT_SECRET` (raw,
    no `kit_slug:` prefix — qkit's own client code adds that); the
-   `<callback-secret>` you pass in must equal qkit's own
+   callback secret supplied through standard input must equal qkit's own
    `PRINTKIT_CALLBACK_SECRET`. Both the inbound secret and the outbound
    callback config now live in `kit_api_keys` — there is no printkit-side
    env var for either anymore.

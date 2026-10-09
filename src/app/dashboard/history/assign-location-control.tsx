@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAsyncAction } from "@/hooks/use-async-action";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,19 +25,17 @@ export function AssignLocationControl({
   jobId: string;
   locations: { id: string; label: string }[];
 }) {
-  const [pending, setPending] = useState(false);
+  const { pending, run } = useAsyncAction();
   const [selected, setSelected] = useState("");
 
-  const assign = async (locationId: string) => {
-    setPending(true);
-    const result = await assignPrintLocation(jobId, locationId);
-    setPending(false);
-    if (result.ok) {
-      toast.success("Booth assigned.");
-    } else {
-      toast.error(result.error);
-    }
-  };
+  const assign = (locationId: string) =>
+    run(async () => {
+      const result = await assignPrintLocation(jobId, locationId);
+      if (result.ok) toast.success("Booth assigned.");
+      else toast.error(result.error);
+    }).catch(() =>
+      toast.error("Could not assign the booth. Please try again."),
+    );
 
   if (locations.length === 0) return null;
 

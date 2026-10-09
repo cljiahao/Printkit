@@ -17,7 +17,7 @@ The authenticated vendor area (`/dashboard/*`).
   links live in the dashboard shell instead.
 - `dashboard-nav.tsx` — `DashboardNav`: composes `@merqo/ui`'s shared
   `DashboardNav`/`AccountMenu` — same shared-component contract every
-  sibling kit uses. Owns the printkit wordmark, the Overview/Bridge/History
+  sibling kit uses. Owns the printkit wordmark, the Overview/Printers/History
   nav links, active-route highlighting, and thin throw-adapting wrappers
   around `submitFeedbackAction`/`submitSupportMessageAction`
   (`@/app/actions/{feedback,support}`), which both return a
@@ -39,7 +39,7 @@ The authenticated vendor area (`/dashboard/*`).
   Tailwind color literals.
 - `page.tsx` / `page.dom.test.tsx` — dashboard overview: fetches
   `listActiveLocations` (`@/lib/print-locations`) and renders one
-  `BridgeStatus` per active location (empty-state message when there are
+  `PrinterStatusRow` per active location (empty-state message when there are
   none), a qkit connection info card, an unrouted-print-jobs callout (from
   `countUnroutedJobs`, `@/lib/print-jobs-list`) linking to
   `/dashboard/history?unrouted=1` when the count is above zero, and recent

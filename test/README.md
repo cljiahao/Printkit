@@ -23,3 +23,5 @@ that don't fit that shape.
 ## Parent
 
 See the repo root [README.md](../README.md) for the full layout.
+
+`operators/` holds Node tests for credential input parsing and the installer's unprivileged build fragment. Run `pnpm test:operators`; the installer checks use a fake npm executable and never execute privileged installation commands.

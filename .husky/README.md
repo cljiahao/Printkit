@@ -15,7 +15,7 @@ Smart App Control to block, unlike lefthook's unsigned `lefthook.exe`).
 - `lib/` — the real script bodies, all plain bash (`set -euo pipefail`) run
   via `exec bash`, not husky's `sh -e` dispatcher (see Connectivity):
   - `pre-commit.sh` — runs format/lint (`prettier`+`eslint --fix` on staged
-    `.ts/.tsx/.js/.mjs/.cjs`, piped through `xargs -d '\n'` so filenames with
+    `.ts/.tsx/.js/.mjs/.cjs`, piped through `tr '\n' '\0' | xargs -0` so filenames with
     spaces/quotes survive), `tsc --noEmit`, a frozen-lockfile install check
     when `package.json` is staged, a gitleaks secret-scan on staged files
     (if gitleaks is installed), then the README-coupling nudge and the
@@ -58,4 +58,4 @@ recorded in `.claude/harness.json`.
 
 ## Parent
 
-[paykit](../README.md)
+[printkit](../README.md)

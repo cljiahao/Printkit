@@ -16,3 +16,12 @@ describe("ReprintButton", () => {
     await waitFor(() => expect(reprintJobMock).toHaveBeenCalledWith("job-1"));
   });
 });
+
+it("re-enables the control when the action throws", async () => {
+  reprintJobMock.mockRejectedValueOnce(new Error("network unavailable"));
+  render(<ReprintButton jobId="job-1" />);
+  const button = screen.getByRole("button");
+  fireEvent.click(button);
+  expect(button).toBeDisabled();
+  await waitFor(() => expect(button).toBeEnabled());
+});

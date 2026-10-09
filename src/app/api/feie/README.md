@@ -9,7 +9,7 @@ job normally reaches `printed` or `failed` without printkit polling for it.
 ## Contents
 
 - `callback/route.ts` — `POST /api/feie/callback`. Form-encoded, verified
-  with SHA256withRSA over `orderId` + `status` + `stime` against
+  with SHA256withRSA over the sorted `name=value&...` form fields against
   `FEIE_CALLBACK_PUBLIC_KEY`. Anything unsigned, badly signed, or arriving
   while no public key is configured answers 401 and changes nothing: the
   route is reachable by anyone, so an unverified callback could otherwise

@@ -14,3 +14,5 @@ device token.
 ## Parent
 
 [bridge-agent](../README.md)
+
+Public pairing JSON is capped at 16 KiB of streamed bytes before pairing storage is queried. Oversized input returns 413 even without Content-Length or with an understated value; malformed JSON returns 400.

@@ -15,7 +15,7 @@ format only.
 
 - `star-cloudprnt.ts` — Star CloudPRNT v1 over HTTP: parses the poll's JSON
   body (normalising `printerMAC` so case and separators cannot fork the
-  device binding), answers `{jobReady}` with `image/png` and the job id as
+  device binding), answers `{jobReady}` with `image/png` and an opaque queue-revision
   `jobToken`, and reads the confirmation `DELETE`'s `code`. Star's protocol
   reference sends a URL-encoded status such as `200 OK` or `511 Media
 Decoding Error` and treats anything not starting with `2` as not printed;
@@ -25,20 +25,20 @@ Decoding Error` and treats anything not starting with `2` as not printed;
   import. `getCloudPollDriver(id)` returns null for a catalog entry whose
   driver does not exist yet, which the route turns into a 401 rather than a
   crash.
-- `service.ts` — `resolveDevice` (URL token to printer, by hash, refusing a
-  printer on another connector), `renderJobPng` (label at the printer's own
-  size and dpi), `awaitsConfirmation` (so a device can only confirm its own
-  location's job, and only while it is still `sent`), `latestSentJobId` (what a token-less confirmation from
-  older Star firmware refers to) and `logDeviceEvent` (audit trail for a token presented by
-  unexpected hardware).
+- `service.ts` — resolves printer credentials, renders labels, reads only
+  the printer's current token-bound job revision, claims that revision through
+  the service-only RPC, and records device audit events.
+- `job-token.ts` — validates and derives the versioned job/queue-revision
+  token using exact creation/requeue timestamps without Date conversion.
 
-## Firmware without job tokens
+## Firmware and deployment
 
-Star only added the `token` query parameter in later firmware (mC-Print3
-3.2+, mC-Label3 1.0+). Older firmware fetches and confirms without naming the
-job, so the route claims the oldest waiting job on a token-less `GET` and
-settles the location's most recently sent job on a token-less `DELETE`. A
-cloud_poll printer handles one job at a time, so this is unambiguous.
+Job-token support is required. Missing tokens and old bare job IDs cannot
+identify a queue revision safely and are rejected for fetch and confirmation.
+Apply migration 0009 before deploying the route, pause devices and drain or
+discard outstanding legacy jobs, then restart devices for fresh poll tokens.
+Upgrade older firmware before resuming; the endpoint's README lists the
+vendor-documented minimum versions. Confirm token echoing with actual hardware.
 
 ## Connectivity
 

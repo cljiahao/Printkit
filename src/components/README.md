@@ -8,10 +8,6 @@ else sits flat here.
 
 ## Contents
 
-- `back-button.tsx` — `BackButton({ href, label })`: a shadcn
-  `Button asChild variant="ghost"` + `ArrowLeft` "leave this page" link.
-  Used in place of a plain underlined `<Link>` so the back-to-dashboard nav
-  is a real hit target with hover/focus state.
 - `printer-status-row.tsx` — `PrinterStatusRow({ label, printerName, state,
 lastSeenAt })`: one booth's printer and whether it is reachable. It renders
   what the server already read from `printers.last_seen_at`, the health
@@ -34,12 +30,9 @@ lastSeenAt })`: one booth's printer and whether it is reachable. It renders
 
 ## Connectivity
 
-`BackButton` is not yet wired to any dashboard route — the dashboard now has
-real content (see `src/app/dashboard/README.md`) but none of its routes need
-a "back" link yet. `elevated-card.tsx` is used by `login/page.tsx` and
+`elevated-card.tsx` is used by `login/page.tsx` and
 `src/app/error.tsx`. `wordmark.tsx` is used by `src/app/error.tsx` and
-`src/app/login/page.tsx` (not by `src/app/page.tsx`, which is a bare
-placeholder). `printer-status-row.tsx` is used by `src/app/dashboard/page.tsx`.
+`src/app/login/page.tsx` (not by `src/app/page.tsx`, which redirects to `/dashboard`). `printer-status-row.tsx` is used by `src/app/dashboard/page.tsx`.
 `ui/` is used throughout `src/app/` and `src/components/`.
 
 ## Parent

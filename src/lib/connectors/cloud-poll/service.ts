@@ -3,6 +3,12 @@ import { getPrinterByTokenHash, type PrinterRow } from "@/lib/printers";
 import { renderJobForPrinter } from "@/lib/render-job";
 import { createServiceClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/types";
+import type { ClaimedJob } from "@/lib/job-dispatch";
+import {
+  cloudPollJobId,
+  cloudPollJobToken,
+  type CloudPollRevision,
+} from "./job-token";
 
 /**
  * Resolves the device's URL token to its printer. The token is the whole
@@ -27,56 +33,43 @@ export async function renderJobPng(
   return renderJobForPrinter(job.payload, printer);
 }
 
-/**
- * Whether this device may report an outcome for a job: it must be at the
- * device's own location, or a printer holding one token could mark another
- * printer's jobs printed, and still `sent`, so a late or repeated
- * confirmation cannot overwrite a job the vendor has since requeued.
- */
-export async function awaitsConfirmation(
-  jobId: string,
+// The device credential scopes the location; the opaque token scopes its revision.
+export async function readCloudPollJob(
+  token: string | null,
   locationId: string,
-): Promise<boolean> {
+): Promise<ClaimedJob | null> {
+  const jobId = cloudPollJobId(token);
+  if (!jobId) return null;
   const supabase = await createServiceClient();
   const { data, error } = await supabase
     .from("print_jobs")
-    .select("id")
+    .select("*")
     .eq("id", jobId)
     .eq("location_id", locationId)
-    .eq("status", "sent")
     .maybeSingle();
-
   if (error) {
-    console.error("awaitsConfirmation failed", error.message);
-    return false;
-  }
-  return data !== null;
-}
-
-/**
- * The job a token-less confirmation refers to. Star firmware older than
- * token support (for example mC-Print3 before 3.2) confirms without naming
- * the job, so the only honest reading is "the one this location sent
- * last": a cloud_poll printer fetches one job at a time.
- */
-export async function latestSentJobId(
-  locationId: string,
-): Promise<string | null> {
-  const supabase = await createServiceClient();
-  const { data, error } = await supabase
-    .from("print_jobs")
-    .select("id")
-    .eq("location_id", locationId)
-    .eq("status", "sent")
-    .order("sent_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("latestSentJobId failed", error.message);
+    console.error("readCloudPollJob failed", error.message);
     return null;
   }
-  return data?.id ?? null;
+  return data && cloudPollJobToken(data) === token ? data : null;
+}
+
+export async function claimCloudPollJob(
+  locationId: string,
+  revision: CloudPollRevision,
+): Promise<ClaimedJob | null> {
+  const supabase = await createServiceClient();
+  const { data, error } = await supabase.rpc("claim_cloud_poll_job", {
+    p_location_id: locationId,
+    p_job_id: revision.id,
+    p_created_at: revision.created_at,
+    p_requeued_at: revision.requeued_at,
+  });
+  if (error) {
+    console.error("claimCloudPollJob failed", error.message);
+    return null;
+  }
+  return data?.[0] ?? null;
 }
 
 /**

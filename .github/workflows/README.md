@@ -10,7 +10,7 @@ secret scan, dependency audit).
 ## Contents
 
 - `ci.yml` — triggers on push to `main` and on every PR. Jobs: `test`
-  ("check + unit" — harness-integrity check, `pnpm check`, `pnpm test`, then
+  ("check + unit" — harness-integrity check, `pnpm check`, `pnpm exec vitest --run --coverage`, then
   a changed-line coverage gate via `diff-cover` against `origin/main`,
   failing under 80%); `db` ("db (migrations + pgTAP RLS)"); `build` ("build
   (next build)" — `pnpm build` with dummy Supabase env vars); `mutation`
@@ -36,3 +36,5 @@ secret scan, dependency audit).
 ## Parent
 
 [.github](../README.md)
+
+The unit suite runs once with coverage. Vitest enforces at least 80% statements, branches, functions and lines over production source; any existing changed-line coverage gate remains in place.

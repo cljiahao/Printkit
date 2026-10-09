@@ -25,6 +25,10 @@ print-status callback is kit-agnostic too — configured per calling kit in
 module) out of the bundle and traces `src/assets/fonts/` into every API
 route.
 
+Use Node 24 and pnpm 11.10.0 (the `packageManager` pin) for reproducible installs.
+The build allowlist grants only the locked shared-UI commit, esbuild and
+unrs-resolver; Sharp uses optional prebuilt packages without an install script.
+
 See `AGENTS.md` for the full stack, commands, and data model. A vendor can
 pair a separate physical bridge/printer to each of their booths, not just
 one shared bridge per vendor — see `print_locations` in `AGENTS.md`'s
@@ -43,7 +47,7 @@ for the security context). The Vercel build does not use
 
 Shared dashboard nav/account menu, and now `JobStatusBadge`'s shared
 `StatusBadge` shape, come from `@merqo/ui`
-(`github:merqo-io/merqo-ui#v0.30.0`, `package.json` — bumped 2026-09-15 for
+(`github:merqo-io/merqo-ui#989d934c1cc8d957ff383934debf8ef083b6b6a4`, `package.json`). This audited source includes shared client-boundary and account-menu hardening; login uses its shared `GoogleMark` instead of a local copy. Earlier releases added
 `DashboardTours`, a route-matched multi-tour router for kits with more than
 one dashboard-page tour; purely additive, this kit's own `DashboardTour`
 usage is unchanged; bumped again 2026-09-16 for per-kit terms-schedule
@@ -67,3 +71,8 @@ A vendor can now reprint an already-`printed` label, not just a `failed`
 one — see `src/app/dashboard/history/README.md`'s `reprintJob` entry.
 
 `e2e/` holds the Playwright public smoke and auth-guard specs, run with `pnpm test:e2e` (see its own README).
+
+Audit progress and validation limits are recorded in
+[the October 2026 audit](docs/audits/2026-10-08-printkit-audit.md).
+Device result handlers report persistence failures and recheck delivery state
+in the update. Feie callbacks also bind the update to the signed attempt ID.

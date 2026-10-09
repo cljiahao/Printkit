@@ -138,32 +138,47 @@ export async function bindDeviceRef(
  * it. A poll only answers "is there work", so claiming there would burn the
  * job if the device never came back for it.
  */
-export async function peekClaimableJob(
-  locationId: string,
-): Promise<{ id: string } | null> {
+export async function peekClaimableJob(locationId: string): Promise<{
+  id: string;
+  created_at: string;
+  requeued_at: string | null;
+} | null> {
   const supabase = await createServiceClient();
   const cutoff = new Date(Date.now() - JOB_EXPIRY_MS).toISOString();
-  const { data, error } = await supabase
-    .from("print_jobs")
-    .select("id, created_at, requeued_at")
-    .eq("location_id", locationId)
-    .eq("status", "queued")
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("peekClaimableJob failed", error.message);
+  const query = () =>
+    supabase
+      .from("print_jobs")
+      .select("id, created_at, requeued_at")
+      .eq("location_id", locationId)
+      .eq("status", "queued");
+  const [fresh, requeued] = await Promise.all([
+    query()
+      .is("requeued_at", null)
+      .gt("created_at", cutoff)
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(1),
+    query()
+      .gt("requeued_at", cutoff)
+      .order("requeued_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(1),
+  ]);
+  if (fresh.error || requeued.error) {
+    console.error(
+      "peekClaimableJob failed",
+      fresh.error?.message ?? requeued.error?.message,
+    );
     return null;
   }
-
-  const claimable = (data ?? [])
-    .filter((row) => (row.requeued_at ?? row.created_at) > cutoff)
-    .sort((a, b) =>
-      (a.requeued_at ?? a.created_at).localeCompare(
-        b.requeued_at ?? b.created_at,
-      ),
-    );
-
-  return claimable[0] ? { id: claimable[0].id } : null;
+  const candidates = [...(fresh.data ?? []), ...(requeued.data ?? [])];
+  candidates.sort((a, b) => {
+    const delta =
+      Date.parse(a.requeued_at ?? a.created_at) -
+      Date.parse(b.requeued_at ?? b.created_at);
+    return delta || a.id.localeCompare(b.id);
+  });
+  return candidates[0] ?? null;
 }
 
 /**

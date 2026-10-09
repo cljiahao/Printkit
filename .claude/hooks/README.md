@@ -22,11 +22,10 @@ harness.
   feedback-only, never blocks.
 - `post-tool-failure.sh` — PostToolUseFailure: writes the failed tool's
   name/error to stderr so the model can self-correct; always exits 0.
-- `protect-files.sh` — PreToolUse(Edit|Write): hard-blocks (exit 2) writes
-  to `.env*` (except `.env.example`), CI/CD pipeline files, secrets
-  directories, and cert/credential files; asks for human approval on other
-  protected files (`AGENTS.md`/`CLAUDE.md`, `docs/CONSTITUTION.md`,
-  `.claude/settings.json`, `.claude/harness.json`, `.claude/settings.local.json`).
+- `protect-files.sh` — PreToolUse(Read|Edit|Write): normalizes Windows paths and
+  denies reads/writes of secret environment files (except blank templates),
+  secret directories and credentials. Governance and CI/CD writes require
+  approval; governance reads are permitted.
 - `session-context.sh` — SessionStart(startup|resume|clear|compact):
   re-injects the first 30 lines of `AGENTS.md`.
 - `skill-usage-log.sh` — PostToolUse(`Skill__.*`): appends a
@@ -37,8 +36,8 @@ harness.
 - `subagent-stop.sh` — SubagentStop: if a subagent left uncommitted
   `.ts`/`.tsx` changes, runs `tsc --noEmit` and exits 2 with the last 20
   lines of errors, blocking a handback of broken code.
-- `user-prompt-guard.cjs` — UserPromptSubmit: OWASP LLM01 prompt-injection
-  phrase guard plus LLM02 credential-leak detection; exit 2 blocks.
+- `user-prompt-guard.cjs` — UserPromptSubmit: injection phrases emit advisory
+  context; detected credentials block the prompt with exit 2.
 
 ## Connectivity
 

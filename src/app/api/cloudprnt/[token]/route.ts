@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { RequestBodyError } from "@/lib/bounded-json";
 import {
   resolveDevice,
   renderJobPng,
   logDeviceEvent,
-  awaitsConfirmation,
-  latestSentJobId,
+  readCloudPollJob,
+  claimCloudPollJob,
 } from "@/lib/connectors/cloud-poll/service";
 import { getCloudPollDriver } from "@/lib/connectors/cloud-poll/drivers";
 import {
@@ -13,7 +14,8 @@ import {
   bindDeviceRef,
   type PrinterRow,
 } from "@/lib/printers";
-import { claimJob, sweepLocation } from "@/lib/job-dispatch";
+import { sweepLocation } from "@/lib/job-dispatch";
+import { cloudPollJobToken } from "@/lib/connectors/cloud-poll/job-token";
 import { updatePrintJobStatus } from "@/lib/print-jobs";
 import type { CloudPollDriver } from "@/lib/connectors/types";
 
@@ -72,23 +74,40 @@ export async function POST(request: Request, context: RouteContext) {
   const device = await openDevice(context);
   if (!device) return unauthorized();
 
-  const poll = await device.driver.parsePoll(request);
+  let poll;
+  try {
+    poll = await device.driver.parsePoll(request);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json(
+        { error: "Invalid request" },
+        { status: error.status },
+      );
+    }
+    throw error;
+  }
   if (!(await deviceMatches(device.printer, poll.deviceRef))) {
     return unauthorized();
   }
 
   const job = await peekClaimableJob(device.printer.location_id);
-  return device.driver.pollResponse(job);
+  return device.driver.pollResponse(
+    job ? { id: cloudPollJobToken(job) } : null,
+  );
 }
 
 export async function GET(request: Request, context: RouteContext) {
   const device = await openDevice(context);
   if (!device) return unauthorized();
 
-  // Firmware without token support fetches without naming the job; it then
-  // gets the oldest one waiting, which is what its poll was told about.
-  const jobId = new URL(request.url).searchParams.get("token") ?? undefined;
-  const job = await claimJob(device.printer.location_id, jobId);
+  const token = new URL(request.url).searchParams.get("token");
+  const revision = await readCloudPollJob(token, device.printer.location_id);
+  if (!revision || revision.status !== "queued")
+    return NextResponse.json(
+      { error: "Unknown job revision" },
+      { status: 404 },
+    );
+  const job = await claimCloudPollJob(device.printer.location_id, revision);
   if (!job) {
     return NextResponse.json({ error: "Unknown job" }, { status: 404 });
   }
@@ -102,22 +121,37 @@ export async function DELETE(request: Request, context: RouteContext) {
   if (!device) return unauthorized();
 
   const confirmation = device.driver.parseConfirmation(request);
-  const jobId =
-    confirmation.jobId ?? (await latestSentJobId(device.printer.location_id));
-  if (!jobId) {
-    return NextResponse.json({ error: "Unknown job" }, { status: 404 });
-  }
+  const job = await readCloudPollJob(
+    confirmation.jobId,
+    device.printer.location_id,
+  );
+  if (!job)
+    return NextResponse.json(
+      { error: "Unknown job revision" },
+      { status: 404 },
+    );
+  if (job.status === confirmation.outcome)
+    return NextResponse.json({ ok: true });
+  if (job.status !== "sent" || !job.sent_at)
+    return NextResponse.json(
+      { error: "Print attempt is no longer pending" },
+      { status: 409 },
+    );
 
-  const owned = await awaitsConfirmation(jobId, device.printer.location_id);
-  if (!owned) {
-    return NextResponse.json({ error: "Unknown job" }, { status: 404 });
-  }
-
-  await updatePrintJobStatus(
-    jobId,
+  const result = await updatePrintJobStatus(
+    job.id,
     confirmation.outcome,
     confirmation.outcome === "failed" ? "device_reported_error" : undefined,
+    {
+      locationId: device.printer.location_id,
+      expectedStatus: "sent",
+      sentAt: job.sent_at,
+      requeuedAt: job.requeued_at,
+    },
   );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

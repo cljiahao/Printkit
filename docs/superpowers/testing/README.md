@@ -19,3 +19,5 @@ person runs against real devices, with pass criteria and negative checks.
 ## Parent
 
 [docs](../../README.md)
+
+Result-persistence failures, stale attempts and request-size boundaries are covered by application regressions. Printer/firmware compatibility and real vendor callbacks still require the hardware plan.

@@ -15,6 +15,7 @@ INSTALL_DIR=/opt/printkit-bridge
 SERVICE_USER="${SUDO_USER:-$USER}"
 SERVICE_HOME="$(getent passwd "$SERVICE_USER" | cut -d: -f6)"
 UNIT_NAME="printkit-bridge@${SERVICE_USER}.service"
+SERVICE_GROUP="$(id -gn "$SERVICE_USER")"
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -32,6 +33,11 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ ! -f "$SOURCE_DIR/package-lock.json" ]; then
+  echo "The reviewed bridge package-lock.json is required." >&2
+  exit 1
+fi
+
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 if [ "$NODE_MAJOR" -lt 24 ]; then
   echo "Node ${NODE_MAJOR} is too old. Install Node 24 or newer." >&2
@@ -45,19 +51,24 @@ apt-get install -y bluetooth bluez libbluetooth-dev libudev-dev \
   build-essential python3
 
 echo "Building the agent"
-sudo -u "$SERVICE_USER" sh -c \
-  "cd '$SOURCE_DIR' && npm install --no-audit --no-fund && npm run build"
+sudo -u "$SERVICE_USER" sh -c '
+  set -eu
+  cd "$1"
+  npm ci --ignore-scripts --no-audit --no-fund
+  npm rebuild --foreground-scripts @serialport/bindings-cpp @stoprocent/bluetooth-hci-socket @stoprocent/noble usb
+  npm run build
+  npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+' sh "$SOURCE_DIR"
 
 echo "Installing the agent into ${INSTALL_DIR}"
 install -d -m 0755 "$INSTALL_DIR"
-rm -rf "${INSTALL_DIR}/dist"
-cp -R "$SOURCE_DIR/dist" "$SOURCE_DIR/package.json" "$INSTALL_DIR/"
-(cd "$INSTALL_DIR" && npm install --omit=dev --no-audit --no-fund)
+rm -rf "${INSTALL_DIR}/dist" "${INSTALL_DIR}/node_modules"
+cp -R "$SOURCE_DIR/dist" "$SOURCE_DIR/node_modules" "$SOURCE_DIR/package.json" "$SOURCE_DIR/package-lock.json" "$INSTALL_DIR/"
 chmod 0755 "${INSTALL_DIR}/dist/cli.js"
 ln -sf "${INSTALL_DIR}/dist/cli.js" /usr/local/bin/printkit-bridge
 
 # The service may only write here, so it has to exist before it starts.
-install -d -m 0700 -o "$SERVICE_USER" -g "$SERVICE_USER" \
+install -d -m 0700 -o "$SERVICE_USER" -g "$SERVICE_GROUP" \
   "${SERVICE_HOME}/.printkit-bridge"
 
 echo "Registering the service as ${UNIT_NAME}"

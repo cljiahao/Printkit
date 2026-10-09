@@ -32,3 +32,5 @@ The agent program itself lives in `bridge-agent/` at the repo root.
 ## Parent
 
 [v1](../README.md)
+
+Pairing bodies are size bounded. Result reports conditionally match the current sent attempt and location; persistence failure returns a retryable server error rather than a successful acknowledgement.

@@ -4,6 +4,20 @@ import sonarjs from "eslint-plugin-sonarjs";
 const eslintConfig = [
   ...next,
   {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "sonarjs/no-unused-vars": "off",
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".next/**",

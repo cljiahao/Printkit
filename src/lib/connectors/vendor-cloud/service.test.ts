@@ -15,6 +15,7 @@ vi.mock("@/lib/print-jobs", () => ({
 }));
 
 const updateMock = vi.fn();
+const updateEqMock = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createServiceClient: () =>
     Promise.resolve({ from: () => ({ update: updateMock }) }),
@@ -40,6 +41,7 @@ const printer = {
 const job = {
   id: "job-1",
   payload: { customer_name: "Ada", order_number: "7" },
+  sent_at: "2026-10-08T12:00:00Z",
 };
 
 beforeEach(() => {
@@ -51,9 +53,14 @@ beforeEach(() => {
     queryJob: queryJobMock,
   });
   updatePrintJobStatusMock.mockClear();
-  updateMock.mockReset().mockReturnValue({
-    eq: () => Promise.resolve({ error: null }),
+  let filters = 0;
+  updateEqMock.mockReset().mockImplementation(() => {
+    filters += 1;
+    return filters === 4
+      ? Promise.resolve({ error: null })
+      : { eq: updateEqMock };
   });
+  updateMock.mockReset().mockReturnValue({ eq: updateEqMock });
 });
 
 describe("sendVendorCloudJob", () => {
@@ -75,6 +82,7 @@ describe("sendVendorCloudJob", () => {
       "job-1",
       "failed",
       "driver_error",
+      { locationId: "loc-1", expectedStatus: "sent", sentAt: job.sent_at },
     );
   });
 
@@ -86,6 +94,7 @@ describe("sendVendorCloudJob", () => {
       "job-1",
       "failed",
       "printer_offline",
+      { locationId: "loc-1", expectedStatus: "sent", sentAt: job.sent_at },
     );
   });
 
@@ -98,6 +107,7 @@ describe("sendVendorCloudJob", () => {
       "job-1",
       "failed",
       "driver_error",
+      { locationId: "loc-1", expectedStatus: "sent", sentAt: job.sent_at },
     );
   });
 });
@@ -111,7 +121,16 @@ describe("reconcileVendorCloudJob", () => {
       printer,
     );
 
-    expect(updatePrintJobStatusMock).toHaveBeenCalledWith("job-1", "printed");
+    expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+      "job-1",
+      "printed",
+      undefined,
+      expect.objectContaining({
+        locationId: "loc-1",
+        expectedStatus: "sent",
+        driverRef: "order-9",
+      }),
+    );
   });
 
   it("leaves a job the maker is still holding", async () => {
@@ -129,4 +148,51 @@ describe("reconcileVendorCloudJob", () => {
     expect(queryJobMock).not.toHaveBeenCalled();
     expect(updatePrintJobStatusMock).not.toHaveBeenCalled();
   });
+});
+
+it("pins delayed reconciliation to the observed attempt", async () => {
+  queryJobMock.mockResolvedValue("failed");
+  const sent = "2026-10-08T00:00:00Z";
+  expect(
+    await reconcileVendorCloudJob(
+      { id: "job-1", driver_ref: "old-ref", sent_at: sent },
+      printer,
+    ),
+  ).toBe(true);
+  expect(updatePrintJobStatusMock).toHaveBeenCalledWith(
+    "job-1",
+    "failed",
+    "driver_error",
+    {
+      locationId: "loc-1",
+      expectedStatus: "sent",
+      driverRef: "old-ref",
+      sentAt: sent,
+    },
+  );
+});
+
+it("pins a delayed cloud acknowledgement to its original sent attempt", async () => {
+  let finish!: (value: { ok: true; driverRef: string }) => void;
+  sendMock.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const sending = sendVendorCloudJob(job, printer);
+  finish({ ok: true, driverRef: "old-maker-reference" });
+  await sending;
+  expect(updateEqMock.mock.calls).toEqual([
+    ["id", job.id],
+    ["location_id", printer.location_id],
+    ["status", "sent"],
+    ["sent_at", job.sent_at],
+  ]);
+});
+
+it("does not send an unclaimed job", async () => {
+  await sendVendorCloudJob({ ...job, sent_at: null }, printer);
+  expect(sendMock).not.toHaveBeenCalled();
+  expect(updateMock).not.toHaveBeenCalled();
 });

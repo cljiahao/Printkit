@@ -326,3 +326,21 @@ describe("readPrinterState", () => {
     expect(await readPrinterState("loc-9")).toBe("not_set_up");
   });
 });
+
+it("refuses URL credentials for a bridge or brand-cloud model", async () => {
+  for (const model of ["niimbot-b1", "feie-fp-n20h"]) {
+    expect((await createPrinterUrl("loc-1", model)).ok).toBe(false);
+  }
+  expect(mintDeviceCredentialMock).not.toHaveBeenCalled();
+});
+
+it("does not expose a virtual printer through the production setup action", async () => {
+  vi.stubEnv("VERCEL_ENV", "production");
+  try {
+    expect((await createPrinterUrl("loc-1", "virtual")).ok).toBe(false);
+    expect(createPrinterMock).not.toHaveBeenCalled();
+    expect(mintDeviceCredentialMock).not.toHaveBeenCalled();
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});

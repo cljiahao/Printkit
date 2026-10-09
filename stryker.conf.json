@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
-  "_comment": "Mutation testing is scoped to src/lib — the pure, fast, deterministic business logic (EMVCo builder, tx state machine, Zod schemas). Components/actions/supabase clients are excluded: I/O- or DOM-bound, low-signal.",
+  "_comment": "Mutation testing targets src/lib; generated database types, tests and Supabase adapters are excluded.",
   "testRunner": "vitest",
   "plugins": ["@stryker-mutator/vitest-runner"],
   "coverageAnalysis": "perTest",

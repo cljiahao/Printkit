@@ -31,6 +31,7 @@ const JOB: PrintJob = {
 const UNROUTED_JOB: PrintJob = {
   ...JOB,
   id: "job-2",
+  status: "queued",
   location_id: null,
   print_locations: null,
 };
@@ -160,4 +161,16 @@ describe("JobHistoryTable", () => {
       screen.queryByRole("button", { name: /assign/i }),
     ).not.toBeInTheDocument();
   });
+});
+
+it("does not offer assignment for unrouted terminal jobs", () => {
+  render(
+    <JobHistoryTable
+      jobs={[{ ...UNROUTED_JOB, status: "printed" }]}
+      locations={[{ id: "loc-1", label: "Booth" }]}
+    />,
+  );
+  expect(
+    screen.queryByRole("button", { name: /assign/i }),
+  ).not.toBeInTheDocument();
 });

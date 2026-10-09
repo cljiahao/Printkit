@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const insertMock = vi.fn();
 const updateMock = vi.fn();
+const codeHashQueryMock = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createServiceClient: () =>
     Promise.resolve({
@@ -18,25 +19,29 @@ import { hashDeviceToken } from "./device-credentials";
 
 function redeemReturns(printerId: string | null, error: unknown = null) {
   updateMock.mockReturnValue({
-    eq: (_col: string, value: string) => ({
-      is: () => ({
-        gt: () => ({
-          select: () => ({
-            maybeSingle: () =>
-              Promise.resolve({
-                data: printerId ? { printer_id: printerId, value } : null,
-                error,
-              }),
+    eq: (col: string, value: string) => {
+      codeHashQueryMock(col, value);
+      return {
+        is: () => ({
+          gt: () => ({
+            select: () => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data: printerId ? { printer_id: printerId, value } : null,
+                  error,
+                }),
+            }),
           }),
         }),
-      }),
-    }),
+      };
+    },
   });
 }
 
 beforeEach(() => {
   insertMock.mockReset().mockResolvedValue({ error: null });
   updateMock.mockReset();
+  codeHashQueryMock.mockClear();
 });
 
 describe("createPairingCode", () => {
@@ -81,12 +86,13 @@ describe("redeemPairingCode", () => {
 
   it("accepts the code as the vendor sees it, with its dash", async () => {
     redeemReturns("printer-1");
-    await redeemPairingCode(formatPairingCode("ABCD2345"));
-
-    const call = updateMock.mock.results[0].value as {
-      eq: (col: string, value: string) => unknown;
-    };
-    expect(call).toBeDefined();
+    expect(await redeemPairingCode(formatPairingCode("ABCD2345"))).toBe(
+      "printer-1",
+    );
+    expect(codeHashQueryMock).toHaveBeenCalledWith(
+      "code_hash",
+      hashDeviceToken("ABCD2345"),
+    );
   });
 
   it("refuses an unknown, used or expired code", async () => {

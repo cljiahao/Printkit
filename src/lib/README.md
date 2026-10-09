@@ -188,3 +188,9 @@ concern — see its README.
 ## Parent
 
 [printkit](../../README.md)
+
+Device result callers supply atomic location/state/attempt predicates to
+updatePrintJobStatus. A rejected predicate or database error returns ok:false
+and never sends a terminal kit callback.
+
+`bounded-body.ts` caps streamed request bytes before parsing. `bounded-json.ts` parses bounded JSON and form bodies, rejecting malformed Content-Length and JSON UTF-8 while cancelling oversized input. Public pairing and Feie callbacks use 16 KiB; authenticated CloudPRNT polling uses 64 KiB.

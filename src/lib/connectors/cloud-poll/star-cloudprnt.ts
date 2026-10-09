@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readBoundedJson, RequestBodyError } from "@/lib/bounded-json";
 import type {
   CloudPollDriver,
   ConfirmResult,
@@ -36,7 +37,7 @@ export const starCloudPrntDriver: CloudPollDriver = {
 
   async parsePoll(request: Request): Promise<PollInfo> {
     try {
-      const body: unknown = await request.json();
+      const body: unknown = await readBoundedJson(request, 64 * 1024);
       const record = (
         typeof body === "object" && body !== null ? body : {}
       ) as Record<string, unknown>;
@@ -44,7 +45,9 @@ export const starCloudPrntDriver: CloudPollDriver = {
         deviceRef: normaliseMac(record.printerMAC),
         ready: true,
       };
-    } catch {
+    } catch (error) {
+      if (error instanceof RequestBodyError && error.status === 413)
+        throw error;
       return { deviceRef: null, ready: true };
     }
   },

@@ -80,3 +80,18 @@ describe("useWakeLock", () => {
     expect(release).toHaveBeenCalled();
   });
 });
+
+it("releases a wake lock that resolves after unmount", async () => {
+  let finish: (lock: { release: () => Promise<void> }) => void = () => {};
+  request.mockReturnValueOnce(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const { unmount } = renderHook(() => useWakeLock(true));
+  unmount();
+  finish({ release });
+  await Promise.resolve();
+  await Promise.resolve();
+  expect(release).toHaveBeenCalledOnce();
+});

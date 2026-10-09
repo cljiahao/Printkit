@@ -36,3 +36,8 @@ on `@/lib/printers` (printer creation) and `@/lib/device-credentials`
 ## Parent
 
 [dashboard](../../README.md)
+
+Preview history keeps only the most recent twenty labels. Discarded previews
+and all previews on unmount release their object URLs. A download finishing
+after unmount creates no preview and sends no success acknowledgement. Start
+failures reset the busy state and show a retry message.

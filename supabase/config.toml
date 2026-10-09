@@ -18,10 +18,10 @@ extra_search_path = ["printkit", "extensions"]
 max_rows = 1000
 # Controls whether new tables, views, sequences and functions created in the `public` schema by
 # `postgres` are reachable through the Data API roles (`anon`, `authenticated`, `service_role`)
-# without explicit GRANTs. Kept unset/off: printkit's migrations grant Data API access explicitly
+# without explicit GRANTs. Kept explicitly off: printkit's migrations grant Data API access explicitly
 # (see `supabase/migrations/0001_printkit_core.sql`'s column-scoped GRANTs), matching the sibling
 # repo qkit's rationale for the same setting.
-# auto_expose_new_tables = true
+auto_expose_new_tables = false
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.

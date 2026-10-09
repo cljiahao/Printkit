@@ -7,3 +7,5 @@
 - `superpowers/` — per-feature specs (`specs/`), implementation plans
   (`plans/`) and manual/hardware test plans (`testing/`). Granular per-task history for the MVP build itself lives at
   `.superpowers/sdd/` (repo root, outside `docs/`).
+
+`audits/` records the reviewed application checkpoint and outstanding database, bridge dependency and physical hardware validation.

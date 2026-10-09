@@ -32,3 +32,5 @@ via `resolveActiveLocation` (`@/lib/print-locations`) before inserting.
 ## Parent
 
 [src/app](../../../README.md)
+
+Request parsing rejects oversized bodies before privileged creation. Connector payload byte limits are enforced separately before dispatch.

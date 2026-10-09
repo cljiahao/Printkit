@@ -67,3 +67,5 @@ Driven by `../../job-dispatch.ts` (dispatch and sweep) and
 ## Parent
 
 [connectors](../README.md)
+
+Reconciliation and callbacks conditionally persist against the captured sent attempt. Transient lookup/write failures request retry; stale or unknown attempts remain idempotent acknowledgements.

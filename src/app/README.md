@@ -60,3 +60,5 @@ marketing footer. No `admin/` directory exists yet.
 ## Parent
 
 [src](../README.md)
+
+Request boundaries use bounded body parsing before privileged work. Pending form states and bridge wake-lock cleanup are covered by component regressions.

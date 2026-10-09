@@ -33,3 +33,5 @@ folder's job is entirely to collect the vendor's consent and forward it.
 ## Parent
 
 [legal](../README.md)
+
+Regression fixtures restore environment and transport mocks between tests so missing-configuration and failure cases cannot leak state into later cases.

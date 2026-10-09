@@ -7,9 +7,7 @@ for the one MVP build; this is the standing backlog going forward).
 
 ## Contents
 
-Empty for now — printkit has no standing backlog yet. The first registry
-gets added here once v0.1 ships and there's a real "what's next" list to
-track.
+- `2026-10-10-component-reuse-spec.md` records component cleanup scope, preserved printer contracts and validation requirements.
 
 ## Parent
 

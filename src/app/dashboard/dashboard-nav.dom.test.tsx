@@ -11,7 +11,9 @@ import { DashboardNav } from "./dashboard-nav";
 describe("DashboardNav", () => {
   it("renders the printkit wordmark and vendor name", () => {
     render(<DashboardNav signOut={vi.fn()} vendorName="Ada's Prints" />);
-    expect(screen.getByText("printkit")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "printkit dashboard home" }),
+    ).toHaveTextContent("PrintKit");
     expect(screen.getAllByText("Ada's Prints").length).toBeGreaterThan(0);
   });
 });

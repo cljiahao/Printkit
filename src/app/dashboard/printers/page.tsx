@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getVendorSession } from "@/lib/vendor-session";
-import { listActiveLocations } from "@/lib/print-locations";
-import { getPrinterByLocation, printerState } from "@/lib/printers";
+import { listLocationPrinterSummaries } from "@/lib/location-printer-summaries";
 import { getCatalogEntry } from "@/lib/printer-catalog";
 import { PrinterStatusRow } from "@/components/printer-status-row";
 import { Button } from "@/components/ui/button";
@@ -14,14 +13,7 @@ const CONNECTOR_LABEL: Record<string, string> = {
 
 export default async function PrintersPage() {
   const { user } = await getVendorSession();
-  const locations = await listActiveLocations(user.id);
-
-  const rows = await Promise.all(
-    locations.map(async (location) => ({
-      location,
-      printer: await getPrinterByLocation(location.id),
-    })),
-  );
+  const rows = await listLocationPrinterSummaries(user.id);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -38,7 +30,7 @@ export default async function PrintersPage() {
         </p>
       ) : (
         <ul className="mt-6 space-y-3">
-          {rows.map(({ location, printer }) => (
+          {rows.map(({ location, printer, state }) => (
             <li
               key={location.id}
               className="border-border rounded-lg border p-4"
@@ -46,9 +38,7 @@ export default async function PrintersPage() {
               <PrinterStatusRow
                 label={location.label}
                 printerName={printer?.display_name ?? null}
-                state={
-                  printer ? printerState(printer.last_seen_at) : "not_set_up"
-                }
+                state={state}
                 lastSeenAt={printer?.last_seen_at ?? null}
               />
 

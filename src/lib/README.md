@@ -172,12 +172,8 @@ everything else sits flat here.
   returns.
 - `env.ts` â€” `publicEnv`: required-env-var accessors that throw at import
   time if unset, instead of silently reading `undefined`.
-- `utils.ts` â€” `cn()` (clsx + tailwind-merge), `formatDate()` (a
-  `date`-column "YYYY-MM-DD" string -> display date, parsed/formatted with
-  an explicit UTC anchor so it never shifts by a day depending on the
-  server's runtime timezone), and `formatDateTime()` (a `timestamptz`
-  string -> display date+time, pinned to `en-SG`/`Asia/Singapore` for the
-  same reason).
+- `utils.ts` — `cn()` merges utility classes; `formatDateTime()` formats timestamps in the Singapore timezone.
+- `location-printer-summaries.ts` — reads active locations and batches minimal printer summaries, scoped by vendor and location IDs, for overview and printers pages.
 
 ## Connectivity
 

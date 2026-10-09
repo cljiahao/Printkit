@@ -13,7 +13,7 @@ is online or it is not.
 ## Contents
 
 - `page.tsx` — one row per booth: the printer, whether it is online (from
-  the shared `last_seen_at` signal), what kind it is in plain words, and the
+  the shared `last_seen_at` signal), loaded through one vendor-scoped printer summary query, what kind it is in plain words, and the
   one action that makes sense next. A booth with no printer offers only
   "Choose a printer"; a Bluetooth booth also offers Bridge mode.
 - `new/page.tsx` and `new/printer-picker.tsx` — the picker. Cards come from
@@ -26,7 +26,7 @@ is online or it is not.
   Every badge carries an `InfoButton`, so a vendor can find out what "4G" or
   "untested" means without leaving the page. A Bluetooth card says it is the
   most setup and links to the guide before the vendor can continue.
-- `setup/page.tsx`, `setup/setup-wizard.tsx`, `setup/actions.ts` — one
+- `setup/page.tsx`, the connector setup files exported by `setup/setup-wizard.tsx`, and `setup/actions.ts` — one
   wizard per kind of printer, each a short numbered list ending in a live
   wait that turns into "Connected" when the printer first reports in:
   - Cloud printer: mint this booth's private printer address once, copy it,

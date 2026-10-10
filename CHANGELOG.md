@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Drop the leftover `allowBuilds` entry for the previous `@merqo/ui` commit, so build permission names only the pinned source URL.
 - Pin `@merqo/ui` to commit `cb9dd39ab56d6bc2030d30edb7474ee8ebf60820` (tag `v0.32.1`) with matching build permission. From this revision, `Section` title tooltips and default-mode `InfoTooltip`s open on a tap as well as on hover and keyboard focus. Nothing changes for vendors here: printer help already opens on a tap.
 - Reuse touch-first shared printer help with preserved target sizing and pin its tested immutable UI commit.
 

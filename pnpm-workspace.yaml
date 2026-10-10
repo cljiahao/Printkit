@@ -4,7 +4,6 @@ allowBuilds:
   "esbuild@0.25.12": true
   supabase: false
   sharp: false
-  "@merqo/ui@https://codeload.github.com/merqo-io/merqo-ui/tar.gz/989d934c1cc8d957ff383934debf8ef083b6b6a4": true
 
 overrides:
   postcss@<8.5.23: ">=8.5.23"
